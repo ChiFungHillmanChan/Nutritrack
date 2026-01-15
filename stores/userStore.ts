@@ -1,18 +1,20 @@
 /**
  * User Store - Zustand State Management
- * 
+ *
  * Manages user authentication state and profile data.
+ * Supports DEMO MODE when Supabase is not configured.
  */
 
 import { create } from 'zustand';
 import { User, DailyTargets, UserGoal, MedicalCondition } from '../types';
-import { getSupabaseClient } from '../services/supabase';
+import { getSupabaseClient, isDemoMode } from '../services/supabase';
 
 interface UserState {
   // State
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
   error: string | null;
 
   // Actions
@@ -24,6 +26,7 @@ interface UserState {
   signIn: (userEmail: string, userPassword: string) => Promise<boolean>;
   signUp: (userEmail: string, userPassword: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  enterDemoMode: () => void;
 
   // Profile actions
   updateProfile: (profileUpdates: Partial<User>) => Promise<boolean>;
@@ -34,6 +37,30 @@ interface UserState {
     conditions: MedicalCondition[]
   ) => DailyTargets;
 }
+
+/**
+ * Demo user for testing without Supabase
+ */
+const DEMO_USER: User = {
+  id: 'demo-user-001',
+  email: 'demo@nutritrack.app',
+  name: '示範用戶',
+  height_cm: 170,
+  weight_kg: 65,
+  goal: 'maintain',
+  medical_conditions: [],
+  daily_targets: {
+    calories: { min: 1800, max: 2200 },
+    protein: { min: 104, max: 143 },
+    carbs: { min: 200, max: 275 },
+    fat: { min: 44, max: 73 },
+    fiber: { min: 25, max: 35 },
+    sodium: { min: 1500, max: 2300 },
+    water: 2275,
+  },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
 
 /**
  * Calculate BMR using Mifflin-St Jeor Equation
@@ -73,9 +100,9 @@ function calculateTargets(
   const avgCalories = (calorieTarget.min + calorieTarget.max) / 2;
 
   let proteinTarget = { min: weight * 1.6, max: weight * 2.2 };
-  let carbsTarget = { min: avgCalories * 0.4 / 4, max: avgCalories * 0.5 / 4 };
-  const fatTarget = { min: avgCalories * 0.2 / 9, max: avgCalories * 0.3 / 9 };
-  
+  let carbsTarget = { min: (avgCalories * 0.4) / 4, max: (avgCalories * 0.5) / 4 };
+  const fatTarget = { min: (avgCalories * 0.2) / 9, max: (avgCalories * 0.3) / 9 };
+
   // Adjust for conditions
   let sodiumTarget = { min: 1500, max: 2300 };
   if (conditions.includes('hypertension') || conditions.includes('heart_disease')) {
@@ -86,9 +113,9 @@ function calculateTargets(
     sodiumTarget = { min: 1000, max: 1500 };
   }
   if (conditions.includes('diabetes')) {
-    carbsTarget = { min: avgCalories * 0.35 / 4, max: avgCalories * 0.45 / 4 };
+    carbsTarget = { min: (avgCalories * 0.35) / 4, max: (avgCalories * 0.45) / 4 };
   }
-  
+
   return {
     calories: {
       min: Math.round(calorieTarget.min),
@@ -117,28 +144,56 @@ export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isLoading: false,
   isAuthenticated: false,
+  isDemoMode: isDemoMode(),
   error: null,
-  
+
   // Basic setters
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-  
+
+  // Enter demo mode with mock user
+  enterDemoMode: () => {
+    set({
+      user: DEMO_USER,
+      isAuthenticated: true,
+      isDemoMode: true,
+      isLoading: false,
+      error: null,
+    });
+  },
+
   // Sign in with email/password
   signIn: async (email, password) => {
+    // Demo mode - auto login
+    if (isDemoMode()) {
+      set({
+        user: { ...DEMO_USER, email },
+        isAuthenticated: true,
+        isDemoMode: true,
+        isLoading: false,
+      });
+      return true;
+    }
+
     set({ isLoading: true, error: null });
-    
+
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      set({ isLoading: false, error: 'Supabase not configured' });
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) {
       set({ isLoading: false, error: error.message });
       return false;
     }
-    
+
     if (data.user) {
       // Fetch user profile from database
       const { data: profile } = await supabase
@@ -146,7 +201,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         .select('*')
         .eq('id', data.user.id)
         .single();
-      
+
       set({
         user: profile,
         isAuthenticated: true,
@@ -154,67 +209,99 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
       return true;
     }
-    
+
     set({ isLoading: false });
     return false;
   },
-  
+
   // Sign up with email/password
   signUp: async (email, password) => {
+    // Demo mode - auto signup
+    if (isDemoMode()) {
+      set({
+        user: { ...DEMO_USER, email },
+        isAuthenticated: true,
+        isDemoMode: true,
+        isLoading: false,
+      });
+      return true;
+    }
+
     set({ isLoading: true, error: null });
-    
+
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      set({ isLoading: false, error: 'Supabase not configured' });
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
-    
+
     if (error) {
       set({ isLoading: false, error: error.message });
       return false;
     }
-    
+
     if (data.user) {
       set({ isLoading: false });
       return true;
     }
-    
+
     set({ isLoading: false });
     return false;
   },
-  
+
   // Sign out
   signOut: async () => {
     const supabase = getSupabaseClient();
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     set({ user: null, isAuthenticated: false });
   },
-  
+
   // Update user profile
   updateProfile: async (updates) => {
-    const { user } = get();
+    const { user, isDemoMode: isDemo } = get();
     if (!user) return false;
-    
+
+    // Demo mode - just update local state
+    if (isDemo) {
+      set({
+        user: { ...user, ...updates, updated_at: new Date().toISOString() },
+        isLoading: false,
+      });
+      return true;
+    }
+
     set({ isLoading: true, error: null });
-    
+
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      set({ isLoading: false, error: 'Supabase not configured' });
+      return false;
+    }
+
     const { error } = await supabase
       .from('users')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', user.id);
-    
+
     if (error) {
       set({ isLoading: false, error: error.message });
       return false;
     }
-    
+
     set({
       user: { ...user, ...updates },
       isLoading: false,
     });
     return true;
   },
-  
+
   // Calculate daily targets
   calculateDailyTargets: calculateTargets,
 }));

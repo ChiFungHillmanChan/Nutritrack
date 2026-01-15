@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 import { useUserStore } from '../stores/userStore';
 import { onAuthStateChange, getCurrentUser } from '../services/auth';
-import { getSupabaseClient } from '../services/supabase';
+import { getSupabaseClient, isDemoMode } from '../services/supabase';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -26,21 +26,31 @@ export default function RootLayout() {
   const initializeAuth = useCallback(async () => {
     try {
       setLoading(true);
-      
+
+      // Demo mode - skip auth initialization
+      if (isDemoMode()) {
+        setLoading(false);
+        setIsReady(true);
+        SplashScreen.hideAsync();
+        return;
+      }
+
       // Check for existing session
       const user = await getCurrentUser();
-      
+
       if (user) {
         // Fetch user profile from database
         const supabase = getSupabaseClient();
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile) {
-          setUser(profile);
+        if (supabase) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (profile) {
+            setUser(profile);
+          }
         }
       }
     } catch {
@@ -57,21 +67,30 @@ export default function RootLayout() {
   }, [initializeAuth]);
 
   useEffect(() => {
+    // Demo mode - skip auth state listener
+    if (isDemoMode()) {
+      return;
+    }
+
     // Listen to auth state changes
-    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
       } else if (event === 'SIGNED_IN' && session) {
         // Fetch user profile
         const supabase = getSupabaseClient();
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', (session as { user: { id: string } }).user.id)
-          .single();
-        
-        if (profile) {
-          setUser(profile);
+        if (supabase) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', (session as { user: { id: string } }).user.id)
+            .single();
+
+          if (profile) {
+            setUser(profile);
+          }
         }
       }
     });

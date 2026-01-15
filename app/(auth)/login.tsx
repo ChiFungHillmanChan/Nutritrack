@@ -14,6 +14,8 @@ import { Link, router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY } from '../../constants/typography';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
+import { useUserStore } from '../../stores/userStore';
+import { isDemoMode } from '../../services/supabase';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
@@ -21,6 +23,13 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const enterDemoMode = useUserStore((state) => state.enterDemoMode);
+  const isInDemoMode = isDemoMode();
+
+  const handleDemoLogin = () => {
+    enterDemoMode();
+    router.replace('/(tabs)');
+  };
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -157,6 +166,14 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        {/* Demo Mode Button */}
+        {isInDemoMode && (
+          <TouchableOpacity style={styles.demoButton} onPress={handleDemoLogin}>
+            <Ionicons name="flask-outline" size={20} color={COLORS.warning} />
+            <Text style={styles.demoButtonText}>示範模式（無需 Supabase）</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -277,5 +294,21 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  demoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warningLight,
+    borderRadius: 12,
+    height: 50,
+    marginTop: 24,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+  },
+  demoButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.warning,
   },
 });

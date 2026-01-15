@@ -1,11 +1,12 @@
 /**
  * Authentication Service
- * 
+ *
  * Handles all authentication operations with Supabase.
  * Supports Email/Password, Google, and Apple Sign-In.
+ * Supports DEMO MODE when Supabase is not configured.
  */
 
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient, isDemoMode } from './supabase';
 import { saveSecure, deleteSecure, STORAGE_KEYS } from './secure-storage';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -30,24 +31,32 @@ export interface AuthResult {
  * Sign in with email and password
  */
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
+  // Demo mode - always succeed
+  if (isDemoMode()) {
+    return { success: true, userId: 'demo-user-001' };
+  }
+
   const supabase = getSupabaseClient();
-  
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
+
   if (data.session) {
     await saveSecure(STORAGE_KEYS.AUTH_TOKEN, data.session.access_token);
     if (data.session.refresh_token) {
       await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, data.session.refresh_token);
     }
   }
-  
+
   return { success: true, userId: data.user?.id };
 }
 
@@ -55,19 +64,27 @@ export async function signInWithEmail(email: string, password: string): Promise<
  * Sign up with email and password
  */
 export async function signUpWithEmail(email: string, password: string): Promise<AuthResult> {
+  // Demo mode - always succeed
+  if (isDemoMode()) {
+    return { success: true, userId: 'demo-user-001' };
+  }
+
   const supabase = getSupabaseClient();
-  
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
-  
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
-  return { 
-    success: true, 
+
+  return {
+    success: true,
     userId: data.user?.id,
   };
 }
@@ -76,8 +93,16 @@ export async function signUpWithEmail(email: string, password: string): Promise<
  * Sign in with Google OAuth
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
+  // Demo mode - not supported
+  if (isDemoMode()) {
+    return { success: false, error: '示範模式唔支援 Google 登入，請用電郵登入' };
+  }
+
   const supabase = getSupabaseClient();
-  
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -85,34 +110,34 @@ export async function signInWithGoogle(): Promise<AuthResult> {
       skipBrowserRedirect: Platform.OS !== 'web',
     },
   });
-  
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
+
   // On native platforms, open the browser
   if (Platform.OS !== 'web' && data.url) {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-    
+
     if (result.type === 'success' && result.url) {
       // Extract tokens from URL
       const url = new URL(result.url);
       const accessToken = url.searchParams.get('access_token');
       const refreshToken = url.searchParams.get('refresh_token');
-      
+
       if (accessToken) {
         await saveSecure(STORAGE_KEYS.AUTH_TOKEN, accessToken);
       }
       if (refreshToken) {
         await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       }
-      
+
       return { success: true };
     }
-    
+
     return { success: false, error: 'Authentication was cancelled' };
   }
-  
+
   return { success: true };
 }
 
@@ -120,8 +145,16 @@ export async function signInWithGoogle(): Promise<AuthResult> {
  * Sign in with Apple
  */
 export async function signInWithApple(): Promise<AuthResult> {
+  // Demo mode - not supported
+  if (isDemoMode()) {
+    return { success: false, error: '示範模式唔支援 Apple 登入，請用電郵登入' };
+  }
+
   const supabase = getSupabaseClient();
-  
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'apple',
     options: {
@@ -129,33 +162,33 @@ export async function signInWithApple(): Promise<AuthResult> {
       skipBrowserRedirect: Platform.OS !== 'web',
     },
   });
-  
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
+
   // On native platforms, open the browser
   if (Platform.OS !== 'web' && data.url) {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-    
+
     if (result.type === 'success' && result.url) {
       const url = new URL(result.url);
       const accessToken = url.searchParams.get('access_token');
       const refreshToken = url.searchParams.get('refresh_token');
-      
+
       if (accessToken) {
         await saveSecure(STORAGE_KEYS.AUTH_TOKEN, accessToken);
       }
       if (refreshToken) {
         await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       }
-      
+
       return { success: true };
     }
-    
+
     return { success: false, error: 'Authentication was cancelled' };
   }
-  
+
   return { success: true };
 }
 
@@ -163,19 +196,27 @@ export async function signInWithApple(): Promise<AuthResult> {
  * Sign out
  */
 export async function signOut(): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
-  
-  const { error } = await supabase.auth.signOut();
-  
-  // Clear secure storage regardless of error
+  // Clear secure storage regardless of mode
   await deleteSecure(STORAGE_KEYS.AUTH_TOKEN);
   await deleteSecure(STORAGE_KEYS.REFRESH_TOKEN);
   await deleteSecure(STORAGE_KEYS.USER_ID);
-  
+
+  // Demo mode - always succeed
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { success: true };
+  }
+
+  const { error } = await supabase.auth.signOut();
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
+
   return { success: true };
 }
 
@@ -183,13 +224,22 @@ export async function signOut(): Promise<AuthResult> {
  * Get current session
  */
 export async function getCurrentSession() {
+  // Demo mode - no session
+  if (isDemoMode()) {
+    return null;
+  }
+
   const supabase = getSupabaseClient();
+  if (!supabase) {
+    return null;
+  }
+
   const { data, error } = await supabase.auth.getSession();
-  
+
   if (error) {
     return null;
   }
-  
+
   return data.session;
 }
 
@@ -197,21 +247,54 @@ export async function getCurrentSession() {
  * Get current user
  */
 export async function getCurrentUser() {
+  // Demo mode - no user from auth
+  if (isDemoMode()) {
+    return null;
+  }
+
   const supabase = getSupabaseClient();
+  if (!supabase) {
+    return null;
+  }
+
   const { data, error } = await supabase.auth.getUser();
-  
+
   if (error) {
     return null;
   }
-  
+
   return data.user;
 }
 
 /**
  * Listen to auth state changes
+ * Returns a dummy subscription in demo mode
  */
 export function onAuthStateChange(callback: (event: string, session: unknown) => void) {
+  // Demo mode - return dummy subscription
+  if (isDemoMode()) {
+    // Call callback once with no session
+    callback('SIGNED_OUT', null);
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => {},
+        },
+      },
+    };
+  }
+
   const supabase = getSupabaseClient();
+  if (!supabase) {
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => {},
+        },
+      },
+    };
+  }
+
   return supabase.auth.onAuthStateChange(callback);
 }
 
@@ -219,15 +302,23 @@ export function onAuthStateChange(callback: (event: string, session: unknown) =>
  * Reset password
  */
 export async function resetPassword(email: string): Promise<AuthResult> {
+  // Demo mode - not supported
+  if (isDemoMode()) {
+    return { success: false, error: '示範模式唔支援密碼重設' };
+  }
+
   const supabase = getSupabaseClient();
-  
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${redirectUri}?type=recovery`,
   });
-  
+
   if (error) {
     return { success: false, error: error.message };
   }
-  
+
   return { success: true };
 }
