@@ -1,0 +1,88 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(file:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next lint:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(xargs dirname:*)",
+      "mcp__chrome-devtools__*",
+      "mcp__puppeteer__*",
+      "Bash(tree:*)",
+      "Skill(code-reviewer)",
+      "Skill(eslint-fixer)",
+      "Skill(superpowers:brainstorming)",
+      "Skill(frontend-design:frontend-design)",
+      "Bash(npx playwright test:*)",
+      "WebSearch"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__chrome-devtools__.*|mcp__puppeteer__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\": {\"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"Auto-approved MCP browser tool\"}}'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat | .claude/hooks/task-notify.sh"
+          },
+          {
+            "type": "command",
+            "command": "cat | .claude/hooks/test-runner.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude needs your attention\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "stripe@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true,
+    "ralph-loop@claude-plugins-official": true
+  }
+}

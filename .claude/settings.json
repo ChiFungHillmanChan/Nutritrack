@@ -1,0 +1,60 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(pnpm:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(pnpm prisma:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(pnpm db:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(file:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npx prettier:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Read(**)",
+      "Edit(server/**)",
+      "Edit(client/**)",
+      "Edit(messages/**)",
+      "Edit(readme/**)",
+      "Edit(scripts/**)",
+      "Edit(prisma/**)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(./secrets/**)",
+      "Read(.git/objects/**)",
+      "Read(node_modules/**)",
+      "Read(.next/**)",
+      "Read(dist/**)",
+      "Read(build/**)",
+      "Read(coverage/**)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "16384",
+    "BASH_DEFAULT_TIMEOUT_MS": "60000",
+    "DISABLE_PROMPT_CACHING": "0",
+    "DISABLE_TELEMETRY": "0"
+  },
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": true
+  }
+}
