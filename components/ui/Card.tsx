@@ -4,7 +4,7 @@
  * Beautiful card components with consistent styling, shadows, and optional gradients.
  */
 
-import { View, StyleSheet, ViewStyle, Pressable } from 'react-native';
+import { View, StyleSheet, ViewStyle, Pressable, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
@@ -18,7 +18,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   variant?: 'default' | 'elevated' | 'outlined' | 'glass';
   padding?: keyof typeof SPACING | number;
   borderRadius?: keyof typeof RADIUS | number;
@@ -69,12 +69,13 @@ export function Card({
     }
   };
 
-  const cardStyle: ViewStyle = {
+  const baseCardStyle: ViewStyle = {
     borderRadius: radiusValue,
     padding: paddingValue,
     ...getVariantStyles(),
-    ...style,
   };
+  
+  const cardStyle = [baseCardStyle, style];
 
   if (onPress) {
     return (
@@ -102,7 +103,7 @@ export function Card({
 interface GradientCardProps {
   children: React.ReactNode;
   colors?: readonly [string, string, ...string[]];
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padding?: keyof typeof SPACING | number;
   borderRadius?: keyof typeof RADIUS | number;
   start?: { x: number; y: number };
@@ -173,7 +174,7 @@ interface SectionCardProps {
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function SectionCard({ title, action, children, style }: SectionCardProps) {

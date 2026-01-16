@@ -6,7 +6,15 @@
  */
 
 import { create } from 'zustand';
-import { User, DailyTargets, UserGoal, MedicalCondition } from '../types';
+import {
+  User,
+  DailyTargets,
+  UserGoal,
+  HealthGoal,
+  MedicalCondition,
+  Gender,
+  ActivityLevel,
+} from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 
 interface UserState {
@@ -30,12 +38,18 @@ interface UserState {
 
   // Profile actions
   updateProfile: (profileUpdates: Partial<User>) => Promise<boolean>;
-  calculateDailyTargets: (
-    height: number,
-    weight: number,
-    goal: UserGoal,
-    conditions: MedicalCondition[]
-  ) => DailyTargets;
+  calculateDailyTargets: (params: TargetCalculationParams) => DailyTargets;
+}
+
+interface TargetCalculationParams {
+  height: number;
+  weight: number;
+  age?: number;
+  gender?: Gender;
+  activityLevel?: ActivityLevel;
+  goal: UserGoal;
+  healthGoals?: HealthGoal[];
+  conditions: MedicalCondition[];
 }
 
 /**
@@ -45,10 +59,18 @@ const DEMO_USER: User = {
   id: 'demo-user-001',
   email: 'demo@nutritrack.app',
   name: '示範用戶',
+  gender: 'prefer_not_to_say',
+  date_of_birth: '1990-01-01',
   height_cm: 170,
   weight_kg: 65,
+  activity_level: 'moderate',
   goal: 'maintain',
+  health_goals: ['healthy_balanced_eating', 'improve_hydration'],
   medical_conditions: [],
+  medications: [],
+  supplements: [],
+  allergies: [],
+  dietary_preferences: [],
   daily_targets: {
     calories: { min: 1800, max: 2200 },
     protein: { min: 104, max: 143 },
@@ -65,22 +87,78 @@ const DEMO_USER: User = {
 /**
  * Calculate BMR using Mifflin-St Jeor Equation
  */
-function calculateBMR(weight: number, height: number, age: number = 30): number {
-  // Using average values, can be refined with actual age/gender
-  return 10 * weight + 6.25 * height - 5 * age + 5;
+function calculateBMR(
+  weight: number,
+  height: number,
+  age: number = 30,
+  gender: Gender = 'prefer_not_to_say'
+): number {
+  // Mifflin-St Jeor Equation
+  const baseBMR = 10 * weight + 6.25 * height - 5 * age;
+  
+  switch (gender) {
+    case 'male':
+      return baseBMR + 5;
+    case 'female':
+      return baseBMR - 161;
+    default:
+      // Use average for other/prefer_not_to_say
+      return baseBMR - 78;
+  }
+}
+
+/**
+ * Get activity multiplier for TDEE calculation
+ */
+function getActivityMultiplier(activityLevel: ActivityLevel = 'moderate'): number {
+  switch (activityLevel) {
+    case 'sedentary':
+      return 1.2;
+    case 'light':
+      return 1.375;
+    case 'moderate':
+      return 1.55;
+    case 'active':
+      return 1.725;
+    case 'very_active':
+      return 1.9;
+    default:
+      return 1.55;
+  }
+}
+
+/**
+ * Calculate age from date of birth
+ */
+function calculateAge(dateOfBirth?: string): number {
+  if (!dateOfBirth) return 30; // Default age
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
 }
 
 /**
  * Calculate daily nutrition targets based on user profile
  */
-function calculateTargets(
-  height: number,
-  weight: number,
-  goal: UserGoal,
-  conditions: MedicalCondition[]
-): DailyTargets {
-  const bmr = calculateBMR(weight, height);
-  const tdee = bmr * 1.55; // Moderate activity level
+function calculateTargets(params: TargetCalculationParams): DailyTargets {
+  const {
+    height,
+    weight,
+    age = 30,
+    gender = 'prefer_not_to_say',
+    activityLevel = 'moderate',
+    goal,
+    healthGoals = [],
+    conditions,
+  } = params;
+
+  const bmr = calculateBMR(weight, height, age, gender);
+  const tdee = bmr * getActivityMultiplier(activityLevel);
 
   // Adjust based on goal
   let calorieTarget: { min: number; max: number };
@@ -99,22 +177,55 @@ function calculateTargets(
   // Calculate macros (as percentage of calories)
   const avgCalories = (calorieTarget.min + calorieTarget.max) / 2;
 
-  let proteinTarget = { min: weight * 1.6, max: weight * 2.2 };
+  // Base protein target
+  let proteinMultiplierMin = 1.6;
+  let proteinMultiplierMax = 2.2;
+
+  // Adjust for muscle gain goal
+  if (goal === 'build_muscle' || healthGoals.includes('muscle_gain')) {
+    proteinMultiplierMin = 1.8;
+    proteinMultiplierMax = 2.4;
+  }
+
+  let proteinTarget = { min: weight * proteinMultiplierMin, max: weight * proteinMultiplierMax };
   let carbsTarget = { min: (avgCalories * 0.4) / 4, max: (avgCalories * 0.5) / 4 };
   const fatTarget = { min: (avgCalories * 0.2) / 9, max: (avgCalories * 0.3) / 9 };
+  let fiberTarget = { min: 25, max: 35 };
 
   // Adjust for conditions
   let sodiumTarget = { min: 1500, max: 2300 };
-  if (conditions.includes('hypertension') || conditions.includes('heart_disease')) {
+  
+  if (conditions.includes('hypertension') || conditions.includes('heart_disease') || conditions.includes('coronary_heart_disease')) {
     sodiumTarget = { min: 1000, max: 1500 };
   }
+  
   if (conditions.includes('kidney_disease')) {
     proteinTarget = { min: weight * 0.6, max: weight * 0.8 };
     sodiumTarget = { min: 1000, max: 1500 };
   }
-  if (conditions.includes('diabetes')) {
+  
+  if (conditions.includes('diabetes') || conditions.includes('t1dm') || conditions.includes('t2dm')) {
+    // Lower carb for diabetics
     carbsTarget = { min: (avgCalories * 0.35) / 4, max: (avgCalories * 0.45) / 4 };
   }
+
+  // Adjust for health goals
+  if (healthGoals.includes('healthy_bowels') || healthGoals.includes('blood_sugar_control')) {
+    fiberTarget = { min: 30, max: 40 };
+  }
+
+  // Calculate water based on weight and activity
+  let waterMultiplier = 35; // ml per kg
+  if (activityLevel === 'active' || activityLevel === 'very_active') {
+    waterMultiplier = 40;
+  }
+  if (healthGoals.includes('improve_hydration')) {
+    waterMultiplier += 5;
+  }
+
+  // Micronutrients (basic targets, can be expanded)
+  const ironTarget = gender === 'female' ? { min: 18, max: 27 } : { min: 8, max: 11 };
+  const calciumTarget = age > 50 ? { min: 1200, max: 1500 } : { min: 1000, max: 1200 };
 
   return {
     calories: {
@@ -133,9 +244,11 @@ function calculateTargets(
       min: Math.round(fatTarget.min),
       max: Math.round(fatTarget.max),
     },
-    fiber: { min: 25, max: 35 },
+    fiber: fiberTarget,
     sodium: sodiumTarget,
-    water: weight * 35, // 35ml per kg body weight
+    water: weight * waterMultiplier,
+    iron: ironTarget,
+    calcium: calciumTarget,
   };
 }
 
@@ -202,8 +315,19 @@ export const useUserStore = create<UserState>((set, get) => ({
         .eq('id', data.user.id)
         .single();
 
+      // Merge with defaults for new fields
+      const userProfile: User = {
+        ...DEMO_USER, // Default values
+        ...profile,
+        health_goals: profile?.health_goals || [],
+        medications: profile?.medications || [],
+        supplements: profile?.supplements || [],
+        allergies: profile?.allergies || [],
+        dietary_preferences: profile?.dietary_preferences || [],
+      };
+
       set({
-        user: profile,
+        user: userProfile,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -302,6 +426,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     return true;
   },
 
-  // Calculate daily targets
-  calculateDailyTargets: calculateTargets,
+  // Calculate daily targets with full parameters
+  calculateDailyTargets: (params: TargetCalculationParams) => calculateTargets(params),
 }));
+
+// Export helper functions for use in components
+export { calculateAge, calculateBMR, getActivityMultiplier };

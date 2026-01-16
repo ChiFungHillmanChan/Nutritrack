@@ -24,7 +24,6 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useUserStore } from '../../stores/userStore';
-import { isDemoMode } from '../../services/supabase';
 
 const { height } = Dimensions.get('window');
 
@@ -34,7 +33,6 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const enterDemoMode = useUserStore((state) => state.enterDemoMode);
-  const isInDemoMode = isDemoMode();
 
   const handleDemoLogin = () => {
     enterDemoMode();
@@ -235,21 +233,19 @@ export default function LoginScreen() {
           </Link>
         </Animated.View>
 
-        {/* Demo Mode */}
-        {isInDemoMode && (
-          <Animated.View entering={FadeInUp.delay(500)}>
-            <TouchableOpacity
-              style={styles.demoButton}
-              onPress={handleDemoLogin}
-              activeOpacity={0.8}
-            >
-              <View style={styles.demoIconContainer}>
-                <Ionicons name="flask-outline" size={18} color={COLORS.warning} />
-              </View>
-              <Text style={styles.demoButtonText}>示範模式（無需登入）</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
+        {/* Demo Mode - Always show for easy testing */}
+        <Animated.View entering={FadeInUp.delay(500)}>
+          <TouchableOpacity
+            style={styles.demoButton}
+            onPress={handleDemoLogin}
+            activeOpacity={0.8}
+          >
+            <View style={styles.demoIconContainer}>
+              <Ionicons name="flask-outline" size={18} color={COLORS.warning} />
+            </View>
+            <Text style={styles.demoButtonText}>示範模式（無需登入）</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

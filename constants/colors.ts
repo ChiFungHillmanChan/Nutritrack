@@ -5,6 +5,8 @@
  * for a beautiful nutrition tracking experience.
  */
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
   // Primary Brand Colors - Fresh, healthy greens
   primary: '#10B981', // Emerald green
@@ -107,44 +109,43 @@ export const GRADIENTS = {
   glass: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)'],
 } as const;
 
+/**
+ * Create platform-aware shadow styles
+ * Uses boxShadow for web, native shadow props for iOS/Android
+ */
+function createShadow(
+  color: string,
+  offsetY: number,
+  blur: number,
+  opacity: number,
+  elevation: number
+) {
+  if (Platform.OS === 'web') {
+    // Convert opacity (0-1) to alpha in rgba
+    const alpha = Math.round(opacity * 255).toString(16).padStart(2, '0');
+    return {
+      boxShadow: `0px ${offsetY}px ${blur}px ${color}${alpha}`,
+    };
+  }
+  
+  // Native platforms use traditional shadow props
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: offsetY },
+    shadowOpacity: opacity,
+    shadowRadius: blur,
+    elevation: elevation,
+  };
+}
+
 // Shadow presets for consistent elevation
 export const SHADOWS = {
-  sm: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  lg: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  xl: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  colored: (color: string) => ({
-    shadowColor: color,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  }),
-} as const;
+  sm: createShadow('#0F172A', 1, 2, 0.05, 1),
+  md: createShadow('#0F172A', 4, 8, 0.08, 3),
+  lg: createShadow('#0F172A', 8, 16, 0.1, 5),
+  xl: createShadow('#0F172A', 12, 24, 0.12, 8),
+  colored: (color: string) => createShadow(color, 4, 8, 0.3, 4),
+};
 
 export type ColorKey = keyof typeof COLORS;
 

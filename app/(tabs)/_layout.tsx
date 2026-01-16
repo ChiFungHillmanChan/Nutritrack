@@ -3,7 +3,9 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
-import { RADIUS } from '../../constants/typography';
+
+const ICON_SIZE = 20;
+const CONTAINER_SIZE = 40;
 
 function TabBarIcon({
   name,
@@ -14,20 +16,22 @@ function TabBarIcon({
   color: string;
   focused: boolean;
 }) {
-  if (focused) {
-    return (
-      <View style={styles.activeIconContainer}>
+  return (
+    <View style={styles.iconContainer}>
+      {focused ? (
         <LinearGradient
           colors={GRADIENTS.primary}
-          style={styles.activeIconBg}
+          style={styles.iconBg}
         >
-          <Ionicons name={name} size={22} color={COLORS.textInverse} />
+          <Ionicons name={name} size={ICON_SIZE} color={COLORS.textInverse} />
         </LinearGradient>
-      </View>
-    );
-  }
-
-  return <Ionicons name={name} size={24} color={color} />;
+      ) : (
+        <View style={styles.iconBgInactive}>
+          <Ionicons name={name} size={ICON_SIZE} color={color} />
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function TabLayout() {
@@ -38,8 +42,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: COLORS.textTertiary,
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabBarItem,
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarShowLabel: true,
+        tabBarShowLabel: false,
+        tabBarLabelStyle: styles.tabBarLabelHidden,
         headerStyle: styles.header,
         headerTitleStyle: styles.headerTitle,
         headerShadowVisible: false,
@@ -49,6 +53,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: '首頁',
+          tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="home" color={color} focused={focused} />
           ),
@@ -60,6 +65,7 @@ export default function TabLayout() {
         name="camera"
         options={{
           title: '記錄',
+          tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="camera" color={color} focused={focused} />
           ),
@@ -67,9 +73,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="habits"
+        options={{
+          title: '習慣',
+          tabBarLabel: () => null,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="checkmark-circle" color={color} focused={focused} />
+          ),
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: '問問',
+          tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="chatbubbles" color={color} focused={focused} />
           ),
@@ -80,6 +98,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: '設定',
+          tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="settings" color={color} focused={focused} />
           ),
@@ -94,29 +113,43 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 0,
-    height: Platform.OS === 'ios' ? 88 : 70,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    height: Platform.OS === 'ios' ? 70 : 56,
+    paddingTop: 4,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 4,
+    paddingHorizontal: 8,
     ...SHADOWS.lg,
   },
   tabBarItem: {
-    paddingTop: 4,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 4,
   },
-  tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 4,
+  tabBarLabelHidden: {
+    display: 'none',
+    height: 0,
+    width: 0,
   },
-  activeIconContainer: {
-    marginBottom: -4,
+  iconContainer: {
+    width: CONTAINER_SIZE,
+    height: CONTAINER_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  activeIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  iconBg: {
+    width: CONTAINER_SIZE,
+    height: CONTAINER_SIZE,
+    borderRadius: CONTAINER_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.colored(COLORS.primary),
+  },
+  iconBgInactive: {
+    width: CONTAINER_SIZE,
+    height: CONTAINER_SIZE,
+    borderRadius: CONTAINER_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     backgroundColor: COLORS.backgroundSecondary,

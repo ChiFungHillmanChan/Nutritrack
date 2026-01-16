@@ -15,10 +15,45 @@ const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 /**
+ * Check if a URL is a placeholder value (not properly configured)
+ */
+function isPlaceholderUrl(url: string): boolean {
+  if (!url) return true;
+  // Detect common placeholder patterns
+  const placeholderPatterns = [
+    'your-project-id',
+    'your-supabase-url',
+    'placeholder',
+    'example.com',
+    'localhost', // Also consider localhost as demo for web testing
+  ];
+  const lowerUrl = url.toLowerCase();
+  return placeholderPatterns.some(pattern => lowerUrl.includes(pattern));
+}
+
+/**
+ * Check if an API key is a placeholder value
+ */
+function isPlaceholderKey(key: string): boolean {
+  if (!key) return true;
+  const placeholderPatterns = [
+    'your-anon-key',
+    'your-key',
+    'placeholder',
+    'xxxxx',
+  ];
+  const lowerKey = key.toLowerCase();
+  return placeholderPatterns.some(pattern => lowerKey.includes(pattern));
+}
+
+/**
  * Check if app is running in demo mode (no Supabase configured)
  */
 export function isDemoMode(): boolean {
-  return !SUPABASE_URL || !SUPABASE_ANON_KEY;
+  return !SUPABASE_URL || 
+         !SUPABASE_ANON_KEY || 
+         isPlaceholderUrl(SUPABASE_URL) || 
+         isPlaceholderKey(SUPABASE_ANON_KEY);
 }
 
 /**

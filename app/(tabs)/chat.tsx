@@ -8,8 +8,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
-  Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -27,7 +26,36 @@ import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { sendChatMessage } from '../../services/ai';
 
-const { width } = Dimensions.get('window');
+// Parse markdown-style text into structured segments for rendering
+interface TextSegment {
+  text: string;
+  bold: boolean;
+}
+
+function parseMarkdownText(content: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  // Match **bold** patterns
+  const regex = /\*\*([^*]+)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      segments.push({ text: content.slice(lastIndex, match.index), bold: false });
+    }
+    // Add bold text
+    segments.push({ text: match[1], bold: true });
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    segments.push({ text: content.slice(lastIndex), bold: false });
+  }
+
+  return segments.length > 0 ? segments : [{ text: content, bold: false }];
+}
 
 interface Message {
   id: string;
@@ -39,6 +67,9 @@ interface Message {
 export default function ChatScreen() {
   const { user } = useUserStore();
   const { todayNutrition } = useFoodStore();
+  const { width } = useWindowDimensions();
+  const maxBubbleWidth = Math.min(width * 0.72, 320);
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -112,6 +143,26 @@ export default function ChatScreen() {
     }
   }, [inputText, isLoading, messages, todayNutrition, user?.daily_targets, user?.goal]);
 
+  // Render formatted text with bold support
+  const renderFormattedText = useCallback(
+    (content: string, isUser: boolean) => {
+      const segments = parseMarkdownText(content);
+      return (
+        <Text style={[styles.messageText, isUser && styles.userMessageText]}>
+          {segments.map((segment, idx) => (
+            <Text
+              key={idx}
+              style={segment.bold ? styles.boldText : undefined}
+            >
+              {segment.text}
+            </Text>
+          ))}
+        </Text>
+      );
+    },
+    []
+  );
+
   const renderMessage = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
       const isUser = item.role === 'user';
@@ -133,14 +184,11 @@ export default function ChatScreen() {
           <View
             style={[
               styles.messageBubble,
+              { maxWidth: maxBubbleWidth },
               isUser ? styles.userBubble : styles.assistantBubble,
             ]}
           >
-            <Text
-              style={[styles.messageText, isUser && styles.userMessageText]}
-            >
-              {item.content}
-            </Text>
+            {renderFormattedText(item.content, isUser)}
             <Text
               style={[styles.messageTime, isUser && styles.userMessageTime]}
             >
@@ -150,7 +198,7 @@ export default function ChatScreen() {
         </Animated.View>
       );
     },
-    []
+    [maxBubbleWidth, renderFormattedText]
   );
 
   const suggestedQuestions = [
@@ -305,9 +353,9 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   messageBubble: {
-    maxWidth: width * 0.75,
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
+    flexShrink: 1,
   },
   userBubble: {
     backgroundColor: COLORS.primary,
@@ -323,6 +371,10 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text,
     lineHeight: 22,
+    flexWrap: 'wrap',
+  },
+  boldText: {
+    fontWeight: '700',
   },
   userMessageText: {
     color: COLORS.textInverse,

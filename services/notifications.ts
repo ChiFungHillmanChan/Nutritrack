@@ -128,6 +128,114 @@ export async function scheduleWeightReminder(
 }
 
 /**
+ * Schedule medication reminder
+ */
+export async function scheduleMedicationReminder(
+  medicationName: string,
+  hour: number,
+  minute: number,
+  repeatDaily = true
+): Promise<string | undefined> {
+  const identifier = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '食藥提醒 💊',
+      body: `記得服用 ${medicationName}`,
+      sound: true,
+      data: { type: 'medication', name: medicationName },
+    },
+    trigger: repeatDaily
+      ? {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        }
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(
+            new Date().setHours(hour, minute, 0, 0)
+          ),
+        },
+  });
+
+  return identifier;
+}
+
+/**
+ * Schedule supplement reminder
+ */
+export async function scheduleSupplementReminder(
+  supplementName: string,
+  hour: number,
+  minute: number
+): Promise<string | undefined> {
+  const identifier = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '營養補充提醒 🌿',
+      body: `記得服用 ${supplementName}`,
+      sound: true,
+      data: { type: 'supplement', name: supplementName },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+  });
+
+  return identifier;
+}
+
+/**
+ * Schedule habit check-in reminder
+ */
+export async function scheduleHabitReminder(
+  habitName: string,
+  hour: number,
+  minute: number
+): Promise<string | undefined> {
+  const identifier = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '習慣追蹤提醒 ✅',
+      body: `記得記錄今日嘅${habitName}`,
+      sound: true,
+      data: { type: 'habit', name: habitName },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+  });
+
+  return identifier;
+}
+
+/**
+ * Schedule goal nudge notification
+ */
+export async function scheduleGoalNudge(
+  goalDescription: string,
+  hour: number,
+  minute: number
+): Promise<string | undefined> {
+  const identifier = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '健康目標提醒 🎯',
+      body: goalDescription,
+      sound: true,
+      data: { type: 'goal_nudge' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+  });
+
+  return identifier;
+}
+
+/**
  * Cancel a scheduled notification
  */
 export async function cancelNotification(identifier: string): Promise<void> {
@@ -181,6 +289,36 @@ export async function setupNotifications(settings: NotificationSettings): Promis
     const [hour, minute] = settings.weight_reminder.time.split(':').map(Number);
     await scheduleWeightReminder(settings.weight_reminder.day_of_week, hour, minute);
   }
+
+  // Schedule medication reminders
+  for (const med of settings.medication_reminders) {
+    if (med.enabled) {
+      const [hour, minute] = med.time.split(':').map(Number);
+      await scheduleMedicationReminder(med.name, hour, minute);
+    }
+  }
+
+  // Schedule supplement reminders
+  for (const supp of settings.supplement_reminders) {
+    if (supp.enabled) {
+      const [hour, minute] = supp.time.split(':').map(Number);
+      await scheduleSupplementReminder(supp.name, hour, minute);
+    }
+  }
+
+  // Schedule habit reminders
+  for (const habit of settings.habit_reminders) {
+    if (habit.enabled) {
+      const [hour, minute] = habit.time.split(':').map(Number);
+      await scheduleHabitReminder(habit.name, hour, minute);
+    }
+  }
+
+  // Schedule goal nudges
+  if (settings.goal_nudges.enabled) {
+    // Default nudge time: 10:00 AM
+    await scheduleGoalNudge('堅持你嘅健康目標，今日繼續努力！', 10, 0);
+  }
 }
 
 /**
@@ -201,6 +339,13 @@ export function getDefaultNotificationSettings(): NotificationSettings {
       enabled: true,
       day_of_week: 0, // Sunday
       time: '09:00',
+    },
+    medication_reminders: [],
+    supplement_reminders: [],
+    habit_reminders: [],
+    goal_nudges: {
+      enabled: true,
+      frequency: 'daily',
     },
   };
 }

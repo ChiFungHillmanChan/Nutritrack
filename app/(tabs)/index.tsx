@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
-import { useUserStore } from '../../stores/userStore';
+import { useUserStore, calculateAge } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
 import {
   CircularProgress,
@@ -26,7 +26,11 @@ import {
   GradientCard,
   NutritionBadge,
   Button,
+  EnergyBalanceCharts,
+  MacroDistributionChart,
 } from '../../components/ui';
+import { calculateEnergyBalance } from '../../lib/energy-calculator';
+import type { ExerciseLog } from '../../types';
 
 const { width } = Dimensions.get('window');
 
@@ -54,15 +58,38 @@ export default function HomeScreen() {
     }
   }, [user?.id, fetchTodayLogs]);
 
+  // Calculate energy balance
+  const energyBalance = useMemo(() => {
+    if (!user?.daily_targets) return null;
+
+    const age = user.date_of_birth 
+      ? calculateAge(user.date_of_birth)
+      : 30;
+
+    // TODO: Get from exerciseStore when implemented
+    const exercises: ExerciseLog[] = [];
+    const steps = 0;
+
+    return calculateEnergyBalance({
+      weightKg: user.weight_kg,
+      heightCm: user.height_cm,
+      age,
+      gender: user.gender || 'prefer_not_to_say',
+      activityLevel: user.activity_level || 'moderate',
+      caloriesConsumed: todayNutrition.calories,
+      exercises,
+      steps,
+      dailyTargets: user.daily_targets,
+    });
+  }, [user, todayNutrition.calories]);
+
+  // Note: calculateMacroPercentages is available for future trend analysis
+
   if (!user) {
     return null;
   }
 
   const targets = user.daily_targets;
-  const caloriesPercentage = Math.min(
-    (todayNutrition.calories / (targets?.calories.max ?? 2000)) * 100,
-    100
-  );
 
   return (
     <ScrollView
@@ -100,36 +127,31 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Main Calories Card */}
+      {/* Main Net Flow Card */}
       <Animated.View entering={FadeInDown.delay(200).springify()}>
         <GradientCard
           colors={['#10B981', '#059669']}
-          style={styles.caloriesCard}
+          style={styles.mainCard}
         >
-          <View style={styles.caloriesContent}>
-            <View style={styles.caloriesLeft}>
-              <Text style={styles.caloriesLabel}>今日卡路里</Text>
-              <View style={styles.caloriesValueRow}>
-                <Text style={styles.caloriesValue}>
-                  {Math.round(todayNutrition.calories)}
+          <View style={styles.mainCardContent}>
+            <View style={styles.mainCardLeft}>
+              <Text style={styles.mainCardLabel}>今日淨熱量</Text>
+              <View style={styles.mainCardValueRow}>
+                <Text style={styles.mainCardValue}>
+                  {energyBalance?.remaining_quota ?? Math.round((targets?.calories.max ?? 2000) - todayNutrition.calories)}
                 </Text>
-                <Text style={styles.caloriesUnit}>
-                  / {targets?.calories.max ?? 2000} kcal
-                </Text>
+                <Text style={styles.mainCardUnit}>kcal</Text>
               </View>
-              <View style={styles.caloriesRemaining}>
-                <Ionicons name="flame" size={14} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.caloriesRemainingText}>
-                  尚餘 {Math.max(0, (targets?.calories.max ?? 2000) - Math.round(todayNutrition.calories))} kcal
-                </Text>
-              </View>
+              <Text style={styles.mainCardSubtext}>
+                剩餘配額
+              </Text>
             </View>
-            <View style={styles.caloriesRight}>
+            <View style={styles.mainCardRight}>
               <CircularProgress
                 value={todayNutrition.calories}
                 max={targets?.calories.max ?? 2000}
-                size={100}
-                strokeWidth={10}
+                size={110}
+                strokeWidth={12}
                 color="#FFFFFF"
                 backgroundColor="rgba(255,255,255,0.3)"
                 showValue={false}
@@ -141,9 +163,48 @@ export default function HomeScreen() {
         </GradientCard>
       </Animated.View>
 
+      {/* Energy Balance Charts (3 Pie Charts) */}
+      <Animated.View entering={FadeInDown.delay(250).springify()}>
+        <Card style={styles.energyCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionDot} />
+              <Text style={styles.sectionTitle}>能量平衡</Text>
+            </View>
+          </View>
+          <EnergyBalanceCharts
+            intake={Math.round(todayNutrition.calories)}
+            burned={energyBalance?.total_burn ?? Math.round((targets?.calories.max ?? 2000) * 0.8)}
+            target={targets?.calories.max ?? 2000}
+            remaining={energyBalance?.remaining_quota ?? Math.round((targets?.calories.max ?? 2000) - todayNutrition.calories)}
+          />
+        </Card>
+      </Animated.View>
+
+      {/* Macro Distribution */}
+      {(todayNutrition.protein > 0 || todayNutrition.carbs > 0 || todayNutrition.fat > 0) && (
+        <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <Card style={styles.macroCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionDot, { backgroundColor: COLORS.protein }]} />
+                <Text style={styles.sectionTitle}>宏量營養素分佈</Text>
+              </View>
+            </View>
+            <MacroDistributionChart
+              protein={todayNutrition.protein}
+              carbs={todayNutrition.carbs}
+              fat={todayNutrition.fat}
+              size={100}
+              style={styles.macroChart}
+            />
+          </Card>
+        </Animated.View>
+      )}
+
       {/* Nutrition Stats */}
-      <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.nutritionSection}>
-        <Text style={styles.sectionTitle}>營養素攝取</Text>
+      <Animated.View entering={FadeInDown.delay(350).springify()} style={styles.nutritionSection}>
+        <Text style={styles.nutritionSectionTitle}>營養素攝取</Text>
         <View style={styles.nutritionGrid}>
           <NutritionBadge
             type="protein"
@@ -371,62 +432,86 @@ const styles = StyleSheet.create({
     color: COLORS.textInverse,
   },
 
-  // Calories Card
-  caloriesCard: {
+  // Main Card
+  mainCard: {
     marginBottom: SPACING.lg,
   },
-  caloriesContent: {
+  mainCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  caloriesLeft: {
+  mainCardLeft: {
     flex: 1,
   },
-  caloriesLabel: {
+  mainCardLabel: {
     ...TYPOGRAPHY.overline,
     color: 'rgba(255,255,255,0.8)',
     marginBottom: SPACING.xs,
   },
-  caloriesValueRow: {
+  mainCardValueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  caloriesValue: {
+  mainCardValue: {
     fontSize: 42,
     fontWeight: '800',
     color: COLORS.textInverse,
     letterSpacing: -1,
   },
-  caloriesUnit: {
+  mainCardUnit: {
     ...TYPOGRAPHY.body,
     color: 'rgba(255,255,255,0.8)',
     marginLeft: SPACING.xs,
   },
-  caloriesRemaining: {
+  mainCardSubtext: {
+    ...TYPOGRAPHY.caption,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: SPACING.xs,
+  },
+  mainCardRight: {
+    marginLeft: SPACING.lg,
+  },
+
+  // Energy Card
+  energyCard: {
+    marginBottom: SPACING.lg,
+    padding: SPACING.lg,
+  },
+  sectionHeader: {
+    marginBottom: SPACING.sm,
+  },
+  sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.sm,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.full,
-    alignSelf: 'flex-start',
   },
-  caloriesRemainingText: {
-    ...TYPOGRAPHY.captionMedium,
-    color: 'rgba(255,255,255,0.9)',
-    marginLeft: SPACING.xs,
+  sectionDot: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginRight: SPACING.sm,
   },
-  caloriesRight: {
-    marginLeft: SPACING.lg,
+  sectionTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+  },
+
+  // Macro Card
+  macroCard: {
+    marginBottom: SPACING.lg,
+    padding: SPACING.lg,
+  },
+  macroChart: {
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
   },
 
   // Nutrition Section
   nutritionSection: {
     marginBottom: SPACING.lg,
   },
-  sectionTitle: {
+  nutritionSectionTitle: {
     ...TYPOGRAPHY.h4,
     color: COLORS.text,
     marginBottom: SPACING.md,

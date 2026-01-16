@@ -10,6 +10,7 @@ This document provides an overview of the project's components, utilities, and d
 |------|---------|
 | `colors.ts` | Color palette with COLORS, GRADIENTS, and SHADOWS objects |
 | `typography.ts` | Typography system with TYPOGRAPHY, SPACING, and RADIUS constants |
+| `exercises.ts` | Exercise types and MET values for calorie calculations |
 
 ### UI Components (`/components/ui`)
 
@@ -26,6 +27,38 @@ This document provides an overview of the project's components, utilities, and d
 | `SegmentedProgressBar` | `ProgressBar.tsx` | Multi-segment progress bar |
 | `NutritionBadge` | `NutritionBadge.tsx` | Nutrition stat display (calories, protein, carbs, fat, fiber) |
 | `NutritionGrid` | `NutritionBadge.tsx` | Grid layout for multiple nutrition badges |
+| `PieChart` | `PieChart.tsx` | Animated pie chart for nutrition visualization |
+
+### Chart Components (`/components/charts`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `NutritionPieChart` | `NutritionPieChart.tsx` | Main pie chart for intake/output/net flow display |
+| `TrendGraph` | `TrendGraph.tsx` | Weekly/monthly trend line graphs |
+| `EnergyBalanceChart` | `EnergyBalanceChart.tsx` | Three-chart energy balance visualization |
+
+### Habit Components (`/components/habits`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `WeightTracker` | `WeightTracker.tsx` | Weight logging with historical graph |
+| `HydrationTracker` | `HydrationTracker.tsx` | Water intake with glass visualization |
+| `SleepTracker` | `SleepTracker.tsx` | Sleep duration and quality tracking |
+| `MoodTracker` | `MoodTracker.tsx` | 5-point mood scale with emoji |
+| `BowelTracker` | `BowelTracker.tsx` | Bristol stool scale tracker |
+| `PeriodTracker` | `PeriodTracker.tsx` | Menstrual cycle tracking |
+| `FiveADayTracker` | `FiveADayTracker.tsx` | Fruit/vegetable servings tracker |
+| `HabitCard` | `HabitCard.tsx` | Generic habit display card |
+| `StreakBadge` | `StreakBadge.tsx` | Habit streak display |
+
+### Wellness Components (`/components/wellness`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `AffirmationCard` | `AffirmationCard.tsx` | Daily affirmation display with sharing |
+| `BreathingExercise` | `BreathingExercise.tsx` | Guided breathing exercise animation |
+| `SoundPlayer` | `SoundPlayer.tsx` | Ambient sound player for meditation |
+| `MeditationTimer` | `MeditationTimer.tsx` | Timer with gentle alerts |
 
 ## Screens
 
@@ -35,40 +68,110 @@ This document provides an overview of the project's components, utilities, and d
 |--------|------|---------|
 | Login | `login.tsx` | Email/password and social login |
 | Register | `register.tsx` | Account creation with password validation |
-| Onboarding | `onboarding.tsx` | Multi-step user profile setup |
+| Onboarding | `onboarding.tsx` | 7-step user profile setup (basics, metrics, goals, conditions, medications, dietary, summary) |
 
 ### Main App (`/app/(tabs)`)
 
 | Screen | File | Purpose |
 |--------|------|---------|
-| Home | `index.tsx` | Dashboard with daily nutrition summary |
+| Home | `index.tsx` | Dashboard with 3 pie charts, nutrition summary, quick actions |
 | Camera | `camera.tsx` | Food photo capture and AI analysis |
 | Chat | `chat.tsx` | AI nutritionist conversation interface |
+| Habits | `habits.tsx` | All habit trackers grid with quick-log |
 | Settings | `settings.tsx` | User profile and app preferences |
+
+### Tools (`/app/tools`)
+
+| Screen | File | Purpose |
+|--------|------|---------|
+| Carb Counter | `carb-counter.tsx` | Carbohydrate counting tool for meals |
+| Portion Guide | `portion-guide.tsx` | Visual portion reference guide |
+| Exercise Guides | `exercise-guides.tsx` | Light exercise and stretching guides |
+| Insulin Calculator | `calculators/insulin-calculator.tsx` | Insulin dose calculator |
+| Creon Calculator | `calculators/creon-calculator.tsx` | Pancreatic enzyme dosing |
+
+### Wellness (`/app/wellness`)
+
+| Screen | File | Purpose |
+|--------|------|---------|
+| Meditation | `meditation.tsx` | Meditation with ambient sounds |
+| Affirmations | `affirmations.tsx` | Daily affirmations browser |
+
+### Games (`/app/tools/games`)
+
+| Screen | File | Purpose |
+|--------|------|---------|
+| Nutrition Quiz | `nutrition-quiz.tsx` | Educational nutrition quiz |
+| Portion Match | `portion-match.tsx` | Portion size matching game |
 
 ## Stores (`/stores`)
 
 | Store | File | Purpose |
 |-------|------|---------|
-| `useUserStore` | `userStore.ts` | User authentication and profile state |
+| `useUserStore` | `userStore.ts` | User authentication, profile state, target calculations |
 | `useFoodStore` | `foodStore.ts` | Food logs and nutrition tracking state |
+| `useExerciseStore` | `exerciseStore.ts` | Exercise logs, steps, activity tracking |
+| `useHabitStore` | `habitStore.ts` | Habit logs and streak tracking |
+| `useWellnessStore` | `wellnessStore.ts` | Meditation sessions, affirmations |
 
 ## Services (`/services`)
 
-| Service | Purpose |
-|---------|---------|
-| `ai.ts` | AI functions using Gemini via Supabase Edge Functions (chat, food analysis) |
-| `auth.ts` | Authentication functions (signIn, signUp, signOut) |
-| `notifications.ts` | Push notification handling |
-| `secure-storage.ts` | Secure token storage |
-| `supabase.ts` | Supabase client configuration |
+| Service | File | Purpose |
+|---------|------|---------|
+| `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
+| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) |
+| `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
+| `secure-storage.ts` | `secure-storage.ts` | Secure token storage |
+| `supabase.ts` | `supabase.ts` | Supabase client configuration |
+| `health-integration.ts` | `health-integration.ts` | Apple Health / Google Fit integration |
 
-## Supabase Edge Functions (`/supabase/functions`)
+## Lib (`/lib`)
+
+| Module | File | Purpose |
+|--------|------|---------|
+| `energy-calculator.ts` | `energy-calculator.ts` | BMR, TDEE, calorie calculations |
+| `nutrition-calculator.ts` | `nutrition-calculator.ts` | Daily target calculations |
+| `ai-models.ts` | `ai-models.ts` | AI model configuration |
+| `ai-model-status.ts` | `ai-model-status.ts` | AI model availability check |
+
+## Types (`/types`)
+
+| Type Category | Purpose |
+|---------------|---------|
+| User Types | `User`, `Gender`, `ActivityLevel`, `HealthGoal`, `MedicalCondition`, `Medication`, `Supplement`, `DietaryPreference` |
+| Food Types | `FoodLog`, `NutritionData`, `MealType` |
+| Exercise Types | `ExerciseLog`, `ExerciseType`, `DailyActivity` |
+| Habit Types | `HabitLog`, `HabitType`, `MoodLevel`, `BristolStoolType`, `SleepQuality`, `PeriodFlowLevel` |
+| Wellness Types | `MeditationSession`, `Affirmation`, `AmbientSoundType`, `BreathingExerciseType` |
+| Calculator Types | `InsulinCalculation`, `CreonCalculation` |
+| Energy Types | `EnergyBalance` |
+| Notification Types | `NotificationSettings`, `MedicationReminder`, `HabitReminder` |
+
+## Supabase
+
+### Edge Functions (`/supabase/functions`)
 
 | Function | Purpose |
 |----------|---------|
 | `chat/index.ts` | AI chat using Gemini 2.5 Pro for nutrition conversations |
 | `analyze-food/index.ts` | Food image analysis using Gemini 2.5 Flash vision API |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `users` | User profiles with enhanced fields (gender, DOB, goals, conditions, medications) |
+| `food_logs` | Food intake records with nutrition data |
+| `weight_logs` | Weight tracking history |
+| `exercise_logs` | Exercise and activity records |
+| `habit_logs` | All habit tracking data |
+| `meditation_sessions` | Meditation session history |
+| `affirmations` | Affirmation content |
+| `user_saved_affirmations` | User's saved affirmations |
+| `portion_guides` | Portion reference data |
+| `daily_activity_cache` | Cached daily step/activity data |
+| `chat_history` | AI conversation history |
+| `nutrition_facts` | Educational content |
 
 ## Usage Guidelines
 
@@ -80,6 +183,7 @@ import {
   Card,
   Button,
   NutritionBadge,
+  PieChart,
 } from '@/components/ui';
 ```
 
@@ -90,9 +194,19 @@ import { COLORS, SHADOWS, GRADIENTS } from '@/constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '@/constants/typography';
 ```
 
+### Using Stores
+
+```tsx
+import { useUserStore } from '@/stores/userStore';
+import { useFoodStore } from '@/stores/foodStore';
+import { useExerciseStore } from '@/stores/exerciseStore';
+import { useHabitStore } from '@/stores/habitStore';
+```
+
 ### Creating New Components
 
 Before creating a new component:
 1. Check this document for existing similar components
 2. If creating, add entry to this structure.md
 3. Place in appropriate directory based on usage scope
+4. Follow naming conventions: PascalCase for components, camelCase for utilities
