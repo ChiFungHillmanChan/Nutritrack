@@ -2,12 +2,14 @@
  * Food Store - Zustand State Management
  *
  * Manages food logs and daily nutrition tracking.
+ * Uses local SQLite database for persistence.
  * Supports DEMO MODE when Supabase is not configured.
  */
 
 import { create } from 'zustand';
 import { FoodLog, NutritionData } from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { foodRepository } from '../services/database';
 
 interface FoodState {
   // State
@@ -39,46 +41,6 @@ const emptyNutrition: NutritionData = {
   sodium: 0,
 };
 
-/**
- * Demo food logs for testing
- */
-const DEMO_FOOD_LOGS: FoodLog[] = [
-  {
-    id: 'demo-log-001',
-    user_id: 'demo-user-001',
-    meal_type: 'breakfast',
-    food_name: '雞蛋三文治',
-    portion_size: 200,
-    nutrition_data: {
-      calories: 350,
-      protein: 18,
-      carbs: 32,
-      fat: 16,
-      fiber: 2,
-      sodium: 520,
-    },
-    logged_at: new Date().toISOString(),
-    ai_confidence: 0.92,
-  },
-  {
-    id: 'demo-log-002',
-    user_id: 'demo-user-001',
-    meal_type: 'lunch',
-    food_name: '叉燒飯',
-    portion_size: 400,
-    nutrition_data: {
-      calories: 650,
-      protein: 28,
-      carbs: 85,
-      fat: 22,
-      fiber: 1,
-      sodium: 890,
-    },
-    logged_at: new Date().toISOString(),
-    ai_confidence: 0.88,
-  },
-];
-
 export const useFoodStore = create<FoodState>((set, get) => ({
   // Initial state
   todayLogs: [],
@@ -92,78 +54,56 @@ export const useFoodStore = create<FoodState>((set, get) => ({
 
   // Calculate total nutrition from logs
   calculateTotalNutrition: (logs: FoodLog[]): NutritionData => {
-    return logs.reduce(
-      (total, log) => ({
-        calories: total.calories + log.nutrition_data.calories,
-        protein: total.protein + log.nutrition_data.protein,
-        carbs: total.carbs + log.nutrition_data.carbs,
-        fat: total.fat + log.nutrition_data.fat,
-        fiber: total.fiber + log.nutrition_data.fiber,
-        sodium: total.sodium + log.nutrition_data.sodium,
-      }),
-      { ...emptyNutrition }
-    );
+    return foodRepository.calculateTotalNutrition(logs);
   },
 
   // Fetch today's food logs
-  fetchTodayLogs: async (_userId: string) => {
+  fetchTodayLogs: async (userId: string) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode - use mock data
-    if (isDemoMode()) {
-      const totalNutrition = get().calculateTotalNutrition(DEMO_FOOD_LOGS);
+    try {
+      // Always fetch from SQLite first (offline-first)
+      const logs = foodRepository.getTodayFoodLogs(userId);
+      
+      // If no logs exist for demo user, create demo data
+      if (logs.length === 0 && isDemoMode()) {
+        const demoLogs = foodRepository.createDemoFoodLogs(userId);
+        const totalNutrition = foodRepository.calculateTotalNutrition(demoLogs);
+        set({
+          todayLogs: demoLogs,
+          todayNutrition: totalNutrition,
+          isLoading: false,
+        });
+        return;
+      }
+
+      const totalNutrition = foodRepository.calculateTotalNutrition(logs);
       set({
-        todayLogs: DEMO_FOOD_LOGS,
+        todayLogs: logs,
         todayNutrition: totalNutrition,
         isLoading: false,
       });
-      return;
+
+      // If connected to Supabase, sync in background
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          // TODO: Implement sync logic
+        }
+      }
+    } catch (error) {
+      console.error('[FoodStore] Fetch error:', error);
+      set({ isLoading: false, error: 'Failed to fetch food logs' });
     }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('food_logs')
-      .select('*')
-      .eq('user_id', _userId)
-      .gte('logged_at', today.toISOString())
-      .lt('logged_at', tomorrow.toISOString())
-      .order('logged_at', { ascending: true });
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return;
-    }
-
-    const logs = data ?? [];
-    const totalNutrition = get().calculateTotalNutrition(logs);
-
-    set({
-      todayLogs: logs,
-      todayNutrition: totalNutrition,
-      isLoading: false,
-    });
   },
 
   // Add a new food log
   addFoodLog: async (log) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode - add to local state only
-    if (isDemoMode()) {
-      const newLog: FoodLog = {
-        ...log,
-        id: `demo-log-${Date.now()}`,
-      };
+    try {
+      // Save to SQLite
+      const newLog = foodRepository.createFoodLog(log);
 
       const { todayLogs, calculateTotalNutrition } = get();
       const updatedLogs = [...todayLogs, newLog];
@@ -174,40 +114,30 @@ export const useFoodStore = create<FoodState>((set, get) => ({
         isLoading: false,
       });
 
+      // If connected to Supabase, also save there
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from('food_logs').insert(log);
+        }
+      }
+
       return true;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
+    } catch (error) {
+      console.error('[FoodStore] Add error:', error);
+      set({ isLoading: false, error: 'Failed to add food log' });
       return false;
     }
-
-    const { data, error } = await supabase.from('food_logs').insert(log).select().single();
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return false;
-    }
-
-    const { todayLogs, calculateTotalNutrition } = get();
-    const updatedLogs = [...todayLogs, data];
-
-    set({
-      todayLogs: updatedLogs,
-      todayNutrition: calculateTotalNutrition(updatedLogs),
-      isLoading: false,
-    });
-
-    return true;
   },
 
   // Delete a food log
   deleteFoodLog: async (logId: string) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode - delete from local state only
-    if (isDemoMode()) {
+    try {
+      // Delete from SQLite
+      foodRepository.deleteFoodLog(logId);
+
       const { todayLogs, calculateTotalNutrition } = get();
       const updatedLogs = todayLogs.filter((log) => log.id !== logId);
 
@@ -217,42 +147,38 @@ export const useFoodStore = create<FoodState>((set, get) => ({
         isLoading: false,
       });
 
+      // If connected to Supabase, also delete there
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from('food_logs').delete().eq('id', logId);
+        }
+      }
+
       return true;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
+    } catch (error) {
+      console.error('[FoodStore] Delete error:', error);
+      set({ isLoading: false, error: 'Failed to delete food log' });
       return false;
     }
-
-    const { error } = await supabase.from('food_logs').delete().eq('id', logId);
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return false;
-    }
-
-    const { todayLogs, calculateTotalNutrition } = get();
-    const updatedLogs = todayLogs.filter((log) => log.id !== logId);
-
-    set({
-      todayLogs: updatedLogs,
-      todayNutrition: calculateTotalNutrition(updatedLogs),
-      isLoading: false,
-    });
-
-    return true;
   },
 
   // Update a food log
   updateFoodLog: async (logId: string, updates: Partial<FoodLog>) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode - update local state only
-    if (isDemoMode()) {
+    try {
+      // Update in SQLite
+      const updatedLog = foodRepository.updateFoodLog(logId, updates);
+      if (!updatedLog) {
+        set({ isLoading: false, error: 'Food log not found' });
+        return false;
+      }
+
       const { todayLogs, calculateTotalNutrition } = get();
-      const updatedLogs = todayLogs.map((log) => (log.id === logId ? { ...log, ...updates } : log));
+      const updatedLogs = todayLogs.map((log) => 
+        log.id === logId ? updatedLog : log
+      );
 
       set({
         todayLogs: updatedLogs,
@@ -260,31 +186,19 @@ export const useFoodStore = create<FoodState>((set, get) => ({
         isLoading: false,
       });
 
+      // If connected to Supabase, also update there
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from('food_logs').update(updates).eq('id', logId);
+        }
+      }
+
       return true;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
+    } catch (error) {
+      console.error('[FoodStore] Update error:', error);
+      set({ isLoading: false, error: 'Failed to update food log' });
       return false;
     }
-
-    const { error } = await supabase.from('food_logs').update(updates).eq('id', logId);
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return false;
-    }
-
-    const { todayLogs, calculateTotalNutrition } = get();
-    const updatedLogs = todayLogs.map((log) => (log.id === logId ? { ...log, ...updates } : log));
-
-    set({
-      todayLogs: updatedLogs,
-      todayNutrition: calculateTotalNutrition(updatedLogs),
-      isLoading: false,
-    });
-
-    return true;
   },
 }));

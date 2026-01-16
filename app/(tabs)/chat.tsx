@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
+import { useChatStore, ChatMessage } from '../../stores/chatStore';
 import { sendChatMessage } from '../../services/ai';
 
 // Parse markdown-style text into structured segments for rendering
@@ -57,53 +58,39 @@ function parseMarkdownText(content: string): TextSegment[] {
   return segments.length > 0 ? segments : [{ text: content, bold: false }];
 }
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
 export default function ChatScreen() {
   const { user } = useUserStore();
   const { todayNutrition } = useFoodStore();
+  const { messages, addMessage, getChatHistory, isLoading, setLoading, initializeChat } = useChatStore();
   const { width } = useWindowDimensions();
   const maxBubbleWidth = Math.min(width * 0.72, 320);
   
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content:
-        '你好！我係你嘅 AI 營養師 🥗\n\n你可以問我任何關於營養、飲食同健康嘅問題。我會根據你今日嘅攝取情況俾你個人化建議！',
-      timestamp: new Date(),
-    },
-  ]);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  // Initialize chat when user is available
+  useEffect(() => {
+    if (user?.id) {
+      initializeChat(user.id);
+    }
+  }, [user?.id, initializeChat]);
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
+    // Add user message to store (will be persisted)
+    addMessage({
       role: 'user',
       content: inputText.trim(),
-      timestamp: new Date(),
-    };
+    });
 
-    setMessages((prev) => [...prev, userMessage]);
     const messageToSend = inputText.trim();
     setInputText('');
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      // Build chat history for context (exclude the initial welcome message)
-      const chatHistory = messages.slice(1).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Get chat history for context (excludes welcome message)
+      const chatHistory = getChatHistory();
 
       // Call the AI service with Gemini
       const response = await sendChatMessage(messageToSend, chatHistory, {
@@ -113,35 +100,26 @@ export default function ChatScreen() {
       });
 
       if (response.success && response.message) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
+        addMessage({
           role: 'assistant',
           content: response.message,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
+        });
       } else {
         // Show error but keep conversation going
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
+        addMessage({
           role: 'assistant',
           content: response.error ?? '抱歉，出咗啲問題。請再試一次。',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        });
       }
     } catch {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      addMessage({
         role: 'assistant',
         content: '抱歉，出咗啲問題。請再試一次。',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [inputText, isLoading, messages, todayNutrition, user?.daily_targets, user?.goal]);
+  }, [inputText, isLoading, addMessage, getChatHistory, setLoading, todayNutrition, user?.daily_targets, user?.goal]);
 
   // Render formatted text with bold support
   const renderFormattedText = useCallback(
@@ -164,7 +142,7 @@ export default function ChatScreen() {
   );
 
   const renderMessage = useCallback(
-    ({ item, index }: { item: Message; index: number }) => {
+    ({ item, index }: { item: ChatMessage; index: number }) => {
       const isUser = item.role === 'user';
       const EnterAnimation = isUser ? SlideInRight : SlideInLeft;
 
@@ -192,7 +170,7 @@ export default function ChatScreen() {
             <Text
               style={[styles.messageTime, isUser && styles.userMessageTime]}
             >
-              {formatTime(item.timestamp)}
+              {formatTime(new Date(item.timestamp))}
             </Text>
           </View>
         </Animated.View>

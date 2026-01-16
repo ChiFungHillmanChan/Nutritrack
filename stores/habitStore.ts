@@ -2,6 +2,7 @@
  * Habit Store - Zustand State Management
  *
  * Manages habit logs and streak tracking.
+ * Uses local SQLite database for persistence.
  */
 
 import { create } from 'zustand';
@@ -14,6 +15,7 @@ import {
   PeriodFlowLevel,
 } from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { habitRepository } from '../services/database';
 
 interface HabitStreak {
   habitType: HabitType;
@@ -52,44 +54,15 @@ interface HabitState {
   getTodayHydration: () => number;
 }
 
-/**
- * Demo habit logs
- */
-const DEMO_HABIT_LOGS: HabitLog[] = [
-  {
-    id: 'demo-habit-001',
-    user_id: 'demo-user-001',
-    habit_type: 'hydration',
-    value: 1500,
-    unit: 'ml',
-    logged_at: new Date().toISOString(),
-  },
-  {
-    id: 'demo-habit-002',
-    user_id: 'demo-user-001',
-    habit_type: 'mood',
-    value: 4,
-    logged_at: new Date().toISOString(),
-  },
-  {
-    id: 'demo-habit-003',
-    user_id: 'demo-user-001',
-    habit_type: 'sleep_duration',
-    value: 7.5,
-    unit: 'hours',
-    logged_at: new Date().toISOString(),
-  },
-];
-
 const DEFAULT_STREAKS: Record<HabitType, HabitStreak> = {
   weight: { habitType: 'weight', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
-  hydration: { habitType: 'hydration', currentStreak: 3, longestStreak: 7, lastLoggedDate: new Date().toISOString() },
-  sleep_duration: { habitType: 'sleep_duration', currentStreak: 5, longestStreak: 12, lastLoggedDate: new Date().toISOString() },
+  hydration: { habitType: 'hydration', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
+  sleep_duration: { habitType: 'sleep_duration', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   sleep_quality: { habitType: 'sleep_quality', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
-  mood: { habitType: 'mood', currentStreak: 2, longestStreak: 5, lastLoggedDate: new Date().toISOString() },
+  mood: { habitType: 'mood', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   bowels: { habitType: 'bowels', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   period_cycle: { habitType: 'period_cycle', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
-  five_a_day: { habitType: 'five_a_day', currentStreak: 1, longestStreak: 3, lastLoggedDate: new Date().toISOString() },
+  five_a_day: { habitType: 'five_a_day', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   steps: { habitType: 'steps', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   medication_taken: { habitType: 'medication_taken', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   supplement_taken: { habitType: 'supplement_taken', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
@@ -127,125 +100,109 @@ export const useHabitStore = create<HabitState>((set, get) => ({
   fetchTodayLogs: async (userId: string) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode
-    if (isDemoMode()) {
+    try {
+      // Fetch from SQLite
+      let logs = habitRepository.getTodayHabitLogs(userId);
+
+      // If no logs exist for demo user, create demo data
+      if (logs.length === 0 && isDemoMode()) {
+        logs = habitRepository.createDemoHabitLogs(userId);
+      }
+
+      // Calculate streaks for common habits
+      const updatedStreaks = { ...DEFAULT_STREAKS };
+      const habitTypes: HabitType[] = ['hydration', 'sleep_duration', 'mood', 'five_a_day'];
+      
+      for (const habitType of habitTypes) {
+        const streak = habitRepository.calculateStreak(userId, habitType);
+        updatedStreaks[habitType] = {
+          habitType,
+          currentStreak: streak.currentStreak,
+          longestStreak: streak.longestStreak,
+          lastLoggedDate: streak.lastLoggedDate,
+        };
+      }
+
       set({
-        todayLogs: DEMO_HABIT_LOGS,
+        todayLogs: logs,
+        streaks: updatedStreaks,
         isLoading: false,
       });
-      return;
+
+      // If connected to Supabase, sync in background
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          // TODO: Implement sync logic
+        }
+      }
+    } catch (error) {
+      console.error('[HabitStore] Fetch error:', error);
+      set({ isLoading: false, error: 'Failed to fetch habit logs' });
     }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('habit_logs')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('logged_at', today.toISOString())
-      .lt('logged_at', tomorrow.toISOString())
-      .order('logged_at', { ascending: true });
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return;
-    }
-
-    set({
-      todayLogs: data ?? [],
-      isLoading: false,
-    });
   },
 
   // Generic habit logging
   logHabit: async (log) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode
-    if (isDemoMode()) {
-      const newLog: HabitLog = {
-        ...log,
-        id: `demo-habit-${Date.now()}`,
-      };
+    try {
+      // Save to SQLite
+      const newLog = habitRepository.createHabitLog(log);
 
       const { todayLogs } = get();
       set({
         todayLogs: [...todayLogs, newLog],
         isLoading: false,
       });
+
+      // If connected to Supabase, also save there
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from('habit_logs').insert({
+            ...log,
+            value: String(log.value),
+          });
+        }
+      }
+
       return true;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
+    } catch (error) {
+      console.error('[HabitStore] Log error:', error);
+      set({ isLoading: false, error: 'Failed to log habit' });
       return false;
     }
-
-    const { data, error } = await supabase
-      .from('habit_logs')
-      .insert({
-        ...log,
-        value: String(log.value), // Convert to string for database
-      })
-      .select()
-      .single();
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return false;
-    }
-
-    const { todayLogs } = get();
-    set({
-      todayLogs: [...todayLogs, data],
-      isLoading: false,
-    });
-    return true;
   },
 
   // Delete habit log
   deleteHabitLog: async (logId: string) => {
     set({ isLoading: true, error: null });
 
-    // Demo mode
-    if (isDemoMode()) {
+    try {
+      // Delete from SQLite
+      habitRepository.deleteHabitLog(logId);
+
       const { todayLogs } = get();
       set({
         todayLogs: todayLogs.filter((log) => log.id !== logId),
         isLoading: false,
       });
+
+      // If connected to Supabase, also delete there
+      if (!isDemoMode()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from('habit_logs').delete().eq('id', logId);
+        }
+      }
+
       return true;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      set({ isLoading: false, error: 'Supabase not configured' });
+    } catch (error) {
+      console.error('[HabitStore] Delete error:', error);
+      set({ isLoading: false, error: 'Failed to delete habit log' });
       return false;
     }
-
-    const { error } = await supabase.from('habit_logs').delete().eq('id', logId);
-
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return false;
-    }
-
-    const { todayLogs } = get();
-    set({
-      todayLogs: todayLogs.filter((log) => log.id !== logId),
-      isLoading: false,
-    });
-    return true;
   },
 
   // Specific habit helpers

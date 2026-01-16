@@ -2,6 +2,7 @@
  * User Store - Zustand State Management
  *
  * Manages user authentication state and profile data.
+ * Uses local SQLite database for persistence.
  * Supports DEMO MODE when Supabase is not configured.
  */
 
@@ -16,6 +17,7 @@ import {
   ActivityLevel,
 } from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { userRepository } from '../services/database';
 
 interface UserState {
   // State
@@ -23,12 +25,16 @@ interface UserState {
   isLoading: boolean;
   isAuthenticated: boolean;
   isDemoMode: boolean;
+  isInitialized: boolean;
   error: string | null;
 
   // Actions
   setUser: (newUser: User | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+
+  // Initialization
+  initialize: () => void;
 
   // Auth actions
   signIn: (userEmail: string, userPassword: string) => Promise<boolean>;
@@ -51,38 +57,6 @@ interface TargetCalculationParams {
   healthGoals?: HealthGoal[];
   conditions: MedicalCondition[];
 }
-
-/**
- * Demo user for testing without Supabase
- */
-const DEMO_USER: User = {
-  id: 'demo-user-001',
-  email: 'demo@nutritrack.app',
-  name: '示範用戶',
-  gender: 'prefer_not_to_say',
-  date_of_birth: '1990-01-01',
-  height_cm: 170,
-  weight_kg: 65,
-  activity_level: 'moderate',
-  goal: 'maintain',
-  health_goals: ['healthy_balanced_eating', 'improve_hydration'],
-  medical_conditions: [],
-  medications: [],
-  supplements: [],
-  allergies: [],
-  dietary_preferences: [],
-  daily_targets: {
-    calories: { min: 1800, max: 2200 },
-    protein: { min: 104, max: 143 },
-    carbs: { min: 200, max: 275 },
-    fat: { min: 44, max: 73 },
-    fiber: { min: 25, max: 35 },
-    sodium: { min: 1500, max: 2300 },
-    water: 2275,
-  },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
 
 /**
  * Calculate BMR using Mifflin-St Jeor Equation
@@ -258,6 +232,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   isLoading: false,
   isAuthenticated: false,
   isDemoMode: isDemoMode(),
+  isInitialized: false,
   error: null,
 
   // Basic setters
@@ -265,28 +240,73 @@ export const useUserStore = create<UserState>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
 
-  // Enter demo mode with mock user
+  // Initialize from SQLite database
+  initialize: () => {
+    try {
+      // Try to get existing user from SQLite
+      const existingUser = userRepository.getCurrentUser();
+      
+      if (existingUser) {
+        set({
+          user: existingUser,
+          isAuthenticated: true,
+          isDemoMode: true, // Local users are always in "demo" mode (no cloud)
+          isInitialized: true,
+        });
+      } else {
+        set({ isInitialized: true });
+      }
+    } catch (error) {
+      console.error('[UserStore] Initialize error:', error);
+      set({ isInitialized: true });
+    }
+  },
+
+  // Enter demo mode with user from SQLite
   enterDemoMode: () => {
-    set({
-      user: DEMO_USER,
-      isAuthenticated: true,
-      isDemoMode: true,
-      isLoading: false,
-      error: null,
-    });
+    try {
+      // Get or create demo user in SQLite
+      const demoUser = userRepository.getDemoUser();
+      
+      set({
+        user: demoUser,
+        isAuthenticated: true,
+        isDemoMode: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      console.error('[UserStore] Enter demo mode error:', error);
+      set({ error: 'Failed to enter demo mode' });
+    }
   },
 
   // Sign in with email/password
   signIn: async (email, password) => {
-    // Demo mode - auto login
+    // Demo mode (no Supabase) - use local SQLite
     if (isDemoMode()) {
-      set({
-        user: { ...DEMO_USER, email },
-        isAuthenticated: true,
-        isDemoMode: true,
-        isLoading: false,
-      });
-      return true;
+      try {
+        // Check if user exists in SQLite
+        let user = userRepository.getUserByEmail(email);
+        
+        if (!user) {
+          // Create user in SQLite for demo mode
+          const demoUser = userRepository.getDemoUser();
+          user = userRepository.updateUser(demoUser.id, { email });
+        }
+        
+        set({
+          user: user!,
+          isAuthenticated: true,
+          isDemoMode: true,
+          isLoading: false,
+        });
+        return true;
+      } catch (error) {
+        console.error('[UserStore] Sign in error:', error);
+        set({ error: 'Sign in failed' });
+        return false;
+      }
     }
 
     set({ isLoading: true, error: null });
@@ -308,30 +328,29 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
 
     if (data.user) {
-      // Fetch user profile from database
+      // Fetch user profile from Supabase database
       const { data: profile } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
         .single();
 
-      // Merge with defaults for new fields
-      const userProfile: User = {
-        ...DEMO_USER, // Default values
-        ...profile,
-        health_goals: profile?.health_goals || [],
-        medications: profile?.medications || [],
-        supplements: profile?.supplements || [],
-        allergies: profile?.allergies || [],
-        dietary_preferences: profile?.dietary_preferences || [],
-      };
+      if (profile) {
+        // Also save to local SQLite for offline access
+        const localUser = userRepository.getUserById(data.user.id);
+        if (!localUser) {
+          userRepository.createUser(profile);
+        } else {
+          userRepository.updateUser(data.user.id, profile);
+        }
 
-      set({
-        user: userProfile,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return true;
+        set({
+          user: profile,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        return true;
+      }
     }
 
     set({ isLoading: false });
@@ -340,15 +359,24 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   // Sign up with email/password
   signUp: async (email, password) => {
-    // Demo mode - auto signup
+    // Demo mode - create user in SQLite
     if (isDemoMode()) {
-      set({
-        user: { ...DEMO_USER, email },
-        isAuthenticated: true,
-        isDemoMode: true,
-        isLoading: false,
-      });
-      return true;
+      try {
+        const demoUser = userRepository.getDemoUser();
+        const user = userRepository.updateUser(demoUser.id, { email });
+        
+        set({
+          user: user!,
+          isAuthenticated: true,
+          isDemoMode: true,
+          isLoading: false,
+        });
+        return true;
+      } catch (error) {
+        console.error('[UserStore] Sign up error:', error);
+        set({ error: 'Sign up failed' });
+        return false;
+      }
     }
 
     set({ isLoading: true, error: null });
@@ -384,7 +412,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (supabase) {
       await supabase.auth.signOut();
     }
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, isDemoMode: false });
   },
 
   // Update user profile
@@ -392,15 +420,22 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { user, isDemoMode: isDemo } = get();
     if (!user) return false;
 
-    // Demo mode - just update local state
+    // Update in SQLite (always, for offline access)
+    try {
+      const updatedUser = userRepository.updateUser(user.id, updates);
+      if (updatedUser) {
+        set({ user: updatedUser });
+      }
+    } catch (error) {
+      console.error('[UserStore] SQLite update error:', error);
+    }
+
+    // If in demo mode, we're done
     if (isDemo) {
-      set({
-        user: { ...user, ...updates, updated_at: new Date().toISOString() },
-        isLoading: false,
-      });
       return true;
     }
 
+    // Also update in Supabase if connected
     set({ isLoading: true, error: null });
 
     const supabase = getSupabaseClient();
@@ -419,10 +454,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       return false;
     }
 
-    set({
-      user: { ...user, ...updates },
-      isLoading: false,
-    });
+    set({ isLoading: false });
     return true;
   },
 

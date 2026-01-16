@@ -108,10 +108,11 @@ This document provides an overview of the project's components, utilities, and d
 
 | Store | File | Purpose |
 |-------|------|---------|
-| `useUserStore` | `userStore.ts` | User authentication, profile state, target calculations |
-| `useFoodStore` | `foodStore.ts` | Food logs and nutrition tracking state |
+| `useUserStore` | `userStore.ts` | User authentication, profile state, target calculations (SQLite persisted) |
+| `useFoodStore` | `foodStore.ts` | Food logs and nutrition tracking state (SQLite persisted) |
+| `useChatStore` | `chatStore.ts` | AI chat conversation history (SQLite persisted) |
 | `useExerciseStore` | `exerciseStore.ts` | Exercise logs, steps, activity tracking |
-| `useHabitStore` | `habitStore.ts` | Habit logs and streak tracking |
+| `useHabitStore` | `habitStore.ts` | Habit logs and streak tracking (SQLite persisted) |
 | `useWellnessStore` | `wellnessStore.ts` | Meditation sessions, affirmations |
 
 ## Services (`/services`)
@@ -121,9 +122,56 @@ This document provides an overview of the project's components, utilities, and d
 | `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
 | `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) |
 | `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
-| `secure-storage.ts` | `secure-storage.ts` | Secure token storage |
+| `secure-storage.ts` | `secure-storage.ts` | Secure token storage (sensitive data) |
 | `supabase.ts` | `supabase.ts` | Supabase client configuration |
 | `health-integration.ts` | `health-integration.ts` | Apple Health / Google Fit integration |
+
+## Database (`/services/database`)
+
+Local SQLite database for offline-first data persistence. Production-ready for iOS/Android App Store deployment.
+
+### Core Files
+
+| File | Purpose |
+|------|---------|
+| `database.ts` | SQLite connection singleton, initialization, helper functions |
+| `migrations.ts` | Version-based schema migrations |
+| `index.ts` | Main export for all database modules |
+
+### Repositories (`/services/database/repositories`)
+
+| Repository | File | Purpose |
+|------------|------|---------|
+| `userRepository` | `userRepository.ts` | User profile CRUD, demo user management |
+| `foodRepository` | `foodRepository.ts` | Food logs CRUD, nutrition calculations |
+| `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message |
+| `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations |
+| `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `users` | User profiles (id, email, name, height, weight, goals, conditions, etc.) |
+| `food_logs` | Food intake records with nutrition data |
+| `chat_messages` | AI conversation history |
+| `habit_logs` | All habit tracking data |
+| `exercise_logs` | Exercise and activity records |
+| `app_settings` | App preferences key-value store |
+| `db_version` | Migration version tracking |
+
+### Usage
+
+```tsx
+import { initializeDatabase, userRepository, foodRepository } from '@/services/database';
+
+// Initialize on app start
+await initializeDatabase();
+
+// Use repositories
+const user = userRepository.getDemoUser();
+const todayLogs = foodRepository.getTodayFoodLogs(userId);
+```
 
 ## Lib (`/lib`)
 

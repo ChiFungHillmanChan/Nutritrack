@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 import { useUserStore } from '../stores/userStore';
-import { onAuthStateChange, getCurrentUser } from '../services/auth';
+import { onAuthStateChange } from '../services/auth';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { initializeDatabase } from '../services/database';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -21,51 +22,45 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
-  const { setUser, setLoading } = useUserStore();
+  const { setUser, setLoading, isAuthenticated, isInitialized, initialize } = useUserStore();
 
-  const initializeAuth = useCallback(async () => {
+  const initializeApp = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Demo mode - skip auth initialization
-      if (isDemoMode()) {
-        setLoading(false);
-        setIsReady(true);
-        SplashScreen.hideAsync();
-        return;
-      }
+      // Initialize SQLite database first
+      await initializeDatabase();
 
-      // Check for existing session
-      const user = await getCurrentUser();
+      // Initialize user store from SQLite
+      initialize();
 
-      if (user) {
-        // Fetch user profile from database
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (profile) {
-            setUser(profile);
-          }
-        }
-      }
-    } catch {
-      // Silently fail - user will be redirected to login
+    } catch (error) {
+      console.error('[App] Initialization error:', error);
     } finally {
       setLoading(false);
       setIsReady(true);
       SplashScreen.hideAsync();
     }
-  }, [setUser, setLoading]);
+  }, [setLoading, initialize]);
 
+  // Initialize app on mount
   useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+    initializeApp();
+  }, [initializeApp]);
 
+  // Handle navigation after initialization
+  useEffect(() => {
+    if (!isReady || !isInitialized) return;
+
+    // If user is already authenticated from SQLite, navigate to main app
+    if (isAuthenticated) {
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 100);
+    }
+  }, [isReady, isInitialized, isAuthenticated]);
+
+  // Listen for Supabase auth changes (when not in demo mode)
   useEffect(() => {
     // Demo mode - skip auth state listener
     if (isDemoMode()) {
