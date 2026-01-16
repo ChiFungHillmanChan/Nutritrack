@@ -8,31 +8,43 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInRight,
+  SlideInRight,
+  SlideOutLeft,
+} from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY } from '../../constants/typography';
-import { useUserStore } from '../../stores/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { useUserStore } from '../../stores/userStore';
 import { UserGoal, MedicalCondition } from '../../types';
+import { Card } from '../../components/ui';
+
+const { width } = Dimensions.get('window');
 
 type Step = 'basics' | 'goal' | 'conditions' | 'summary';
 
-const GOALS: { value: UserGoal; label: string; icon: string; desc: string }[] = [
-  { value: 'lose_weight', label: '減重', icon: 'trending-down', desc: '減少體脂，變得更健康' },
-  { value: 'gain_weight', label: '增重', icon: 'trending-up', desc: '增加體重，變得更強壯' },
-  { value: 'maintain', label: '維持', icon: 'remove', desc: '保持現有體重同狀態' },
-  { value: 'build_muscle', label: '增肌', icon: 'barbell', desc: '增加肌肉量，塑造體態' },
+const GOALS: { value: UserGoal; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string; color: string }[] = [
+  { value: 'lose_weight', label: '減重', icon: 'trending-down', desc: '減少體脂，變得更健康', color: COLORS.calories },
+  { value: 'gain_weight', label: '增重', icon: 'trending-up', desc: '增加體重，變得更強壯', color: COLORS.carbs },
+  { value: 'maintain', label: '維持', icon: 'remove', desc: '保持現有體重同狀態', color: COLORS.fiber },
+  { value: 'build_muscle', label: '增肌', icon: 'barbell', desc: '增加肌肉量，塑造體態', color: COLORS.protein },
 ];
 
-const CONDITIONS: { value: MedicalCondition; label: string }[] = [
-  { value: 'diabetes', label: '糖尿病' },
-  { value: 'hypertension', label: '高血壓' },
-  { value: 'heart_disease', label: '心臟病' },
-  { value: 'kidney_disease', label: '腎病' },
-  { value: 'celiac_disease', label: '乳糜瀉' },
-  { value: 'lactose_intolerance', label: '乳糖不耐症' },
-  { value: 'none', label: '冇以上情況' },
+const CONDITIONS: { value: MedicalCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'diabetes', label: '糖尿病', icon: 'water' },
+  { value: 'hypertension', label: '高血壓', icon: 'pulse' },
+  { value: 'heart_disease', label: '心臟病', icon: 'heart' },
+  { value: 'kidney_disease', label: '腎病', icon: 'medical' },
+  { value: 'celiac_disease', label: '乳糜瀉', icon: 'nutrition' },
+  { value: 'lactose_intolerance', label: '乳糖不耐症', icon: 'cafe' },
+  { value: 'none', label: '冇以上情況', icon: 'checkmark-circle' },
 ];
 
 export default function OnboardingScreen() {
@@ -50,9 +62,9 @@ export default function OnboardingScreen() {
     if (condition === 'none') {
       setConditions(['none']);
     } else {
-      const filtered = conditions.filter(c => c !== 'none');
+      const filtered = conditions.filter((c) => c !== 'none');
       if (filtered.includes(condition)) {
-        setConditions(filtered.filter(c => c !== condition));
+        setConditions(filtered.filter((c) => c !== condition));
       } else {
         setConditions([...filtered, condition]);
       }
@@ -129,168 +141,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  const renderBasicsStep = () => (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>基本資料</Text>
-      <Text style={styles.stepDescription}>我哋需要呢啲資料嚟計算你嘅每日營養目標</Text>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>姓名</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="你嘅名"
-          placeholderTextColor={COLORS.textTertiary}
-          value={name}
-          onChangeText={setName}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>身高 (cm)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="例如：170"
-          placeholderTextColor={COLORS.textTertiary}
-          value={height}
-          onChangeText={setHeight}
-          keyboardType="numeric"
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>體重 (kg)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="例如：65"
-          placeholderTextColor={COLORS.textTertiary}
-          value={weight}
-          onChangeText={setWeight}
-          keyboardType="numeric"
-        />
-      </View>
-    </View>
-  );
-
-  const renderGoalStep = () => (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>你嘅目標</Text>
-      <Text style={styles.stepDescription}>選擇一個最適合你嘅健康目標</Text>
-
-      <View style={styles.goalGrid}>
-        {GOALS.map((item) => (
-          <TouchableOpacity
-            key={item.value}
-            style={[styles.goalCard, goal === item.value && styles.goalCardSelected]}
-            onPress={() => setGoal(item.value)}
-          >
-            <Ionicons
-              name={item.icon as keyof typeof Ionicons.glyphMap}
-              size={28}
-              color={goal === item.value ? COLORS.primary : COLORS.textSecondary}
-            />
-            <Text style={[styles.goalLabel, goal === item.value && styles.goalLabelSelected]}>
-              {item.label}
-            </Text>
-            <Text style={styles.goalDesc}>{item.desc}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderConditionsStep = () => (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>健康狀況</Text>
-      <Text style={styles.stepDescription}>如果你有以下情況，我哋會調整營養建議</Text>
-
-      <View style={styles.conditionsGrid}>
-        {CONDITIONS.map((item) => (
-          <TouchableOpacity
-            key={item.value}
-            style={[
-              styles.conditionChip,
-              conditions.includes(item.value) && styles.conditionChipSelected,
-            ]}
-            onPress={() => handleConditionToggle(item.value)}
-          >
-            <Text
-              style={[
-                styles.conditionText,
-                conditions.includes(item.value) && styles.conditionTextSelected,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderSummaryStep = () => {
-    const heightNum = parseFloat(height) || 0;
-    const weightNum = parseFloat(weight) || 0;
-    const targets = goal ? calculateDailyTargets(heightNum, weightNum, goal, conditions) : null;
-
-    return (
-      <View style={styles.stepContent}>
-        <Text style={styles.stepTitle}>確認資料</Text>
-        <Text style={styles.stepDescription}>以下係你嘅每日營養目標</Text>
-
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>姓名</Text>
-            <Text style={styles.summaryValue}>{name}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>身高</Text>
-            <Text style={styles.summaryValue}>{height} cm</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>體重</Text>
-            <Text style={styles.summaryValue}>{weight} kg</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>目標</Text>
-            <Text style={styles.summaryValue}>
-              {GOALS.find(g => g.value === goal)?.label}
-            </Text>
-          </View>
-        </View>
-
-        {targets && (
-          <View style={styles.targetsCard}>
-            <Text style={styles.targetsTitle}>每日目標</Text>
-            <View style={styles.targetRow}>
-              <Text style={styles.targetLabel}>卡路里</Text>
-              <Text style={styles.targetValue}>
-                {targets.calories.min} - {targets.calories.max} kcal
-              </Text>
-            </View>
-            <View style={styles.targetRow}>
-              <Text style={styles.targetLabel}>蛋白質</Text>
-              <Text style={styles.targetValue}>
-                {targets.protein.min} - {targets.protein.max} g
-              </Text>
-            </View>
-            <View style={styles.targetRow}>
-              <Text style={styles.targetLabel}>碳水化合物</Text>
-              <Text style={styles.targetValue}>
-                {targets.carbs.min} - {targets.carbs.max} g
-              </Text>
-            </View>
-            <View style={styles.targetRow}>
-              <Text style={styles.targetLabel}>脂肪</Text>
-              <Text style={styles.targetValue}>
-                {targets.fat.min} - {targets.fat.max} g
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   const getStepNumber = () => {
     switch (step) {
       case 'basics':
@@ -306,46 +156,317 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Progress */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(getStepNumber() / 4) * 100}%` }]} />
+      {/* Progress Header */}
+      <Animated.View entering={FadeIn} style={styles.progressHeader}>
+        <View style={styles.progressInfo}>
+          <Text style={styles.stepText}>步驟 {getStepNumber()} / 4</Text>
+          <Text style={styles.progressPercentage}>{Math.round((getStepNumber() / 4) * 100)}%</Text>
         </View>
-        <Text style={styles.progressText}>步驟 {getStepNumber()} / 4</Text>
-      </View>
+        <View style={styles.progressBarContainer}>
+          <Animated.View
+            style={[
+              styles.progressBarFill,
+              { width: `${(getStepNumber() / 4) * 100}%` },
+            ]}
+          />
+        </View>
+      </Animated.View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {step === 'basics' && renderBasicsStep()}
-        {step === 'goal' && renderGoalStep()}
-        {step === 'conditions' && renderConditionsStep()}
-        {step === 'summary' && renderSummaryStep()}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {step === 'basics' && <BasicsStep name={name} setName={setName} height={height} setHeight={setHeight} weight={weight} setWeight={setWeight} />}
+        {step === 'goal' && <GoalStep goal={goal} setGoal={setGoal} />}
+        {step === 'conditions' && <ConditionsStep conditions={conditions} handleConditionToggle={handleConditionToggle} />}
+        {step === 'summary' && <SummaryStep name={name} height={height} weight={weight} goal={goal} conditions={conditions} calculateDailyTargets={calculateDailyTargets} />}
       </ScrollView>
 
       {/* Navigation */}
       <View style={styles.navigation}>
-        {step !== 'basics' && (
+        {step !== 'basics' ? (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={20} color={COLORS.text} />
             <Text style={styles.backButtonText}>返回</Text>
           </TouchableOpacity>
+        ) : (
+          <View />
         )}
         <TouchableOpacity
           style={[styles.nextButton, isLoading && styles.buttonDisabled]}
           onPress={handleNext}
           disabled={isLoading}
+          activeOpacity={0.9}
         >
-          {isLoading ? (
-            <ActivityIndicator color={COLORS.textInverse} />
-          ) : (
-            <>
-              <Text style={styles.nextButtonText}>
-                {step === 'summary' ? '完成' : '下一步'}
-              </Text>
-              <Ionicons name="arrow-forward" size={20} color={COLORS.textInverse} />
-            </>
-          )}
+          <LinearGradient
+            colors={GRADIENTS.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.nextButtonGradient}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.textInverse} />
+            ) : (
+              <>
+                <Text style={styles.nextButtonText}>
+                  {step === 'summary' ? '開始使用' : '繼續'}
+                </Text>
+                <Ionicons
+                  name={step === 'summary' ? 'checkmark' : 'arrow-forward'}
+                  size={20}
+                  color={COLORS.textInverse}
+                />
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
+    </View>
+  );
+}
+
+// Step Components
+function BasicsStep({ name, setName, height, setHeight, weight, setWeight }: {
+  name: string;
+  setName: (v: string) => void;
+  height: string;
+  setHeight: (v: string) => void;
+  weight: string;
+  setWeight: (v: string) => void;
+}) {
+  return (
+    <Animated.View entering={FadeInDown.springify()}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepIconContainer}>
+          <LinearGradient colors={GRADIENTS.primary} style={styles.stepIconGradient}>
+            <Ionicons name="person" size={28} color={COLORS.textInverse} />
+          </LinearGradient>
+        </View>
+        <Text style={styles.stepTitle}>基本資料</Text>
+        <Text style={styles.stepDescription}>我哋需要呢啲資料嚟計算你嘅每日營養目標</Text>
+      </View>
+
+      <Card style={styles.formCard}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>姓名</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="你嘅名"
+            placeholderTextColor={COLORS.textTertiary}
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
+
+        <View style={styles.rowInputs}>
+          <View style={[styles.inputGroup, styles.halfInput]}>
+            <Text style={styles.inputLabel}>身高</Text>
+            <View style={styles.unitInput}>
+              <TextInput
+                style={[styles.input, styles.unitInputField]}
+                placeholder="170"
+                placeholderTextColor={COLORS.textTertiary}
+                value={height}
+                onChangeText={setHeight}
+                keyboardType="numeric"
+              />
+              <Text style={styles.unitText}>cm</Text>
+            </View>
+          </View>
+
+          <View style={[styles.inputGroup, styles.halfInput]}>
+            <Text style={styles.inputLabel}>體重</Text>
+            <View style={styles.unitInput}>
+              <TextInput
+                style={[styles.input, styles.unitInputField]}
+                placeholder="65"
+                placeholderTextColor={COLORS.textTertiary}
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+              />
+              <Text style={styles.unitText}>kg</Text>
+            </View>
+          </View>
+        </View>
+      </Card>
+    </Animated.View>
+  );
+}
+
+function GoalStep({ goal, setGoal }: { goal: UserGoal | null; setGoal: (v: UserGoal) => void }) {
+  return (
+    <Animated.View entering={FadeInDown.springify()}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepIconContainer}>
+          <LinearGradient colors={[COLORS.carbs, COLORS.accentDark]} style={styles.stepIconGradient}>
+            <Ionicons name="trophy" size={28} color={COLORS.textInverse} />
+          </LinearGradient>
+        </View>
+        <Text style={styles.stepTitle}>你嘅目標</Text>
+        <Text style={styles.stepDescription}>選擇一個最適合你嘅健康目標</Text>
+      </View>
+
+      <View style={styles.goalsGrid}>
+        {GOALS.map((item, index) => (
+          <Animated.View key={item.value} entering={FadeInRight.delay(index * 100)}>
+            <TouchableOpacity
+              style={[
+                styles.goalCard,
+                goal === item.value && styles.goalCardSelected,
+                goal === item.value && { borderColor: item.color },
+              ]}
+              onPress={() => setGoal(item.value)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.goalIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon} size={24} color={item.color} />
+              </View>
+              <View style={styles.goalContent}>
+                <Text style={[styles.goalLabel, goal === item.value && { color: item.color }]}>
+                  {item.label}
+                </Text>
+                <Text style={styles.goalDesc}>{item.desc}</Text>
+              </View>
+              {goal === item.value && (
+                <View style={[styles.goalCheck, { backgroundColor: item.color }]}>
+                  <Ionicons name="checkmark" size={14} color={COLORS.textInverse} />
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        ))}
+      </View>
+    </Animated.View>
+  );
+}
+
+function ConditionsStep({ conditions, handleConditionToggle }: {
+  conditions: MedicalCondition[];
+  handleConditionToggle: (c: MedicalCondition) => void;
+}) {
+  return (
+    <Animated.View entering={FadeInDown.springify()}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepIconContainer}>
+          <LinearGradient colors={[COLORS.protein, COLORS.fat]} style={styles.stepIconGradient}>
+            <Ionicons name="medical" size={28} color={COLORS.textInverse} />
+          </LinearGradient>
+        </View>
+        <Text style={styles.stepTitle}>健康狀況</Text>
+        <Text style={styles.stepDescription}>如果你有以下情況，我哋會調整營養建議</Text>
+      </View>
+
+      <Card style={styles.conditionsCard}>
+        <View style={styles.conditionsGrid}>
+          {CONDITIONS.map((item, index) => (
+            <Animated.View key={item.value} entering={FadeInRight.delay(index * 50)}>
+              <TouchableOpacity
+                style={[
+                  styles.conditionChip,
+                  conditions.includes(item.value) && styles.conditionChipSelected,
+                ]}
+                onPress={() => handleConditionToggle(item.value)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={16}
+                  color={conditions.includes(item.value) ? COLORS.textInverse : COLORS.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.conditionText,
+                    conditions.includes(item.value) && styles.conditionTextSelected,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ))}
+        </View>
+      </Card>
+    </Animated.View>
+  );
+}
+
+function SummaryStep({ name, height, weight, goal, conditions, calculateDailyTargets }: {
+  name: string;
+  height: string;
+  weight: string;
+  goal: UserGoal | null;
+  conditions: MedicalCondition[];
+  calculateDailyTargets: (h: number, w: number, g: UserGoal, c: MedicalCondition[]) => unknown;
+}) {
+  const heightNum = parseFloat(height) || 0;
+  const weightNum = parseFloat(weight) || 0;
+  const targets = goal ? calculateDailyTargets(heightNum, weightNum, goal, conditions) as {
+    calories: { min: number; max: number };
+    protein: { min: number; max: number };
+    carbs: { min: number; max: number };
+    fat: { min: number; max: number };
+  } : null;
+
+  return (
+    <Animated.View entering={FadeInDown.springify()}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepIconContainer}>
+          <LinearGradient colors={GRADIENTS.primary} style={styles.stepIconGradient}>
+            <Ionicons name="sparkles" size={28} color={COLORS.textInverse} />
+          </LinearGradient>
+        </View>
+        <Text style={styles.stepTitle}>準備就緒！</Text>
+        <Text style={styles.stepDescription}>以下係你嘅個人化營養目標</Text>
+      </View>
+
+      {/* Profile Summary */}
+      <Card style={styles.summaryCard}>
+        <View style={styles.summaryHeader}>
+          <View style={styles.summaryAvatar}>
+            <Text style={styles.summaryAvatarText}>{name.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.summaryInfo}>
+            <Text style={styles.summaryName}>{name}</Text>
+            <Text style={styles.summaryMeta}>
+              {height}cm · {weight}kg · {GOALS.find((g) => g.value === goal)?.label}
+            </Text>
+          </View>
+        </View>
+      </Card>
+
+      {/* Targets Card */}
+      {targets && (
+        <Card style={styles.targetsCard}>
+          <Text style={styles.targetsTitle}>每日營養目標</Text>
+          <View style={styles.targetsList}>
+            <TargetRow label="卡路里" value={`${targets.calories.min} - ${targets.calories.max}`} unit="kcal" color={COLORS.calories} icon="flame" />
+            <TargetRow label="蛋白質" value={`${targets.protein.min} - ${targets.protein.max}`} unit="g" color={COLORS.protein} icon="fish" />
+            <TargetRow label="碳水化合物" value={`${targets.carbs.min} - ${targets.carbs.max}`} unit="g" color={COLORS.carbs} icon="nutrition" />
+            <TargetRow label="脂肪" value={`${targets.fat.min} - ${targets.fat.max}`} unit="g" color={COLORS.fat} icon="water" />
+          </View>
+        </Card>
+      )}
+    </Animated.View>
+  );
+}
+
+function TargetRow({ label, value, unit, color, icon }: {
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <View style={styles.targetRow}>
+      <View style={[styles.targetIcon, { backgroundColor: color + '15' }]}>
+        <Ionicons name={icon} size={16} color={color} />
+      </View>
+      <Text style={styles.targetLabel}>{label}</Text>
+      <Text style={[styles.targetValue, { color }]}>{value}</Text>
+      <Text style={styles.targetUnit}>{unit}</Text>
     </View>
   );
 }
@@ -353,191 +474,320 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundSecondary,
   },
-  progressContainer: {
-    paddingHorizontal: 24,
+
+  // Progress Header
+  progressHeader: {
+    backgroundColor: COLORS.surface,
     paddingTop: 60,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    ...SHADOWS.sm,
   },
-  progressBar: {
-    height: 4,
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  stepText: {
+    ...TYPOGRAPHY.captionMedium,
+    color: COLORS.textSecondary,
+  },
+  progressPercentage: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.primary,
+  },
+  progressBarContainer: {
+    height: 6,
     backgroundColor: COLORS.backgroundTertiary,
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
   },
-  progressFill: {
+  progressBarFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 2,
+    borderRadius: 3,
   },
-  progressText: {
-    ...TYPOGRAPHY.caption,
-    marginTop: 8,
-    textAlign: 'right',
-  },
+
+  // Scroll
   scrollView: {
     flex: 1,
   },
-  stepContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+  scrollContent: {
+    padding: SPACING.xl,
+    paddingBottom: SPACING['3xl'],
+  },
+
+  // Step Header
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+  },
+  stepIconContainer: {
+    marginBottom: SPACING.lg,
+    ...SHADOWS.lg,
+  },
+  stepIconGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stepTitle: {
     ...TYPOGRAPHY.h2,
-    marginBottom: 8,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   stepDescription: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: 24,
+    textAlign: 'center',
+  },
+
+  // Form Card
+  formCard: {
+    padding: SPACING.lg,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   inputLabel: {
     ...TYPOGRAPHY.label,
-    marginBottom: 8,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
   },
   input: {
     backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 50,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.lg,
+    height: 52,
     ...TYPOGRAPHY.body,
     color: COLORS.text,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderLight,
   },
-  goalGrid: {
-    gap: 12,
+  rowInputs: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  halfInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  unitInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    paddingRight: SPACING.lg,
+  },
+  unitInputField: {
+    flex: 1,
+    borderWidth: 0,
+  },
+  unitText: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+  },
+
+  // Goals
+  goalsGrid: {
+    gap: SPACING.md,
   },
   goalCard: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderLight,
+    ...SHADOWS.sm,
   },
   goalCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.successLight,
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.md,
+  },
+  goalIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  goalContent: {
+    flex: 1,
   },
   goalLabel: {
     ...TYPOGRAPHY.h4,
-    marginTop: 8,
     color: COLORS.text,
-  },
-  goalLabelSelected: {
-    color: COLORS.primary,
+    marginBottom: 2,
   },
   goalDesc: {
     ...TYPOGRAPHY.caption,
-    marginTop: 4,
+    color: COLORS.textSecondary,
+  },
+  goalCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Conditions
+  conditionsCard: {
+    padding: SPACING.lg,
   },
   conditionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: SPACING.sm,
   },
   conditionChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.backgroundSecondary,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderLight,
   },
   conditionChipSelected: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
   conditionText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.text,
+    ...TYPOGRAPHY.bodySmallMedium,
+    color: COLORS.textSecondary,
   },
   conditionTextSelected: {
     color: COLORS.textInverse,
   },
+
+  // Summary
   summaryCard: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
   },
-  summaryRow: {
+  summaryHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    alignItems: 'center',
   },
-  summaryLabel: {
-    ...TYPOGRAPHY.body,
+  summaryAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  summaryAvatarText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.textInverse,
+  },
+  summaryInfo: {
+    flex: 1,
+  },
+  summaryName: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+  },
+  summaryMeta: {
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
+    marginTop: 2,
   },
-  summaryValue: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-  },
+
+  // Targets
   targetsCard: {
-    backgroundColor: COLORS.successLight,
-    borderRadius: 12,
-    padding: 16,
+    padding: SPACING.lg,
   },
   targetsTitle: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.primaryDark,
-    marginBottom: 12,
+    ...TYPOGRAPHY.label,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  targetsList: {
+    gap: SPACING.md,
   },
   targetRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  targetIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
   },
   targetLabel: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.text,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    flex: 1,
   },
   targetValue: {
-    ...TYPOGRAPHY.bodySmall,
+    ...TYPOGRAPHY.bodyMedium,
     fontWeight: '600',
-    color: COLORS.primary,
   },
+  targetUnit: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs,
+    width: 32,
+  },
+
+  // Navigation
   navigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: COLORS.borderLight,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
   backButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.text,
-    marginLeft: 8,
+    marginLeft: SPACING.xs,
   },
   nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginLeft: 'auto',
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.colored(COLORS.primary),
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
+  },
+  nextButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.sm,
   },
   nextButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textInverse,
-    marginRight: 8,
   },
 });

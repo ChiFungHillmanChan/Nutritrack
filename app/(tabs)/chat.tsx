@@ -8,45 +8,32 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  Dimensions,
+  Alert,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY } from '../../constants/typography';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SlideInLeft,
+  SlideInRight,
+  Layout,
+} from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
-import { Ionicons } from '@expo/vector-icons';
+import { sendChatMessage } from '../../services/ai';
+
+const { width } = Dimensions.get('window');
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-}
-
-// Mock AI chat for MVP (will be replaced with real Gemini API)
-async function sendMessage(
-  message: string, 
-  _context: { nutrition: unknown; targets: unknown }
-): Promise<string> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Mock responses based on common questions
-  const lowerMessage = message.toLowerCase();
-  
-  if (lowerMessage.includes('食咩') || lowerMessage.includes('建議')) {
-    return '根據你今日嘅攝取情況，我建議你可以考慮以下選擇：\n\n1. 雞胸肉沙律 - 高蛋白低脂\n2. 三文魚配糙米 - 優質蛋白同複合碳水\n3. 希臘乳酪配水果 - 補充蛋白質同纖維\n\n你今日蛋白質攝取偏低，建議揀高蛋白嘅食物！';
-  }
-  
-  if (lowerMessage.includes('減肥') || lowerMessage.includes('瘦')) {
-    return '減重嘅關鍵係保持適度嘅熱量赤字，同時確保營養均衡。以下係一啲建議：\n\n1. 每餐都要有蛋白質，幫助維持飽足感\n2. 多食蔬菜增加纖維攝取\n3. 減少加工食品同糖分\n4. 保持足夠水分攝取\n\n記住，持續嘅習慣改變比短期節食更有效！';
-  }
-  
-  if (lowerMessage.includes('蛋白質') || lowerMessage.includes('protein')) {
-    return '蛋白質對身體好重要！以下係一啲優質蛋白質來源：\n\n動物性：雞胸肉、魚、蛋、瘦牛肉、乳製品\n植物性：豆腐、豆類、藜麥、堅果\n\n一般建議每公斤體重攝取 1.6-2.2g 蛋白質，如果你有運動習慣可以攝取較多。';
-  }
-  
-  return '多謝你嘅問題！我係你嘅 AI 營養師，可以幫你解答關於營養、飲食同健康嘅問題。\n\n你可以問我：\n• 今日應該食咩？\n• 點樣健康減重？\n• 邊啲食物高蛋白？\n• 我嘅飲食有咩可以改善？';
 }
 
 export default function ChatScreen() {
@@ -56,7 +43,8 @@ export default function ChatScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: '你好！我係你嘅 AI 營養師 🥗\n\n你可以問我任何關於營養、飲食同健康嘅問題。我會根據你今日嘅攝取情況俾你個人化建議！',
+      content:
+        '你好！我係你嘅 AI 營養師 🥗\n\n你可以問我任何關於營養、飲食同健康嘅問題。我會根據你今日嘅攝取情況俾你個人化建議！',
       timestamp: new Date(),
     },
   ]);
@@ -74,24 +62,43 @@ export default function ChatScreen() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
+    const messageToSend = inputText.trim();
     setInputText('');
     setIsLoading(true);
 
     try {
-      const response = await sendMessage(inputText, {
-        nutrition: todayNutrition,
-        targets: user?.daily_targets,
+      // Build chat history for context (exclude the initial welcome message)
+      const chatHistory = messages.slice(1).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Call the AI service with Gemini
+      const response = await sendChatMessage(messageToSend, chatHistory, {
+        daily_nutrition: todayNutrition,
+        daily_targets: user?.daily_targets,
+        user_goal: user?.goal,
       });
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      if (response.success && response.message) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response.message,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        // Show error but keep conversation going
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response.error ?? '抱歉，出咗啲問題。請再試一次。',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
     } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -99,30 +106,52 @@ export default function ChatScreen() {
         content: '抱歉，出咗啲問題。請再試一次。',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, isLoading, todayNutrition, user?.daily_targets]);
+  }, [inputText, isLoading, messages, todayNutrition, user?.daily_targets, user?.goal]);
 
-  const renderMessage = useCallback(({ item }: { item: Message }) => {
-    const isUser = item.role === 'user';
-    
-    return (
-      <View style={[styles.messageContainer, isUser && styles.userMessageContainer]}>
-        {!isUser && (
-          <View style={styles.avatarContainer}>
-            <Ionicons name="nutrition" size={20} color={COLORS.primary} />
+  const renderMessage = useCallback(
+    ({ item, index }: { item: Message; index: number }) => {
+      const isUser = item.role === 'user';
+      const EnterAnimation = isUser ? SlideInRight : SlideInLeft;
+
+      return (
+        <Animated.View
+          entering={EnterAnimation.delay(index * 50).springify()}
+          layout={Layout.springify()}
+          style={[styles.messageWrapper, isUser && styles.userMessageWrapper]}
+        >
+          {!isUser && (
+            <View style={styles.avatarContainer}>
+              <LinearGradient colors={GRADIENTS.primary} style={styles.avatar}>
+                <Ionicons name="nutrition" size={16} color={COLORS.textInverse} />
+              </LinearGradient>
+            </View>
+          )}
+          <View
+            style={[
+              styles.messageBubble,
+              isUser ? styles.userBubble : styles.assistantBubble,
+            ]}
+          >
+            <Text
+              style={[styles.messageText, isUser && styles.userMessageText]}
+            >
+              {item.content}
+            </Text>
+            <Text
+              style={[styles.messageTime, isUser && styles.userMessageTime]}
+            >
+              {formatTime(item.timestamp)}
+            </Text>
           </View>
-        )}
-        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-          <Text style={[styles.messageText, isUser && styles.userMessageText]}>
-            {item.content}
-          </Text>
-        </View>
-      </View>
-    );
-  }, []);
+        </Animated.View>
+      );
+    },
+    []
+  );
 
   const suggestedQuestions = [
     '今日應該食咩？',
@@ -136,66 +165,112 @@ export default function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      {/* Messages List */}
       <FlatList
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+        showsVerticalScrollIndicator={false}
         ListFooterComponent={
           isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color={COLORS.primary} />
-              <Text style={styles.loadingText}>思考緊...</Text>
-            </View>
+            <Animated.View entering={FadeIn} style={styles.loadingContainer}>
+              <View style={styles.loadingBubble}>
+                <View style={styles.typingDots}>
+                  <Animated.View
+                    entering={FadeIn.delay(0)}
+                    style={[styles.dot, styles.dot1]}
+                  />
+                  <Animated.View
+                    entering={FadeIn.delay(100)}
+                    style={[styles.dot, styles.dot2]}
+                  />
+                  <Animated.View
+                    entering={FadeIn.delay(200)}
+                    style={[styles.dot, styles.dot3]}
+                  />
+                </View>
+              </View>
+            </Animated.View>
           ) : null
         }
       />
 
       {/* Suggested Questions */}
       {messages.length <= 1 && (
-        <View style={styles.suggestionsContainer}>
+        <Animated.View
+          entering={FadeInUp.delay(300).springify()}
+          style={styles.suggestionsContainer}
+        >
           <Text style={styles.suggestionsTitle}>試下問：</Text>
           <View style={styles.suggestionsRow}>
             {suggestedQuestions.map((question, index) => (
-              <TouchableOpacity
+              <Animated.View
                 key={index}
-                style={styles.suggestionChip}
-                onPress={() => setInputText(question)}
+                entering={FadeInDown.delay(400 + index * 100).springify()}
               >
-                <Text style={styles.suggestionText}>{question}</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.suggestionChip}
+                  onPress={() => setInputText(question)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={14}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.suggestionText}>{question}</Text>
+                </TouchableOpacity>
+              </Animated.View>
             ))}
           </View>
-        </View>
+        </Animated.View>
       )}
 
       {/* Input Area */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="輸入你嘅問題..."
-          placeholderTextColor={COLORS.textTertiary}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={!inputText.trim() || isLoading}
-        >
-          <Ionicons
-            name="send"
-            size={20}
-            color={inputText.trim() && !isLoading ? COLORS.textInverse : COLORS.textTertiary}
+      <View style={styles.inputWrapper}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="輸入你嘅問題..."
+            placeholderTextColor={COLORS.textTertiary}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
           />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isLoading}
+            activeOpacity={0.8}
+          >
+            {inputText.trim() && !isLoading ? (
+              <LinearGradient colors={GRADIENTS.primary} style={styles.sendButtonGradient}>
+                <Ionicons name="send" size={18} color={COLORS.textInverse} />
+              </LinearGradient>
+            ) : (
+              <View style={styles.sendButtonInactive}>
+                <Ionicons name="send" size={18} color={COLORS.textMuted} />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('zh-HK', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const styles = StyleSheet.create({
@@ -203,112 +278,180 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,
   },
+
+  // Messages
   messagesList: {
-    padding: 16,
-    paddingBottom: 8,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.sm,
   },
-  messageContainer: {
+  messageWrapper: {
     flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+    alignItems: 'flex-end',
   },
-  userMessageContainer: {
+  userMessageWrapper: {
     justifyContent: 'flex-end',
   },
   avatarContainer: {
+    marginRight: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.successLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    ...SHADOWS.sm,
   },
   messageBubble: {
-    maxWidth: '75%',
-    padding: 12,
-    borderRadius: 16,
+    maxWidth: width * 0.75,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
   },
   userBubble: {
     backgroundColor: COLORS.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: RADIUS.xs,
+    ...SHADOWS.colored(COLORS.primary),
   },
   assistantBubble: {
-    backgroundColor: COLORS.background,
-    borderBottomLeftRadius: 4,
+    backgroundColor: COLORS.surface,
+    borderBottomLeftRadius: RADIUS.xs,
+    ...SHADOWS.sm,
   },
   messageText: {
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+    lineHeight: 22,
   },
   userMessageText: {
     color: COLORS.textInverse,
   },
+  messageTime: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
+    marginTop: SPACING.xs,
+    alignSelf: 'flex-end',
+  },
+  userMessageTime: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+
+  // Loading
   loadingContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    alignItems: 'flex-end',
+    marginBottom: SPACING.md,
+  },
+  loadingBubble: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderBottomLeftRadius: RADIUS.xs,
     marginLeft: 40,
+    ...SHADOWS.sm,
   },
-  loadingText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginLeft: 8,
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.textTertiary,
+  },
+  dot1: {
+    opacity: 0.4,
+  },
+  dot2: {
+    opacity: 0.6,
+  },
+  dot3: {
+    opacity: 0.8,
+  },
+
+  // Suggestions
   suggestionsContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   suggestionsTitle: {
-    ...TYPOGRAPHY.caption,
-    marginBottom: 8,
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   suggestionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: SPACING.sm,
   },
   suggestionChip: {
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    gap: SPACING.xs,
+    ...SHADOWS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.primaryMuted,
   },
   suggestionText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.primary,
+    fontWeight: '500',
+  },
+
+  // Input
+  inputWrapper: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: RADIUS.xl,
+    paddingLeft: SPACING.lg,
+    paddingRight: SPACING.xs,
+    paddingVertical: SPACING.xs,
   },
   input: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+    paddingVertical: SPACING.sm,
   },
   sendButton: {
+    marginLeft: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  sendButtonGradient: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
+    ...SHADOWS.colored(COLORS.primary),
+  },
+  sendButtonInactive: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.backgroundTertiary,
   },
   sendButtonDisabled: {
-    backgroundColor: COLORS.backgroundTertiary,
+    opacity: 1,
   },
 });

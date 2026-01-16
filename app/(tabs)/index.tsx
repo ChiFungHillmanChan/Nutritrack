@@ -6,13 +6,29 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInRight,
+} from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY } from '../../constants/typography';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  CircularProgress,
+  Card,
+  GradientCard,
+  NutritionBadge,
+  Button,
+} from '../../components/ui';
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();
@@ -43,6 +59,10 @@ export default function HomeScreen() {
   }
 
   const targets = user.daily_targets;
+  const caloriesPercentage = Math.min(
+    (todayNutrition.calories / (targets?.calories.max ?? 2000)) * 100,
+    100
+  );
 
   return (
     <ScrollView
@@ -57,161 +77,207 @@ export default function HomeScreen() {
         />
       }
     >
-      {/* Greeting */}
-      <View style={styles.greeting}>
-        <Text style={styles.greetingText}>
-          {getGreeting()}，{user.name ?? '用戶'}！
-        </Text>
-        <Text style={styles.dateText}>{formatDate(new Date())}</Text>
-      </View>
-
-      {/* Main Progress Card */}
-      <View style={styles.progressCard}>
-        <Text style={styles.progressTitle}>今日攝取</Text>
-        
-        {/* Calories Progress */}
-        <View style={styles.caloriesContainer}>
-          <View style={styles.caloriesInfo}>
-            <Text style={styles.caloriesValue}>{Math.round(todayNutrition.calories)}</Text>
-            <Text style={styles.caloriesUnit}>/ {targets?.calories.max ?? 2000} kcal</Text>
-          </View>
-          <ProgressBar
-            value={todayNutrition.calories}
-            max={targets?.calories.max ?? 2000}
-            color={COLORS.calories}
-          />
+      {/* Header with Greeting */}
+      <Animated.View entering={FadeIn.delay(100)} style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>
+            {getGreeting()}，{user.name ?? '用戶'}
+          </Text>
+          <Text style={styles.date}>{formatDate(new Date())}</Text>
         </View>
-
-        {/* Macros Grid */}
-        <View style={styles.macrosGrid}>
-          <MacroCard
-            label="蛋白質"
-            value={todayNutrition.protein}
-            max={targets?.protein.max ?? 100}
-            unit="g"
-            color={COLORS.protein}
-          />
-          <MacroCard
-            label="碳水"
-            value={todayNutrition.carbs}
-            max={targets?.carbs.max ?? 250}
-            unit="g"
-            color={COLORS.carbs}
-          />
-          <MacroCard
-            label="脂肪"
-            value={todayNutrition.fat}
-            max={targets?.fat.max ?? 65}
-            unit="g"
-            color={COLORS.fat}
-          />
-          <MacroCard
-            label="纖維"
-            value={todayNutrition.fiber}
-            max={targets?.fiber.max ?? 30}
-            unit="g"
-            color={COLORS.fiber}
-          />
-        </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
         <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(tabs)/camera')}
+          style={styles.avatarButton}
+          onPress={() => router.push('/(tabs)/settings')}
         >
-          <View style={[styles.quickActionIcon, { backgroundColor: COLORS.successLight }]}>
-            <Ionicons name="camera" size={24} color={COLORS.primary} />
-          </View>
-          <Text style={styles.quickActionText}>記錄食物</Text>
+          <LinearGradient
+            colors={GRADIENTS.primary}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>
+              {user.name?.charAt(0).toUpperCase() ?? 'U'}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(tabs)/chat')}
-        >
-          <View style={[styles.quickActionIcon, { backgroundColor: COLORS.infoLight }]}>
-            <Ionicons name="chatbubbles" size={24} color={COLORS.info} />
-          </View>
-          <Text style={styles.quickActionText}>問 AI</Text>
-        </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      {/* Today's Meals */}
-      <View style={styles.mealsSection}>
-        <Text style={styles.sectionTitle}>今日記錄</Text>
-        {todayLogs.length > 0 ? (
-          todayLogs.map((log) => (
-            <View key={log.id} style={styles.mealCard}>
-              <View style={styles.mealInfo}>
-                <Text style={styles.mealType}>{getMealTypeLabel(log.meal_type)}</Text>
-                <Text style={styles.mealName}>{log.food_name}</Text>
-                <Text style={styles.mealCalories}>
-                  {Math.round(log.nutrition_data.calories)} kcal
+      {/* Main Calories Card */}
+      <Animated.View entering={FadeInDown.delay(200).springify()}>
+        <GradientCard
+          colors={['#10B981', '#059669']}
+          style={styles.caloriesCard}
+        >
+          <View style={styles.caloriesContent}>
+            <View style={styles.caloriesLeft}>
+              <Text style={styles.caloriesLabel}>今日卡路里</Text>
+              <View style={styles.caloriesValueRow}>
+                <Text style={styles.caloriesValue}>
+                  {Math.round(todayNutrition.calories)}
+                </Text>
+                <Text style={styles.caloriesUnit}>
+                  / {targets?.calories.max ?? 2000} kcal
                 </Text>
               </View>
-              <Text style={styles.mealTime}>
-                {formatTime(new Date(log.logged_at))}
-              </Text>
+              <View style={styles.caloriesRemaining}>
+                <Ionicons name="flame" size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.caloriesRemainingText}>
+                  尚餘 {Math.max(0, (targets?.calories.max ?? 2000) - Math.round(todayNutrition.calories))} kcal
+                </Text>
+              </View>
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="restaurant-outline" size={48} color={COLORS.textTertiary} />
-            <Text style={styles.emptyText}>今日未有記錄</Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => router.push('/(tabs)/camera')}
-            >
-              <Text style={styles.emptyButtonText}>記錄第一餐</Text>
-            </TouchableOpacity>
+            <View style={styles.caloriesRight}>
+              <CircularProgress
+                value={todayNutrition.calories}
+                max={targets?.calories.max ?? 2000}
+                size={100}
+                strokeWidth={10}
+                color="#FFFFFF"
+                backgroundColor="rgba(255,255,255,0.3)"
+                showValue={false}
+                showPercentage
+                animated
+              />
+            </View>
           </View>
-        )}
-      </View>
+        </GradientCard>
+      </Animated.View>
+
+      {/* Nutrition Stats */}
+      <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.nutritionSection}>
+        <Text style={styles.sectionTitle}>營養素攝取</Text>
+        <View style={styles.nutritionGrid}>
+          <NutritionBadge
+            type="protein"
+            value={todayNutrition.protein}
+            max={targets?.protein.max ?? 100}
+            variant="detailed"
+            style={styles.nutritionItem}
+          />
+          <NutritionBadge
+            type="carbs"
+            value={todayNutrition.carbs}
+            max={targets?.carbs.max ?? 250}
+            variant="detailed"
+            style={styles.nutritionItem}
+          />
+          <NutritionBadge
+            type="fat"
+            value={todayNutrition.fat}
+            max={targets?.fat.max ?? 65}
+            variant="detailed"
+            style={styles.nutritionItem}
+          />
+          <NutritionBadge
+            type="fiber"
+            value={todayNutrition.fiber}
+            max={targets?.fiber.max ?? 30}
+            variant="detailed"
+            style={styles.nutritionItem}
+          />
+        </View>
+      </Animated.View>
+
+      {/* Quick Actions */}
+      <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.quickActions}>
+        <TouchableOpacity
+          style={styles.quickActionCard}
+          onPress={() => router.push('/(tabs)/camera')}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={[COLORS.caloriesBg, '#FFF7ED']}
+            style={styles.quickActionGradient}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.calories + '20' }]}>
+              <Ionicons name="camera" size={24} color={COLORS.calories} />
+            </View>
+            <Text style={styles.quickActionTitle}>記錄食物</Text>
+            <Text style={styles.quickActionSubtitle}>影相分析營養</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickActionCard}
+          onPress={() => router.push('/(tabs)/chat')}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={[COLORS.proteinBg, '#F5F3FF']}
+            style={styles.quickActionGradient}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.protein + '20' }]}>
+              <Ionicons name="chatbubbles" size={24} color={COLORS.protein} />
+            </View>
+            <Text style={styles.quickActionTitle}>問 AI</Text>
+            <Text style={styles.quickActionSubtitle}>營養建議</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Today's Meals */}
+      <Animated.View entering={FadeInDown.delay(500).springify()}>
+        <Card style={styles.mealsCard}>
+          <View style={styles.mealsHeader}>
+            <View style={styles.mealsTitleRow}>
+              <View style={styles.mealsTitleDot} />
+              <Text style={styles.mealsTitle}>今日記錄</Text>
+            </View>
+            {todayLogs.length > 0 && (
+              <Text style={styles.mealsCount}>{todayLogs.length} 項</Text>
+            )}
+          </View>
+
+          {todayLogs.length > 0 ? (
+            <View style={styles.mealsList}>
+              {todayLogs.map((log, index) => (
+                <Animated.View
+                  key={log.id}
+                  entering={FadeInRight.delay(index * 100)}
+                  style={styles.mealItem}
+                >
+                  <View style={[styles.mealIcon, { backgroundColor: getMealColor(log.meal_type) + '15' }]}>
+                    <Ionicons
+                      name={getMealIcon(log.meal_type)}
+                      size={18}
+                      color={getMealColor(log.meal_type)}
+                    />
+                  </View>
+                  <View style={styles.mealInfo}>
+                    <Text style={styles.mealType}>{getMealTypeLabel(log.meal_type)}</Text>
+                    <Text style={styles.mealName} numberOfLines={1}>{log.food_name}</Text>
+                  </View>
+                  <View style={styles.mealStats}>
+                    <Text style={styles.mealCalories}>
+                      {Math.round(log.nutrition_data.calories)}
+                    </Text>
+                    <Text style={styles.mealCaloriesUnit}>kcal</Text>
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="restaurant-outline" size={40} color={COLORS.textTertiary} />
+              </View>
+              <Text style={styles.emptyTitle}>今日未有記錄</Text>
+              <Text style={styles.emptySubtitle}>
+                影張食物相開始追蹤營養
+              </Text>
+              <Button
+                title="記錄第一餐"
+                icon="camera"
+                onPress={() => router.push('/(tabs)/camera')}
+                gradient
+                style={styles.emptyButton}
+              />
+            </View>
+          )}
+        </Card>
+      </Animated.View>
+
+      {/* Bottom spacing */}
+      <View style={styles.bottomSpacer} />
     </ScrollView>
-  );
-}
-
-// Helper Components
-function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const percentage = Math.min((value / max) * 100, 100);
-  
-  return (
-    <View style={styles.progressBarContainer}>
-      <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: color }]} />
-    </View>
-  );
-}
-
-function MacroCard({
-  label,
-  value,
-  max,
-  unit,
-  color,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  unit: string;
-  color: string;
-}) {
-  const percentage = Math.min((value / max) * 100, 100);
-  
-  return (
-    <View style={styles.macroCard}>
-      <View style={styles.macroHeader}>
-        <View style={[styles.macroDot, { backgroundColor: color }]} />
-        <Text style={styles.macroLabel}>{label}</Text>
-      </View>
-      <Text style={styles.macroValue}>
-        {Math.round(value)}<Text style={styles.macroUnit}>/{max}{unit}</Text>
-      </Text>
-      <View style={styles.macroProgressContainer}>
-        <View style={[styles.macroProgressFill, { width: `${percentage}%`, backgroundColor: color }]} />
-      </View>
-    </View>
   );
 }
 
@@ -233,10 +299,6 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString('zh-HK', options);
 }
 
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
-}
-
 function getMealTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     breakfast: '早餐',
@@ -247,186 +309,278 @@ function getMealTypeLabel(type: string): string {
   return labels[type] ?? type;
 }
 
+function getMealIcon(type: string): keyof typeof Ionicons.glyphMap {
+  const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+    breakfast: 'sunny',
+    lunch: 'partly-sunny',
+    dinner: 'moon',
+    snack: 'cafe',
+  };
+  return icons[type] ?? 'restaurant';
+}
+
+function getMealColor(type: string): string {
+  const colors: Record<string, string> = {
+    breakfast: COLORS.calories,
+    lunch: COLORS.carbs,
+    dinner: COLORS.protein,
+    snack: COLORS.fat,
+  };
+  return colors[type] ?? COLORS.primary;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg,
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
   },
   greeting: {
-    marginBottom: 20,
-  },
-  greetingText: {
     ...TYPOGRAPHY.h2,
-  },
-  dateText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  progressCard: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  progressTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: 16,
-  },
-  caloriesContainer: {
-    marginBottom: 20,
-  },
-  caloriesInfo: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  caloriesValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: COLORS.calories,
-  },
-  caloriesUnit: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginLeft: 4,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: COLORS.backgroundTertiary,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  macrosGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  macroCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    padding: 12,
-  },
-  macroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  macroDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  macroLabel: {
-    ...TYPOGRAPHY.caption,
-  },
-  macroValue: {
-    fontSize: 18,
-    fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 6,
   },
-  macroUnit: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: 'normal',
+  date: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
-  macroProgressContainer: {
-    height: 4,
-    backgroundColor: COLORS.backgroundTertiary,
-    borderRadius: 2,
-    overflow: 'hidden',
+  avatarButton: {
+    ...SHADOWS.md,
+    borderRadius: 24,
   },
-  macroProgressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  quickAction: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  quickActionIcon: {
+  avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  quickActionText: {
-    ...TYPOGRAPHY.label,
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textInverse,
   },
-  mealsSection: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 20,
+
+  // Calories Card
+  caloriesCard: {
+    marginBottom: SPACING.lg,
   },
-  sectionTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: 16,
-  },
-  mealCard: {
+  caloriesContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  },
+  caloriesLeft: {
+    flex: 1,
+  },
+  caloriesLabel: {
+    ...TYPOGRAPHY.overline,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: SPACING.xs,
+  },
+  caloriesValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  caloriesValue: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: COLORS.textInverse,
+    letterSpacing: -1,
+  },
+  caloriesUnit: {
+    ...TYPOGRAPHY.body,
+    color: 'rgba(255,255,255,0.8)',
+    marginLeft: SPACING.xs,
+  },
+  caloriesRemaining: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    alignSelf: 'flex-start',
+  },
+  caloriesRemainingText: {
+    ...TYPOGRAPHY.captionMedium,
+    color: 'rgba(255,255,255,0.9)',
+    marginLeft: SPACING.xs,
+  },
+  caloriesRight: {
+    marginLeft: SPACING.lg,
+  },
+
+  // Nutrition Section
+  nutritionSection: {
+    marginBottom: SPACING.lg,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  nutritionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  nutritionItem: {
+    flex: 1,
+    minWidth: (width - SPACING.lg * 2 - SPACING.sm) / 2 - 1,
+  },
+
+  // Quick Actions
+  quickActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  quickActionCard: {
+    flex: 1,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.sm,
+  },
+  quickActionGradient: {
+    padding: SPACING.lg,
+    alignItems: 'center',
+  },
+  quickActionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  quickActionTitle: {
+    ...TYPOGRAPHY.labelLarge,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  quickActionSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+
+  // Meals Card
+  mealsCard: {
+    padding: SPACING.lg,
+  },
+  mealsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  mealsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mealsTitleDot: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginRight: SPACING.sm,
+  },
+  mealsTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+  },
+  mealsCount: {
+    ...TYPOGRAPHY.captionMedium,
+    color: COLORS.textSecondary,
+    backgroundColor: COLORS.backgroundTertiary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+  },
+  mealsList: {
+    gap: SPACING.sm,
+  },
+  mealItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: RADIUS.md,
+  },
+  mealIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mealInfo: {
     flex: 1,
+    marginLeft: SPACING.md,
   },
   mealType: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.overline,
     color: COLORS.primary,
-    textTransform: 'uppercase',
-    fontWeight: '600',
+    marginBottom: 2,
   },
   mealName: {
-    ...TYPOGRAPHY.body,
-    marginVertical: 2,
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.text,
+  },
+  mealStats: {
+    alignItems: 'flex-end',
   },
   mealCalories: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.h4,
+    color: COLORS.calories,
   },
-  mealTime: {
-    ...TYPOGRAPHY.caption,
+  mealCaloriesUnit: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
   },
+
+  // Empty State
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: SPACING['3xl'],
   },
-  emptyText: {
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.backgroundTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  emptySubtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginTop: 12,
-    marginBottom: 16,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
   },
   emptyButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    minWidth: 160,
   },
-  emptyButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.textInverse,
+
+  // Bottom spacer
+  bottomSpacer: {
+    height: SPACING['2xl'],
   },
 });

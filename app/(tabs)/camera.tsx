@@ -8,45 +8,38 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SlideInRight,
+} from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY } from '../../constants/typography';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
-import { Ionicons } from '@expo/vector-icons';
+import { Card, Button, NutritionBadge } from '../../components/ui';
 import { MealType, NutritionData } from '../../types';
+import { analyzeFood as analyzeFoodAI } from '../../services/ai';
 
-// Mock AI analysis for MVP (will be replaced with real Gemini API)
-async function analyzeFood(_base64: string): Promise<{
-  food_name: string;
-  portion_size_grams: number;
-  nutrition: NutritionData;
-  confidence: number;
-}> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Mock response - in production, this calls Gemini API
-  return {
-    food_name: '白飯',
-    portion_size_grams: 200,
-    nutrition: {
-      calories: 260,
-      protein: 5,
-      carbs: 56,
-      fat: 0.5,
-      fiber: 0.6,
-      sodium: 2,
-    },
-    confidence: 0.85,
-  };
-}
+const { width } = Dimensions.get('window');
+
+const MEAL_TYPES: { type: MealType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
+  { type: 'breakfast', label: '早餐', icon: 'sunny', color: COLORS.calories },
+  { type: 'lunch', label: '午餐', icon: 'partly-sunny', color: COLORS.carbs },
+  { type: 'dinner', label: '晚餐', icon: 'moon', color: COLORS.protein },
+  { type: 'snack', label: '小食', icon: 'cafe', color: COLORS.fat },
+];
 
 export default function CameraScreen() {
   const { user } = useUserStore();
   const { addFoodLog } = useFoodStore();
-  
+
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -103,14 +96,28 @@ export default function CameraScreen() {
 
     setIsAnalyzing(true);
     try {
-      const result = await analyzeFood(imageBase64);
-      setAnalysisResult(result);
+      // Get meal type label for context
+      const mealTypeLabel = MEAL_TYPES.find((m) => m.type === selectedMealType)?.label;
+      
+      // Call the AI service with Gemini
+      const response = await analyzeFoodAI(imageBase64, mealTypeLabel);
+      
+      if (response.success && response.data) {
+        setAnalysisResult({
+          food_name: response.data.food_name,
+          portion_size_grams: response.data.portion_size_grams,
+          nutrition: response.data.nutrition,
+          confidence: response.data.confidence,
+        });
+      } else {
+        Alert.alert('分析失敗', response.error ?? '請再試一次');
+      }
     } catch {
       Alert.alert('分析失敗', '請再試一次');
     } finally {
       setIsAnalyzing(false);
     }
-  }, [imageBase64]);
+  }, [imageBase64, selectedMealType]);
 
   const handleSave = useCallback(async () => {
     if (!user?.id || !analysisResult) return;
@@ -144,169 +151,245 @@ export default function CameraScreen() {
   }, []);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Image Preview or Capture Buttons */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Image Preview or Capture Area */}
       {!imageUri ? (
-        <View style={styles.captureSection}>
-          <View style={styles.placeholder}>
-            <Ionicons name="camera-outline" size={64} color={COLORS.textTertiary} />
-            <Text style={styles.placeholderText}>影張食物相</Text>
-          </View>
-          
-          <View style={styles.captureButtons}>
-            <TouchableOpacity style={styles.captureButton} onPress={handleTakePhoto}>
-              <Ionicons name="camera" size={24} color={COLORS.textInverse} />
-              <Text style={styles.captureButtonText}>影相</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.captureButton, styles.secondaryButton]} onPress={handlePickImage}>
-              <Ionicons name="images" size={24} color={COLORS.primary} />
-              <Text style={[styles.captureButtonText, styles.secondaryButtonText]}>相簿</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <Animated.View entering={FadeIn} style={styles.captureSection}>
+          <Card style={styles.captureCard} variant="elevated">
+            <View style={styles.cameraPlaceholder}>
+              <LinearGradient
+                colors={[COLORS.primaryMuted, COLORS.successLight]}
+                style={styles.placeholderGradient}
+              >
+                <View style={styles.placeholderIcon}>
+                  <Ionicons name="camera" size={48} color={COLORS.primary} />
+                </View>
+              </LinearGradient>
+              <Text style={styles.placeholderTitle}>拍攝食物相片</Text>
+              <Text style={styles.placeholderSubtitle}>
+                AI 會自動分析營養成分
+              </Text>
+            </View>
+
+            <View style={styles.captureButtons}>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={handleTakePhoto}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={GRADIENTS.primary}
+                  style={styles.captureButtonGradient}
+                >
+                  <Ionicons name="camera" size={24} color={COLORS.textInverse} />
+                  <Text style={styles.captureButtonText}>拍攝</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.captureButton, styles.secondaryButton]}
+                onPress={handlePickImage}
+                activeOpacity={0.8}
+              >
+                <View style={styles.secondaryButtonInner}>
+                  <Ionicons name="images" size={24} color={COLORS.primary} />
+                  <Text style={styles.secondaryButtonText}>相簿</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </Animated.View>
       ) : (
-        <View style={styles.previewSection}>
-          <Image source={{ uri: imageUri }} style={styles.previewImage} />
-          
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <Ionicons name="close" size={20} color={COLORS.textInverse} />
-          </TouchableOpacity>
-        </View>
+        <Animated.View entering={FadeInDown.springify()}>
+          <View style={styles.imagePreview}>
+            <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)']}
+              style={styles.imageOverlay}
+            />
+            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <Ionicons name="close" size={20} color={COLORS.textInverse} />
+            </TouchableOpacity>
+            {analysisResult && (
+              <View style={styles.confidenceBadge}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+                <Text style={styles.confidenceText}>
+                  {Math.round(analysisResult.confidence * 100)}% 準確
+                </Text>
+              </View>
+            )}
+          </View>
+        </Animated.View>
       )}
 
       {/* Meal Type Selection */}
       {imageUri && (
-        <View style={styles.mealTypeSection}>
-          <Text style={styles.sectionTitle}>呢餐係</Text>
-          <View style={styles.mealTypeButtons}>
-            {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.mealTypeButton,
-                  selectedMealType === type && styles.mealTypeButtonSelected,
-                ]}
-                onPress={() => setSelectedMealType(type)}
-              >
-                <Text
-                  style={[
-                    styles.mealTypeButtonText,
-                    selectedMealType === type && styles.mealTypeButtonTextSelected,
-                  ]}
+        <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <Card style={styles.mealTypeCard}>
+            <Text style={styles.sectionLabel}>選擇餐類</Text>
+            <View style={styles.mealTypeGrid}>
+              {MEAL_TYPES.map((meal, index) => (
+                <Animated.View
+                  key={meal.type}
+                  entering={SlideInRight.delay(index * 50)}
                 >
-                  {getMealTypeLabel(type)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.mealTypeButton,
+                      selectedMealType === meal.type && styles.mealTypeButtonSelected,
+                      selectedMealType === meal.type && { borderColor: meal.color },
+                    ]}
+                    onPress={() => setSelectedMealType(meal.type)}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.mealTypeIcon,
+                        { backgroundColor: meal.color + '15' },
+                        selectedMealType === meal.type && { backgroundColor: meal.color + '25' },
+                      ]}
+                    >
+                      <Ionicons
+                        name={meal.icon}
+                        size={18}
+                        color={meal.color}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.mealTypeLabel,
+                        selectedMealType === meal.type && { color: meal.color, fontWeight: '600' },
+                      ]}
+                    >
+                      {meal.label}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </View>
+          </Card>
+        </Animated.View>
       )}
 
       {/* Analyze Button */}
       {imageUri && !analysisResult && (
-        <TouchableOpacity
-          style={[styles.analyzeButton, isAnalyzing && styles.buttonDisabled]}
-          onPress={handleAnalyze}
-          disabled={isAnalyzing}
-        >
-          {isAnalyzing ? (
-            <>
-              <ActivityIndicator color={COLORS.textInverse} />
-              <Text style={styles.analyzeButtonText}>AI 分析緊...</Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="sparkles" size={20} color={COLORS.textInverse} />
-              <Text style={styles.analyzeButtonText}>AI 分析食物</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <TouchableOpacity
+            style={[styles.analyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
+            onPress={handleAnalyze}
+            disabled={isAnalyzing}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={isAnalyzing ? [COLORS.textMuted, COLORS.textTertiary] : GRADIENTS.primary}
+              style={styles.analyzeButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              {isAnalyzing ? (
+                <>
+                  <ActivityIndicator color={COLORS.textInverse} size="small" />
+                  <Text style={styles.analyzeButtonText}>AI 分析緊...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={22} color={COLORS.textInverse} />
+                  <Text style={styles.analyzeButtonText}>AI 分析營養</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
       )}
 
       {/* Analysis Result */}
       {analysisResult && (
-        <View style={styles.resultSection}>
-          <View style={styles.resultHeader}>
-            <Text style={styles.resultTitle}>{analysisResult.food_name}</Text>
-            <View style={styles.confidenceBadge}>
-              <Text style={styles.confidenceText}>
-                {Math.round(analysisResult.confidence * 100)}% 準確度
-              </Text>
+        <Animated.View entering={FadeInUp.delay(100).springify()}>
+          <Card style={styles.resultCard} variant="elevated">
+            {/* Food Name Header */}
+            <View style={styles.resultHeader}>
+              <View style={styles.resultTitleRow}>
+                <View style={styles.resultIconContainer}>
+                  <Ionicons name="restaurant" size={20} color={COLORS.primary} />
+                </View>
+                <View>
+                  <Text style={styles.resultTitle}>{analysisResult.food_name}</Text>
+                  <Text style={styles.resultPortion}>
+                    估計份量: {analysisResult.portion_size_grams}g
+                  </Text>
+                </View>
+              </View>
             </View>
-          </View>
 
-          <Text style={styles.portionText}>
-            估計份量: {analysisResult.portion_size_grams}g
-          </Text>
+            {/* Calories Highlight */}
+            <View style={styles.caloriesHighlight}>
+              <View style={styles.caloriesLeft}>
+                <Text style={styles.caloriesLabel}>總卡路里</Text>
+                <View style={styles.caloriesValueRow}>
+                  <Text style={styles.caloriesValue}>
+                    {Math.round(analysisResult.nutrition.calories)}
+                  </Text>
+                  <Text style={styles.caloriesUnit}>kcal</Text>
+                </View>
+              </View>
+              <View style={styles.caloriesIcon}>
+                <Ionicons name="flame" size={28} color={COLORS.calories} />
+              </View>
+            </View>
 
-          <View style={styles.nutritionGrid}>
-            <NutritionItem
-              label="卡路里"
-              value={analysisResult.nutrition.calories}
-              unit="kcal"
-              color={COLORS.calories}
-            />
-            <NutritionItem
-              label="蛋白質"
-              value={analysisResult.nutrition.protein}
-              unit="g"
-              color={COLORS.protein}
-            />
-            <NutritionItem
-              label="碳水"
-              value={analysisResult.nutrition.carbs}
-              unit="g"
-              color={COLORS.carbs}
-            />
-            <NutritionItem
-              label="脂肪"
-              value={analysisResult.nutrition.fat}
-              unit="g"
-              color={COLORS.fat}
-            />
-          </View>
+            {/* Nutrition Grid */}
+            <View style={styles.nutritionGrid}>
+              <NutritionBadge
+                type="protein"
+                value={analysisResult.nutrition.protein}
+                max={100}
+                variant="compact"
+                style={styles.nutritionCompact}
+              />
+              <NutritionBadge
+                type="carbs"
+                value={analysisResult.nutrition.carbs}
+                max={100}
+                variant="compact"
+                style={styles.nutritionCompact}
+              />
+              <NutritionBadge
+                type="fat"
+                value={analysisResult.nutrition.fat}
+                max={100}
+                variant="compact"
+                style={styles.nutritionCompact}
+              />
+              <NutritionBadge
+                type="fiber"
+                value={analysisResult.nutrition.fiber}
+                max={30}
+                variant="compact"
+                style={styles.nutritionCompact}
+              />
+            </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Ionicons name="checkmark" size={20} color={COLORS.textInverse} />
-            <Text style={styles.saveButtonText}>記錄呢餐</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Save Button */}
+            <Button
+              title="記錄呢餐"
+              icon="checkmark-circle"
+              onPress={handleSave}
+              gradient
+              fullWidth
+              size="lg"
+              style={styles.saveButton}
+            />
+          </Card>
+        </Animated.View>
       )}
+
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
-}
-
-function NutritionItem({
-  label,
-  value,
-  unit,
-  color,
-}: {
-  label: string;
-  value: number;
-  unit: string;
-  color: string;
-}) {
-  return (
-    <View style={styles.nutritionItem}>
-      <View style={[styles.nutritionDot, { backgroundColor: color }]} />
-      <Text style={styles.nutritionLabel}>{label}</Text>
-      <Text style={styles.nutritionValue}>
-        {Math.round(value)}{unit}
-      </Text>
-    </View>
-  );
-}
-
-function getMealTypeLabel(type: MealType): string {
-  const labels: Record<MealType, string> = {
-    breakfast: '早餐',
-    lunch: '午餐',
-    dinner: '晚餐',
-    snack: '小食',
-  };
-  return labels[type];
 }
 
 const styles = StyleSheet.create({
@@ -315,190 +398,291 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg,
   },
+
+  // Capture Section
   captureSection: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+    marginBottom: SPACING.lg,
   },
-  placeholder: {
-    alignItems: 'center',
-    marginBottom: 24,
+  captureCard: {
+    padding: 0,
+    overflow: 'hidden',
   },
-  placeholderText: {
+  cameraPlaceholder: {
+    alignItems: 'center',
+    paddingVertical: SPACING['3xl'],
+    paddingHorizontal: SPACING.lg,
+  },
+  placeholderGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  placeholderIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+  },
+  placeholderTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  placeholderSubtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginTop: 12,
+    textAlign: 'center',
   },
   captureButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.sm,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   captureButton: {
     flex: 1,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+  },
+  captureButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+    ...SHADOWS.colored(COLORS.primary),
   },
   captureButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textInverse,
   },
   secondaryButton: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
   },
+  secondaryButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+  },
   secondaryButtonText: {
+    ...TYPOGRAPHY.button,
     color: COLORS.primary,
   },
-  previewSection: {
+
+  // Image Preview
+  imagePreview: {
     position: 'relative',
-    borderRadius: 16,
+    borderRadius: RADIUS.xl,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.lg,
   },
   previewImage: {
     width: '100%',
     aspectRatio: 4 / 3,
-    borderRadius: 16,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
   },
   resetButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: SPACING.md,
+    right: SPACING.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mealTypeSection: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.label,
-    marginBottom: 12,
-  },
-  mealTypeButtons: {
+  confidenceBadge: {
+    position: 'absolute',
+    bottom: SPACING.md,
+    left: SPACING.md,
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    gap: SPACING.xs,
+  },
+  confidenceText: {
+    ...TYPOGRAPHY.captionMedium,
+    color: COLORS.success,
+  },
+
+  // Meal Type
+  mealTypeCard: {
+    marginBottom: SPACING.lg,
+  },
+  sectionLabel: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  mealTypeGrid: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
   },
   mealTypeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: COLORS.backgroundSecondary,
     alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    minWidth: (width - SPACING.lg * 2 - SPACING.lg * 2 - SPACING.sm * 3) / 4,
   },
   mealTypeButtonSelected: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.sm,
   },
-  mealTypeButtonText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.text,
+  mealTypeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xs,
   },
-  mealTypeButtonTextSelected: {
-    color: COLORS.textInverse,
-    fontWeight: '600',
+  mealTypeLabel: {
+    ...TYPOGRAPHY.captionMedium,
+    color: COLORS.textSecondary,
   },
+
+  // Analyze Button
   analyzeButton: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    marginBottom: SPACING.lg,
+    ...SHADOWS.colored(COLORS.primary),
+  },
+  analyzeButtonDisabled: {
+    ...SHADOWS.sm,
+  },
+  analyzeButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
   },
   analyzeButtonText: {
-    ...TYPOGRAPHY.button,
+    ...TYPOGRAPHY.buttonLarge,
     color: COLORS.textInverse,
   },
-  resultSection: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 20,
+
+  // Result Card
+  resultCard: {
+    padding: SPACING.lg,
   },
   resultHeader: {
+    marginBottom: SPACING.lg,
+  },
+  resultTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  resultIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
   },
   resultTitle: {
     ...TYPOGRAPHY.h3,
+    color: COLORS.text,
   },
-  confidenceBadge: {
-    backgroundColor: COLORS.successLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  confidenceText: {
+  resultPortion: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  portionText: {
-    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: 16,
+    marginTop: 2,
   },
+
+  // Calories Highlight
+  caloriesHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.caloriesBg,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.lg,
+  },
+  caloriesLeft: {
+    flex: 1,
+  },
+  caloriesLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  caloriesValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  caloriesValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: COLORS.calories,
+    letterSpacing: -1,
+  },
+  caloriesUnit: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.calories,
+    marginLeft: SPACING.xs,
+    fontWeight: '500',
+  },
+  caloriesIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.calories + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Nutrition Grid
   nutritionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
+    gap: SPACING.sm,
+    marginBottom: SPACING.xl,
   },
-  nutritionItem: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 8,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  nutritionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  nutritionLabel: {
-    ...TYPOGRAPHY.caption,
+  nutritionCompact: {
     flex: 1,
   },
-  nutritionValue: {
-    ...TYPOGRAPHY.bodySmall,
-    fontWeight: '600',
-  },
+
+  // Save Button
   saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    marginTop: SPACING.sm,
   },
-  saveButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.textInverse,
+
+  // Bottom spacer
+  bottomSpacer: {
+    height: SPACING['2xl'],
   },
 });
