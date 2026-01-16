@@ -369,7 +369,6 @@ export async function sendChatMessage(
 ): Promise<ChatResponse> {
   // Option 1: Direct Gemini API (local development with API key)
   if (hasDirectGeminiAccess()) {
-    console.log('Using direct Gemini API for chat');
     return callGeminiChat(message, history, context);
   }
 
@@ -398,7 +397,6 @@ export async function sendChatMessage(
   }
 
   // Option 3: Demo mode (no API key, no Supabase)
-  console.log('Using demo mode for chat');
   await new Promise((resolve) => setTimeout(resolve, 1500));
   return {
     success: true,
@@ -415,7 +413,6 @@ export async function analyzeFood(
 ): Promise<FoodAnalysisResponse> {
   // Option 1: Direct Gemini API (local development with API key)
   if (hasDirectGeminiAccess()) {
-    console.log('Using direct Gemini API for food analysis');
     return callGeminiVision(imageBase64, mealType);
   }
 
@@ -444,7 +441,6 @@ export async function analyzeFood(
   }
 
   // Option 3: Demo mode (no API key, no Supabase)
-  console.log('Using demo mode for food analysis');
   await new Promise((resolve) => setTimeout(resolve, 2000));
   return {
     success: true,

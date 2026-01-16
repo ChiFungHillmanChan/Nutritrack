@@ -5,10 +5,7 @@
  */
 
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';

@@ -1,31 +1,63 @@
-import { useState, useCallback } from 'react';
+/**
+ * Settings Screen
+ *
+ * Main settings page with profile, app settings, and data management.
+ */
+
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   Alert,
   Switch,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInRight,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { signOut } from '../../services/auth';
-import { Card, NutritionBadge } from '../../components/ui';
+import { Card } from '../../components/ui';
+import { SettingRow, ProfileHeader } from '../../components/settings';
+import { settingsRepository } from '../../services/database';
 
 export default function SettingsScreen() {
   const { user, signOut: storeSignOut } = useUserStore();
+  
+  // App settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [dataStats, setDataStats] = useState({
+    foodLogsCount: 0,
+    chatMessagesCount: 0,
+    habitLogsCount: 0,
+    exerciseLogsCount: 0,
+  });
 
+  // Load settings and stats on mount
+  useEffect(() => {
+    const settings = settingsRepository.getAllSettings();
+    setNotificationsEnabled(settings.notifications_enabled);
+    
+    if (user?.id) {
+      const stats = settingsRepository.getDatabaseStats(user.id);
+      setDataStats(stats);
+    }
+  }, [user?.id]);
+
+  // Handle notification toggle
+  const handleNotificationToggle = useCallback((value: boolean) => {
+    setNotificationsEnabled(value);
+    settingsRepository.setSetting('notifications_enabled', value);
+  }, []);
+
+  // Handle profile edit
+  const handleEditProfile = useCallback(() => {
+    router.push('/profile-edit' as never);
+  }, []);
+
+  // Handle sign out
   const handleSignOut = useCallback(async () => {
     Alert.alert('登出', '你確定要登出嗎？', [
       { text: '取消', style: 'cancel' },
@@ -41,9 +73,42 @@ export default function SettingsScreen() {
     ]);
   }, [storeSignOut]);
 
-  const handleEditProfile = useCallback(() => {
-    Alert.alert('即將推出', '編輯個人資料功能即將推出');
-  }, []);
+  // Handle clear data
+  const handleClearData = useCallback(() => {
+    Alert.alert(
+      '清除所有數據',
+      '這將刪除你的所有食物記錄、聊天記錄和習慣數據。此操作無法撤銷。',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '清除',
+          style: 'destructive',
+          onPress: () => {
+            if (user?.id) {
+              const success = settingsRepository.clearAllUserData(user.id);
+              if (success) {
+                setDataStats({
+                  foodLogsCount: 0,
+                  chatMessagesCount: 0,
+                  habitLogsCount: 0,
+                  exerciseLogsCount: 0,
+                });
+                Alert.alert('完成', '所有數據已清除');
+              } else {
+                Alert.alert('錯誤', '清除數據失敗');
+              }
+            }
+          },
+        },
+      ]
+    );
+  }, [user?.id]);
+
+  const totalRecords =
+    dataStats.foodLogsCount +
+    dataStats.chatMessagesCount +
+    dataStats.habitLogsCount +
+    dataStats.exerciseLogsCount;
 
   return (
     <ScrollView
@@ -53,86 +118,40 @@ export default function SettingsScreen() {
     >
       {/* Profile Header */}
       <Animated.View entering={FadeIn.delay(100)}>
-        <LinearGradient
-          colors={GRADIENTS.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.profileHeader}
-        >
-          <View style={styles.profileTop}>
-            <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase() ?? 'U'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={handleEditProfile}
-            >
-              <Ionicons name="pencil" size={16} color={COLORS.textInverse} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.profileName}>{user?.name ?? '用戶'}</Text>
-          <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
-
-          {/* Stats Row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.height_cm ?? '-'}</Text>
-              <Text style={styles.statLabel}>身高 cm</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.weight_kg ?? '-'}</Text>
-              <Text style={styles.statLabel}>體重 kg</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{getGoalLabel(user?.goal)}</Text>
-              <Text style={styles.statLabel}>目標</Text>
-            </View>
-          </View>
-        </LinearGradient>
+        <ProfileHeader user={user} onEditPress={handleEditProfile} />
       </Animated.View>
 
-      {/* Daily Targets */}
+      {/* Daily Targets Summary */}
       {user?.daily_targets && (
         <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <Card style={styles.targetsCard}>
+          <Card style={styles.card}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
                 <View style={styles.sectionDot} />
                 <Text style={styles.sectionTitle}>每日營養目標</Text>
               </View>
-              <TouchableOpacity style={styles.sectionAction}>
-                <Text style={styles.sectionActionText}>編輯</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.targetsList}>
-              <TargetItem
-                icon="flame"
+              <TargetRow
                 label="卡路里"
                 value={`${user.daily_targets.calories.min} - ${user.daily_targets.calories.max}`}
                 unit="kcal"
                 color={COLORS.calories}
               />
-              <TargetItem
-                icon="fish"
+              <TargetRow
                 label="蛋白質"
                 value={`${user.daily_targets.protein.min} - ${user.daily_targets.protein.max}`}
                 unit="g"
                 color={COLORS.protein}
               />
-              <TargetItem
-                icon="nutrition"
+              <TargetRow
                 label="碳水化合物"
                 value={`${user.daily_targets.carbs.min} - ${user.daily_targets.carbs.max}`}
                 unit="g"
                 color={COLORS.carbs}
               />
-              <TargetItem
-                icon="water"
+              <TargetRow
                 label="脂肪"
                 value={`${user.daily_targets.fat.min} - ${user.daily_targets.fat.max}`}
                 unit="g"
@@ -143,12 +162,11 @@ export default function SettingsScreen() {
         </Animated.View>
       )}
 
-      {/* Settings Options */}
+      {/* App Settings */}
       <Animated.View entering={FadeInDown.delay(300).springify()}>
-        <Card style={styles.settingsCard}>
-          <Text style={styles.settingsGroupTitle}>應用程式設定</Text>
+        <Card style={styles.card}>
+          <Text style={styles.groupTitle}>應用程式設定</Text>
 
-          {/* Notifications */}
           <SettingRow
             icon="notifications"
             iconBg={COLORS.caloriesBg}
@@ -157,7 +175,7 @@ export default function SettingsScreen() {
             trailing={
               <Switch
                 value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
+                onValueChange={handleNotificationToggle}
                 trackColor={{
                   false: COLORS.backgroundTertiary,
                   true: COLORS.primaryMuted,
@@ -167,47 +185,51 @@ export default function SettingsScreen() {
             }
           />
 
-          {/* Language */}
           <SettingRow
             icon="language"
             iconBg={COLORS.proteinBg}
             iconColor={COLORS.protein}
             label="語言"
             value="繁體中文"
-            onPress={() => {}}
+            onPress={() => Alert.alert('語言', '目前只支援繁體中文')}
           />
+        </Card>
+      </Animated.View>
 
-          {/* Theme */}
+      {/* Data Management */}
+      <Animated.View entering={FadeInDown.delay(400).springify()}>
+        <Card style={styles.card}>
+          <Text style={styles.groupTitle}>數據管理</Text>
+
+          <View style={styles.statsRow}>
+            <StatItem label="食物記錄" count={dataStats.foodLogsCount} />
+            <StatItem label="聊天記錄" count={dataStats.chatMessagesCount} />
+            <StatItem label="習慣記錄" count={dataStats.habitLogsCount} />
+          </View>
+
           <SettingRow
-            icon="moon"
-            iconBg={COLORS.fatBg}
-            iconColor={COLORS.fat}
-            label="外觀主題"
-            value="淺色模式"
-            onPress={() => {}}
+            icon="trash"
+            iconBg={COLORS.errorLight}
+            iconColor={COLORS.error}
+            label="清除所有數據"
+            value={`${totalRecords} 筆記錄`}
+            onPress={handleClearData}
+            danger
           />
         </Card>
       </Animated.View>
 
       {/* Support & Info */}
-      <Animated.View entering={FadeInDown.delay(400).springify()}>
-        <Card style={styles.settingsCard}>
-          <Text style={styles.settingsGroupTitle}>支援及資訊</Text>
-
-          <SettingRow
-            icon="help-circle"
-            iconBg={COLORS.carbsBg}
-            iconColor={COLORS.carbs}
-            label="幫助中心"
-            onPress={() => {}}
-          />
+      <Animated.View entering={FadeInDown.delay(500).springify()}>
+        <Card style={styles.card}>
+          <Text style={styles.groupTitle}>支援及資訊</Text>
 
           <SettingRow
             icon="document-text"
             iconBg={COLORS.fiberBg}
             iconColor={COLORS.fiber}
             label="私隱政策"
-            onPress={() => {}}
+            onPress={() => router.push('/privacy-policy' as never)}
           />
 
           <SettingRow
@@ -215,27 +237,29 @@ export default function SettingsScreen() {
             iconBg={COLORS.sodiumBg}
             iconColor={COLORS.sodium}
             label="關於 Nutritrack"
-            onPress={() => {}}
+            onPress={() => router.push('/about' as never)}
           />
         </Card>
       </Animated.View>
 
       {/* Sign Out */}
-      <Animated.View entering={FadeInDown.delay(500).springify()}>
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="log-out" size={20} color={COLORS.error} />
-          <Text style={styles.signOutText}>登出</Text>
-        </TouchableOpacity>
+      <Animated.View entering={FadeInDown.delay(600).springify()}>
+        <Card style={styles.signOutCard}>
+          <SettingRow
+            icon="log-out"
+            iconBg={COLORS.errorLight}
+            iconColor={COLORS.error}
+            label="登出"
+            onPress={handleSignOut}
+            showChevron={false}
+            danger
+          />
+        </Card>
       </Animated.View>
 
       {/* Version */}
-      <Animated.View entering={FadeIn.delay(600)}>
+      <Animated.View entering={FadeIn.delay(700)}>
         <Text style={styles.versionText}>Nutritrack v1.0.0</Text>
-        <Text style={styles.copyrightText}>Made with ❤️ for healthy living</Text>
       </Animated.View>
 
       <View style={styles.bottomSpacer} />
@@ -244,99 +268,34 @@ export default function SettingsScreen() {
 }
 
 // Helper Components
-function TargetItem({
-  icon,
+function TargetRow({
   label,
   value,
   unit,
   color,
 }: {
-  icon: string;
   label: string;
   value: string;
   unit: string;
   color: string;
 }) {
   return (
-    <View style={styles.targetItem}>
-      <View style={[styles.targetIcon, { backgroundColor: color + '15' }]}>
-        <Ionicons
-          name={icon as keyof typeof Ionicons.glyphMap}
-          size={18}
-          color={color}
-        />
-      </View>
-      <View style={styles.targetInfo}>
-        <Text style={styles.targetLabel}>{label}</Text>
-        <View style={styles.targetValueRow}>
-          <Text style={[styles.targetValue, { color }]}>{value}</Text>
-          <Text style={styles.targetUnit}>{unit}</Text>
-        </View>
-      </View>
+    <View style={styles.targetRow}>
+      <View style={[styles.targetDot, { backgroundColor: color }]} />
+      <Text style={styles.targetLabel}>{label}</Text>
+      <Text style={[styles.targetValue, { color }]}>{value}</Text>
+      <Text style={styles.targetUnit}>{unit}</Text>
     </View>
   );
 }
 
-function SettingRow({
-  icon,
-  iconBg,
-  iconColor,
-  label,
-  value,
-  trailing,
-  onPress,
-}: {
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  label: string;
-  value?: string;
-  trailing?: React.ReactNode;
-  onPress?: () => void;
-}) {
-  const content = (
-    <View style={styles.settingRow}>
-      <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
-        <Ionicons
-          name={icon as keyof typeof Ionicons.glyphMap}
-          size={18}
-          color={iconColor}
-        />
-      </View>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <View style={styles.settingRight}>
-        {value && <Text style={styles.settingValue}>{value}</Text>}
-        {trailing}
-        {onPress && !trailing && (
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={COLORS.textTertiary}
-          />
-        )}
-      </View>
+function StatItem({ label, count }: { label: string; count: number }) {
+  return (
+    <View style={styles.statItem}>
+      <Text style={styles.statCount}>{count}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
-
-  if (onPress) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-        {content}
-      </TouchableOpacity>
-    );
-  }
-
-  return content;
-}
-
-function getGoalLabel(goal?: string): string {
-  const labels: Record<string, string> = {
-    lose_weight: '減重',
-    gain_weight: '增重',
-    maintain: '維持',
-    build_muscle: '增肌',
-  };
-  return goal ? labels[goal] ?? '-' : '-';
 }
 
 const styles = StyleSheet.create({
@@ -347,82 +306,11 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.lg,
   },
-
-  // Profile Header
-  profileHeader: {
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xl,
+  card: {
     marginBottom: SPACING.lg,
-    ...SHADOWS.lg,
   },
-  profileTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  signOutCard: {
     marginBottom: SPACING.md,
-  },
-  avatarContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.textInverse,
-  },
-  editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileName: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.textInverse,
-    marginBottom: SPACING.xs,
-  },
-  profileEmail: {
-    ...TYPOGRAPHY.body,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: SPACING.lg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.textInverse,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.captionSmall,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: SPACING.xs,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-
-  // Targets Card
-  targetsCard: {
-    marginBottom: SPACING.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -445,40 +333,29 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h4,
     color: COLORS.text,
   },
-  sectionAction: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  sectionActionText: {
-    ...TYPOGRAPHY.bodySmallMedium,
-    color: COLORS.primary,
+  groupTitle: {
+    ...TYPOGRAPHY.overline,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
   },
   targetsList: {
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
-  targetItem: {
+  targetRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: SPACING.xs,
   },
-  targetIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  targetInfo: {
-    flex: 1,
+  targetDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: SPACING.sm,
   },
   targetLabel: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  targetValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flex: 1,
   },
   targetValue: {
     ...TYPOGRAPHY.bodyMedium,
@@ -488,78 +365,34 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     marginLeft: SPACING.xs,
+    width: 35,
   },
-
-  // Settings Card
-  settingsCard: {
-    marginBottom: SPACING.lg,
-  },
-  settingsGroupTitle: {
-    ...TYPOGRAPHY.overline,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  },
-  settingRow: {
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-around',
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  settingIcon: {
-    width: 36,
-    height: 36,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: RADIUS.md,
+  },
+  statItem: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
   },
-  settingLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    flex: 1,
+  statCount: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.primary,
   },
-  settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  settingValue: {
-    ...TYPOGRAPHY.body,
+  statLabel: {
+    ...TYPOGRAPHY.captionSmall,
     color: COLORS.textSecondary,
+    marginTop: 2,
   },
-
-  // Sign Out
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.errorLight,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    gap: SPACING.sm,
-    marginBottom: SPACING.lg,
-    ...SHADOWS.sm,
-  },
-  signOutText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.error,
-  },
-
-  // Version
   versionText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textTertiary,
     textAlign: 'center',
-    marginBottom: SPACING.xs,
+    marginTop: SPACING.sm,
   },
-  copyrightText: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-  },
-
-  // Bottom spacer
   bottomSpacer: {
     height: SPACING['3xl'],
   },

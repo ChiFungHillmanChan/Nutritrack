@@ -24,6 +24,8 @@ export * as foodRepository from './repositories/foodRepository';
 export * as chatRepository from './repositories/chatRepository';
 export * as habitRepository from './repositories/habitRepository';
 export * as exerciseRepository from './repositories/exerciseRepository';
+export * as settingsRepository from './repositories/settingsRepository';
 
 // Re-export commonly used types
 export type { ChatMessage } from './repositories/chatRepository';
+export type { AppSettings } from './repositories/settingsRepository';

@@ -28,7 +28,7 @@ import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useHabitStore } from '../../stores/habitStore';
 import { Card, CircularProgress } from '../../components/ui';
-import type { HabitType, MoodLevel, BristolStoolType, SleepQuality } from '../../types';
+import type { HabitType, MoodLevel, BristolStoolType } from '../../types';
 
 // Habit card configuration
 interface HabitConfig {
@@ -385,7 +385,7 @@ export default function HabitsScreen() {
 function HabitCard({
   habit,
   value,
-  progress,
+  progress: _progress,
   onPress,
   onQuickAdd,
 }: {

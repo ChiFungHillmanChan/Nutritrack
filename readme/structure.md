@@ -51,6 +51,13 @@ This document provides an overview of the project's components, utilities, and d
 | `HabitCard` | `HabitCard.tsx` | Generic habit display card |
 | `StreakBadge` | `StreakBadge.tsx` | Habit streak display |
 
+### Settings Components (`/components/settings`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `SettingRow` | `SettingRow.tsx` | Reusable settings list item with icon, label, value, and trailing element |
+| `ProfileHeader` | `ProfileHeader.tsx` | User profile card with avatar, stats, and edit button |
+
 ### Wellness Components (`/components/wellness`)
 
 | Component | File | Purpose |
@@ -78,7 +85,15 @@ This document provides an overview of the project's components, utilities, and d
 | Camera | `camera.tsx` | Food photo capture and AI analysis |
 | Chat | `chat.tsx` | AI nutritionist conversation interface |
 | Habits | `habits.tsx` | All habit trackers grid with quick-log |
-| Settings | `settings.tsx` | User profile and app preferences |
+| Settings | `settings.tsx` | User profile, app settings, data management |
+
+### Settings Screens (`/app`)
+
+| Screen | File | Purpose |
+|--------|------|---------|
+| Profile Edit | `profile-edit.tsx` | Edit user profile (name, height, weight, goal, activity level) |
+| About | `about.tsx` | App information, version, features, credits |
+| Privacy Policy | `privacy-policy.tsx` | Privacy policy and data handling information |
 
 ### Tools (`/app/tools`)
 
@@ -147,6 +162,7 @@ Local SQLite database for offline-first data persistence. Production-ready for i
 | `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message |
 | `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations |
 | `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries |
+| `settingsRepository` | `settingsRepository.ts` | App settings persistence, data management, clear user data |
 
 ### Database Tables
 

@@ -12,7 +12,6 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { useEffect } from 'react';
 import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY } from '../../constants/typography';
 

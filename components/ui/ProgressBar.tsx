@@ -8,7 +8,6 @@ import { View, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
-  withSpring,
   withTiming,
   Easing,
 } from 'react-native-reanimated';
@@ -113,8 +112,6 @@ export function SegmentedProgressBar({
   gap = 2,
   style,
 }: SegmentedProgressBarProps) {
-  const totalValue = segments.reduce((sum, seg) => sum + seg.value, 0);
-  
   return (
     <View
       style={[
