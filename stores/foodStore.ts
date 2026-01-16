@@ -64,19 +64,6 @@ export const useFoodStore = create<FoodState>((set, get) => ({
     try {
       // Always fetch from SQLite first (offline-first)
       const logs = foodRepository.getTodayFoodLogs(userId);
-      
-      // If no logs exist for demo user, create demo data
-      if (logs.length === 0 && isDemoMode()) {
-        const demoLogs = foodRepository.createDemoFoodLogs(userId);
-        const totalNutrition = foodRepository.calculateTotalNutrition(demoLogs);
-        set({
-          todayLogs: demoLogs,
-          todayNutrition: totalNutrition,
-          isLoading: false,
-        });
-        return;
-      }
-
       const totalNutrition = foodRepository.calculateTotalNutrition(logs);
       set({
         todayLogs: logs,

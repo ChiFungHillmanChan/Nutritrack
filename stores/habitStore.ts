@@ -102,12 +102,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
     try {
       // Fetch from SQLite
-      let logs = habitRepository.getTodayHabitLogs(userId);
-
-      // If no logs exist for demo user, create demo data
-      if (logs.length === 0 && isDemoMode()) {
-        logs = habitRepository.createDemoHabitLogs(userId);
-      }
+      const logs = habitRepository.getTodayHabitLogs(userId);
 
       // Calculate streaks for common habits
       const updatedStreaks = { ...DEFAULT_STREAKS };
