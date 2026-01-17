@@ -28,4 +28,4 @@ export * as settingsRepository from './repositories/settingsRepository';
 
 // Re-export commonly used types
 export type { ChatMessage } from './repositories/chatRepository';
-export type { AppSettings } from './repositories/settingsRepository';
+export type { AppSettings, OnboardingProgress } from './repositories/settingsRepository';

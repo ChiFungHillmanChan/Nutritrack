@@ -243,7 +243,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isLoading: false,
   isAuthenticated: false,
-  isDemoMode: isDemoMode(),
+  isDemoMode: false, // Will be set properly during initialization
   isInitialized: false,
   error: null,
   oauthMetadata: null,
@@ -257,6 +257,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   // Initialize from SQLite database
   initialize: () => {
     try {
+      // Set isDemoMode based on Supabase configuration
+      const demoModeEnabled = isDemoMode();
+      
       // Check if user is logged in from settings
       const isLoggedIn = settingsRepository.isUserLoggedIn();
       const currentUserId = settingsRepository.getCurrentUserId();
@@ -269,16 +272,16 @@ export const useUserStore = create<UserState>((set, get) => ({
           set({
             user: existingUser,
             isAuthenticated: true,
-            isDemoMode: true, // Local users are always in "demo" mode (no cloud)
+            isDemoMode: demoModeEnabled,
             isInitialized: true,
           });
         } else {
           // User ID in settings but not in database - clear login state
           settingsRepository.setLoginState(false, null);
-          set({ isInitialized: true });
+          set({ isDemoMode: demoModeEnabled, isInitialized: true });
         }
       } else {
-        set({ isInitialized: true });
+        set({ isDemoMode: demoModeEnabled, isInitialized: true });
       }
     } catch (error) {
       console.error('[UserStore] Initialize error:', error);

@@ -174,3 +174,99 @@ export function getDatabaseStats(userId: string): {
     exerciseLogsCount: exerciseLogs?.count ?? 0,
   };
 }
+
+// ============================================
+// ONBOARDING PROGRESS PERSISTENCE
+// ============================================
+
+import type {
+  Gender,
+  ActivityLevel,
+  UserGoal,
+  HealthGoal,
+  MedicalCondition,
+  DietaryPreference,
+  Medication,
+  Supplement,
+} from '../../../types';
+
+/**
+ * Onboarding progress data structure
+ * Stores all form data from the 7-step onboarding process
+ */
+export interface OnboardingProgress {
+  // Current step (0-indexed position in STEPS array)
+  currentStep: number;
+  // User ID (Supabase auth ID) to associate progress with
+  userId: string;
+  // Timestamp when progress was last saved
+  lastUpdated: string;
+  
+  // Step 1: Basics
+  name?: string;
+  gender?: Gender | null;
+  dateOfBirth?: string; // ISO date string
+  
+  // Step 2: Metrics
+  height?: string;
+  weight?: string;
+  activityLevel?: ActivityLevel;
+  
+  // Step 3: Goals
+  primaryGoal?: UserGoal | null;
+  healthGoals?: HealthGoal[];
+  
+  // Step 4: Conditions
+  conditions?: MedicalCondition[];
+  
+  // Step 5: Medications
+  medications?: Medication[];
+  supplements?: Supplement[];
+  
+  // Step 6: Dietary
+  dietaryPrefs?: DietaryPreference[];
+  allergies?: string[];
+}
+
+const ONBOARDING_PROGRESS_KEY = 'onboarding_progress';
+
+/**
+ * Save onboarding progress for a user
+ * This is called after each step to persist the user's input
+ */
+export function saveOnboardingProgress(progress: OnboardingProgress): void {
+  setSetting(`${ONBOARDING_PROGRESS_KEY}_${progress.userId}`, {
+    ...progress,
+    lastUpdated: new Date().toISOString(),
+  });
+}
+
+/**
+ * Get onboarding progress for a user
+ * Returns null if no progress exists
+ */
+export function getOnboardingProgress(userId: string): OnboardingProgress | null {
+  const progress = getSetting<OnboardingProgress | null>(
+    `${ONBOARDING_PROGRESS_KEY}_${userId}`,
+    null
+  );
+  return progress;
+}
+
+/**
+ * Clear onboarding progress for a user
+ * Called when onboarding is completed or user wants to start fresh
+ */
+export function clearOnboardingProgress(userId: string): void {
+  const db = getDatabase();
+  const key = `${ONBOARDING_PROGRESS_KEY}_${userId}`;
+  db.runSync('DELETE FROM app_settings WHERE key = ?', [key]);
+}
+
+/**
+ * Check if user has saved onboarding progress
+ */
+export function hasOnboardingProgress(userId: string): boolean {
+  const progress = getOnboardingProgress(userId);
+  return progress !== null;
+}

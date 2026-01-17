@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,13 @@ import {
   Supplement,
   DailyTargets,
 } from '../../types';
+import {
+  saveOnboardingProgress,
+  getOnboardingProgress,
+  clearOnboardingProgress,
+  OnboardingProgress,
+} from '../../services/database/repositories/settingsRepository';
+import { getSupabaseClient } from '../../services/supabase';
 
 // Type for the calculateDailyTargets function
 interface TargetCalculationParams {
@@ -148,6 +155,10 @@ function getDietaryPrefs(t: (key: string) => string): { value: DietaryPreference
 export default function OnboardingScreen() {
   const { t, language } = useTranslation();
   const [step, setStep] = useState<Step>('basics');
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Track current user ID for progress persistence
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   // Basic info
   const [name, setName] = useState('');
@@ -182,17 +193,121 @@ export default function OnboardingScreen() {
 
   const { updateProfile, calculateDailyTargets, oauthMetadata, setOAuthMetadata } = useUserStore();
 
-  // Pre-fill form with OAuth metadata (from Google/Apple login)
+  // Get current user ID and load saved progress on mount
   useEffect(() => {
-    if (oauthMetadata) {
+    const loadSavedProgress = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setIsInitialized(true);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (userId) {
+        setCurrentUserId(userId);
+        
+        // Load saved progress
+        const savedProgress = getOnboardingProgress(userId);
+        if (savedProgress) {
+          console.log('[Onboarding] Restoring saved progress:', savedProgress);
+          
+          // Restore step
+          if (savedProgress.currentStep !== undefined) {
+            setStep(STEPS[savedProgress.currentStep] || 'basics');
+          }
+          
+          // Restore basics
+          if (savedProgress.name) setName(savedProgress.name);
+          if (savedProgress.gender !== undefined) setGender(savedProgress.gender);
+          if (savedProgress.dateOfBirth) {
+            setDateOfBirth(new Date(savedProgress.dateOfBirth));
+          }
+          
+          // Restore metrics
+          if (savedProgress.height) setHeight(savedProgress.height);
+          if (savedProgress.weight) setWeight(savedProgress.weight);
+          if (savedProgress.activityLevel) setActivityLevel(savedProgress.activityLevel);
+          
+          // Restore goals
+          if (savedProgress.primaryGoal !== undefined) setPrimaryGoal(savedProgress.primaryGoal);
+          if (savedProgress.healthGoals) setHealthGoals(savedProgress.healthGoals);
+          
+          // Restore conditions
+          if (savedProgress.conditions) setConditions(savedProgress.conditions);
+          
+          // Restore medications & supplements
+          if (savedProgress.medications) setMedications(savedProgress.medications);
+          if (savedProgress.supplements) setSupplements(savedProgress.supplements);
+          
+          // Restore dietary
+          if (savedProgress.dietaryPrefs) setDietaryPrefs(savedProgress.dietaryPrefs);
+          if (savedProgress.allergies) setAllergies(savedProgress.allergies);
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+
+    loadSavedProgress();
+  }, []);
+
+  // Save progress whenever form data changes (debounced via step change)
+  const saveProgress = useCallback((currentStepIndex: number) => {
+    if (!currentUserId || !isInitialized) return;
+
+    const progress: OnboardingProgress = {
+      currentStep: currentStepIndex,
+      userId: currentUserId,
+      lastUpdated: new Date().toISOString(),
+      
+      // Basics
+      name,
+      gender,
+      dateOfBirth: dateOfBirth.toISOString(),
+      
+      // Metrics
+      height,
+      weight,
+      activityLevel,
+      
+      // Goals
+      primaryGoal,
+      healthGoals,
+      
+      // Conditions
+      conditions,
+      
+      // Medications
+      medications,
+      supplements,
+      
+      // Dietary
+      dietaryPrefs,
+      allergies,
+    };
+
+    console.log('[Onboarding] Saving progress at step:', currentStepIndex);
+    saveOnboardingProgress(progress);
+  }, [
+    currentUserId, isInitialized, name, gender, dateOfBirth, height, weight, 
+    activityLevel, primaryGoal, healthGoals, conditions, medications, 
+    supplements, dietaryPrefs, allergies
+  ]);
+
+  // Pre-fill form with OAuth metadata (from Google/Apple login)
+  // Only apply if no saved progress was loaded
+  useEffect(() => {
+    if (oauthMetadata && isInitialized) {
       console.log('[Onboarding] Pre-filling with OAuth metadata:', oauthMetadata);
       
-      // Pre-fill name if available
+      // Pre-fill name if available and not already set from saved progress
       if (oauthMetadata.name && !name) {
         setName(oauthMetadata.name);
       }
     }
-  }, [oauthMetadata]);
+  }, [oauthMetadata, isInitialized]);
 
   // Clear OAuth metadata when leaving onboarding
   useEffect(() => {
@@ -324,6 +439,10 @@ export default function OnboardingScreen() {
     if (!validateStep()) return;
 
     const currentIndex = STEPS.indexOf(step);
+    
+    // Save progress before moving to next step
+    saveProgress(currentIndex);
+    
     if (currentIndex < STEPS.length - 1) {
       setStep(STEPS[currentIndex + 1]);
     } else {
@@ -333,6 +452,10 @@ export default function OnboardingScreen() {
 
   const handleBack = () => {
     const currentIndex = STEPS.indexOf(step);
+    
+    // Save progress before going back
+    saveProgress(currentIndex);
+    
     if (currentIndex > 0) {
       setStep(STEPS[currentIndex - 1]);
     } else {
@@ -383,6 +506,11 @@ export default function OnboardingScreen() {
     setIsLoading(false);
 
     if (success) {
+      // Clear saved onboarding progress after successful completion
+      if (currentUserId) {
+        console.log('[Onboarding] Clearing saved progress after completion');
+        clearOnboardingProgress(currentUserId);
+      }
       router.replace('/(tabs)');
     } else {
       Alert.alert(t('common.error'), t('onboarding.validation.saveFailed'));
