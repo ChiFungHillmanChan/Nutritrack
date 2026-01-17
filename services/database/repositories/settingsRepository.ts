@@ -5,6 +5,16 @@
  */
 
 import { getDatabase, parseJSON, stringifyJSON } from '../database';
+import type {
+  Gender,
+  ActivityLevel,
+  UserGoal,
+  HealthGoal,
+  MedicalCondition,
+  DietaryPreference,
+  Medication,
+  Supplement,
+} from '../../../types';
 
 // App settings structure
 export interface AppSettings {
@@ -178,17 +188,6 @@ export function getDatabaseStats(userId: string): {
 // ============================================
 // ONBOARDING PROGRESS PERSISTENCE
 // ============================================
-
-import type {
-  Gender,
-  ActivityLevel,
-  UserGoal,
-  HealthGoal,
-  MedicalCondition,
-  DietaryPreference,
-  Medication,
-  Supplement,
-} from '../../../types';
 
 /**
  * Onboarding progress data structure
