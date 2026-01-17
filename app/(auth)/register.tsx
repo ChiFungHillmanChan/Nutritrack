@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signUpWithEmail } from '../../services/auth';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { height } = Dimensions.get('window');
 
@@ -31,16 +32,17 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { t } = useTranslation();
 
   const validatePassword = (pwd: string): string | null => {
     if (pwd.length < 8) {
-      return '密碼最少要 8 個字元';
+      return t('auth.register.passwordTooShort');
     }
     if (!/[A-Z]/.test(pwd)) {
-      return '密碼要包含最少一個大楷字母';
+      return t('auth.register.passwordNeedsUppercase');
     }
     if (!/[0-9]/.test(pwd)) {
-      return '密碼要包含最少一個數字';
+      return t('auth.register.passwordNeedsNumber');
     }
     return null;
   };
@@ -48,18 +50,18 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     // Validation
     if (!email || !password || !confirmPassword) {
-      Alert.alert('錯誤', '請填寫所有欄位');
+      Alert.alert(t('common.error'), t('auth.register.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('錯誤', '兩次輸入嘅密碼唔一樣');
+      Alert.alert(t('common.error'), t('auth.register.passwordMismatch'));
       return;
     }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
-      Alert.alert('密碼唔夠強', passwordError);
+      Alert.alert(t('auth.register.passwordNotStrong'), passwordError);
       return;
     }
 
@@ -68,11 +70,11 @@ export default function RegisterScreen() {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert('註冊成功', '請檢查你嘅電郵確認帳戶', [
-        { text: '好', onPress: () => router.replace('/(auth)/onboarding') },
+      Alert.alert(t('auth.register.registerSuccess'), t('auth.register.checkEmail'), [
+        { text: t('common.ok'), onPress: () => router.replace('/(auth)/onboarding') },
       ]);
     } else {
-      Alert.alert('註冊失敗', result.error ?? '請再試一次');
+      Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
@@ -112,8 +114,8 @@ export default function RegisterScreen() {
                 <Ionicons name="person-add" size={24} color={COLORS.textInverse} />
               </LinearGradient>
             </View>
-            <Text style={styles.title}>建立帳戶</Text>
-            <Text style={styles.subtitle}>開始你嘅健康追蹤之旅</Text>
+            <Text style={styles.title}>{t('auth.register.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.register.subtitle')}</Text>
           </View>
         </Animated.View>
 
@@ -121,7 +123,7 @@ export default function RegisterScreen() {
         <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.formSection}>
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>電郵地址</Text>
+            <Text style={styles.inputLabel}>{t('auth.register.email')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="mail-outline"
@@ -131,7 +133,7 @@ export default function RegisterScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="yourname@example.com"
+                placeholder={t('auth.register.emailPlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
                 value={email}
                 onChangeText={setEmail}
@@ -144,7 +146,7 @@ export default function RegisterScreen() {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>密碼</Text>
+            <Text style={styles.inputLabel}>{t('auth.register.password')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="lock-closed-outline"
@@ -154,7 +156,7 @@ export default function RegisterScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="建立一個安全嘅密碼"
+                placeholder={t('auth.register.passwordPlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
                 value={password}
                 onChangeText={setPassword}
@@ -176,22 +178,22 @@ export default function RegisterScreen() {
           {/* Password Requirements */}
           <View style={styles.requirements}>
             <PasswordRequirement
-              text="最少 8 個字元"
+              text={t('auth.register.requirements.minLength')}
               met={passwordChecks.length}
             />
             <PasswordRequirement
-              text="包含大楷字母"
+              text={t('auth.register.requirements.uppercase')}
               met={passwordChecks.uppercase}
             />
             <PasswordRequirement
-              text="包含數字"
+              text={t('auth.register.requirements.number')}
               met={passwordChecks.number}
             />
           </View>
 
           {/* Confirm Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>確認密碼</Text>
+            <Text style={styles.inputLabel}>{t('auth.register.confirmPassword')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons
                 name="lock-closed-outline"
@@ -201,7 +203,7 @@ export default function RegisterScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="再次輸入密碼"
+                placeholder={t('auth.register.confirmPasswordPlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -234,7 +236,7 @@ export default function RegisterScreen() {
                 <ActivityIndicator color={COLORS.textInverse} />
               ) : (
                 <>
-                  <Text style={styles.registerButtonText}>建立帳戶</Text>
+                  <Text style={styles.registerButtonText}>{t('auth.register.registerButton')}</Text>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.textInverse} />
                 </>
               )}
@@ -243,18 +245,18 @@ export default function RegisterScreen() {
 
           {/* Terms */}
           <Text style={styles.termsText}>
-            建立帳戶即表示你同意我哋嘅{' '}
-            <Text style={styles.termsLink}>服務條款</Text> 及{' '}
-            <Text style={styles.termsLink}>私隱政策</Text>
+            {t('auth.register.terms')}{' '}
+            <Text style={styles.termsLink}>{t('auth.register.termsOfService')}</Text> {t('auth.register.and')}{' '}
+            <Text style={styles.termsLink}>{t('settings.privacyPolicy')}</Text>
           </Text>
         </Animated.View>
 
         {/* Login Link */}
         <View style={styles.footer}>
-          <Text style={styles.loginText}>已有帳戶？</Text>
+          <Text style={styles.loginText}>{t('auth.register.haveAccount')}</Text>
           <Link href="/(auth)/login" asChild>
             <TouchableOpacity>
-              <Text style={styles.loginLink}>登入</Text>
+              <Text style={styles.loginLink}>{t('auth.register.loginNow')}</Text>
             </TouchableOpacity>
           </Link>
         </View>

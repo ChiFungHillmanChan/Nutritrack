@@ -7,7 +7,7 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-export const CURRENT_DB_VERSION = 1;
+export const CURRENT_DB_VERSION = 2;
 
 interface Migration {
   version: number;
@@ -174,13 +174,18 @@ const migrations: Migration[] = [
       `);
     },
   },
+  // Migration v2: Add onboarding_completed column to users
+  {
+    version: 2,
+    up: (db: SQLiteDatabase) => {
+      // Add onboarding_completed column with default value 1 (true) for existing users
+      // This ensures existing users are not forced through onboarding again
+      db.execSync(`
+        ALTER TABLE users ADD COLUMN onboarding_completed INTEGER DEFAULT 1;
+      `);
+    },
+  },
   // Add future migrations here:
-  // {
-  //   version: 2,
-  //   up: (db: SQLiteDatabase) => {
-  //     // Add new columns or tables
-  //   },
-  // },
 ];
 
 /**

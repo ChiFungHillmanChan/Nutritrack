@@ -1,8 +1,18 @@
+/**
+ * Tab Layout with Hamburger Menu
+ * 
+ * Main tab navigation layout with header actions.
+ */
+
+import { useState, useCallback } from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
+import { SPACING } from '../../constants/typography';
+import { HamburgerMenu } from '../../components/navigation';
 
 const ICON_SIZE = 20;
 const CONTAINER_SIZE = 40;
@@ -34,78 +44,116 @@ function TabBarIcon({
   );
 }
 
-export default function TabLayout() {
+// Settings button for header left
+function SettingsHeaderButton() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textTertiary,
-        tabBarStyle: styles.tabBar,
-        tabBarItemStyle: styles.tabBarItem,
-        tabBarShowLabel: false,
-        tabBarLabelStyle: styles.tabBarLabelHidden,
-        headerStyle: styles.header,
-        headerTitleStyle: styles.headerTitle,
-        headerShadowVisible: false,
-      }}
+    <TouchableOpacity
+      style={styles.headerButton}
+      onPress={() => router.push('/(tabs)/settings')}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: '首頁',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="home" color={color} focused={focused} />
-          ),
-          headerTitle: 'Nutritrack',
-          headerTitleStyle: styles.headerTitleMain,
+      <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
+// Menu button for header right
+function MenuHeaderButton({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      style={styles.headerButton}
+      onPress={onPress}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Ionicons name="menu" size={24} color={COLORS.text} />
+    </TouchableOpacity>
+  );
+}
+
+export default function TabLayout() {
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const openMenu = useCallback(() => setMenuVisible(true), []);
+  const closeMenu = useCallback(() => setMenuVisible(false), []);
+
+  return (
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: COLORS.primary,
+          tabBarInactiveTintColor: COLORS.textTertiary,
+          tabBarStyle: styles.tabBar,
+          tabBarItemStyle: styles.tabBarItem,
+          tabBarShowLabel: false,
+          tabBarLabelStyle: styles.tabBarLabelHidden,
+          headerStyle: styles.header,
+          headerTitleStyle: styles.headerTitle,
+          headerShadowVisible: false,
+          headerRight: () => <MenuHeaderButton onPress={openMenu} />,
         }}
-      />
-      <Tabs.Screen
-        name="camera"
-        options={{
-          title: '記錄',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="camera" color={color} focused={focused} />
-          ),
-          headerTitle: '記錄食物',
-        }}
-      />
-      <Tabs.Screen
-        name="habits"
-        options={{
-          title: '習慣',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="checkmark-circle" color={color} focused={focused} />
-          ),
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: '問問',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="chatbubbles" color={color} focused={focused} />
-          ),
-          headerTitle: 'AI 營養師',
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: '設定',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="settings" color={color} focused={focused} />
-          ),
-          headerTitle: '設定',
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: '首頁',
+            tabBarLabel: () => null,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="home" color={color} focused={focused} />
+            ),
+            headerTitle: 'Nutritrack',
+            headerTitleStyle: styles.headerTitleMain,
+            headerLeft: () => <SettingsHeaderButton />,
+          }}
+        />
+        <Tabs.Screen
+          name="camera"
+          options={{
+            title: '記錄',
+            tabBarLabel: () => null,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="camera" color={color} focused={focused} />
+            ),
+            headerTitle: '記錄食物',
+          }}
+        />
+        <Tabs.Screen
+          name="habits"
+          options={{
+            title: '習慣',
+            tabBarLabel: () => null,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="checkmark-circle" color={color} focused={focused} />
+            ),
+            headerShown: false,
+          }}
+        />
+        <Tabs.Screen
+          name="chat"
+          options={{
+            title: '問問',
+            tabBarLabel: () => null,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="chatbubbles" color={color} focused={focused} />
+            ),
+            headerTitle: 'AI 營養師',
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: '我的檔案',
+            tabBarLabel: () => null,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="person" color={color} focused={focused} />
+            ),
+            headerTitle: 'My Profile',
+          }}
+        />
+      </Tabs>
+
+      {/* Hamburger Menu Modal */}
+      <HamburgerMenu visible={menuVisible} onClose={closeMenu} />
+    </>
   );
 }
 
@@ -167,5 +215,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
     letterSpacing: -0.3,
+  },
+  headerButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
 });

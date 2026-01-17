@@ -27,6 +27,8 @@ interface HabitStreak {
 interface HabitState {
   // State
   todayLogs: HabitLog[];
+  todayHabits: HabitLog[];
+  allHabits: HabitLog[];
   streaks: Record<HabitType, HabitStreak>;
   isLoading: boolean;
   error: string | null;
@@ -37,6 +39,8 @@ interface HabitState {
 
   // Habit log actions
   fetchTodayLogs: (userId: string) => Promise<void>;
+  fetchTodayHabits: (userId: string) => Promise<void>;
+  fetchAllHabits: (userId: string) => Promise<void>;
   logHabit: (log: Omit<HabitLog, 'id'>) => Promise<boolean>;
   deleteHabitLog: (logId: string) => Promise<boolean>;
 
@@ -74,6 +78,8 @@ const DEFAULT_STREAKS: Record<HabitType, HabitStreak> = {
 export const useHabitStore = create<HabitState>((set, get) => ({
   // Initial state
   todayLogs: [],
+  todayHabits: [],
+  allHabits: [],
   streaks: DEFAULT_STREAKS,
   isLoading: false,
   error: null,
@@ -134,6 +140,39 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     } catch (error) {
       console.error('[HabitStore] Fetch error:', error);
       set({ isLoading: false, error: 'Failed to fetch habit logs' });
+    }
+  },
+
+  // Fetch today's habits (alias for fetchTodayLogs)
+  fetchTodayHabits: async (userId: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const logs = habitRepository.getTodayHabitLogs(userId);
+      set({
+        todayHabits: logs,
+        todayLogs: logs,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('[HabitStore] Fetch today habits error:', error);
+      set({ isLoading: false, error: 'Failed to fetch today habits' });
+    }
+  },
+
+  // Fetch all habit logs for timeline
+  fetchAllHabits: async (userId: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const logs = habitRepository.getHabitLogsByUserId(userId);
+      set({
+        allHabits: logs,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('[HabitStore] Fetch all error:', error);
+      set({ isLoading: false, error: 'Failed to fetch all habit logs' });
     }
   },
 

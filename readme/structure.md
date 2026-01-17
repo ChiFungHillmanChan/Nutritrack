@@ -8,9 +8,10 @@ This document provides an overview of the project's components, utilities, and d
 
 | File | Purpose |
 |------|---------|
-| `colors.ts` | Color palette with COLORS, GRADIENTS, and SHADOWS objects |
+| `colors.ts` | Color palette with COLORS, GRADIENTS, and SHADOWS objects (mint green theme) |
 | `typography.ts` | Typography system with TYPOGRAPHY, SPACING, and RADIUS constants |
 | `exercises.ts` | Exercise types and MET values for calorie calculations |
+| `quotes.ts` | Daily motivational quotes and health tips with getTodayQuote() helper and language-aware getTodayLocalizedQuote() |
 
 ### UI Components (`/components/ui`)
 
@@ -28,6 +29,8 @@ This document provides an overview of the project's components, utilities, and d
 | `NutritionBadge` | `NutritionBadge.tsx` | Nutrition stat display (calories, protein, carbs, fat, fiber) |
 | `NutritionGrid` | `NutritionBadge.tsx` | Grid layout for multiple nutrition badges |
 | `PieChart` | `PieChart.tsx` | Animated pie chart for nutrition visualization |
+| `HorizontalProgressBar` | `HorizontalProgressBar.tsx` | Horizontal progress bars for nutrient display |
+| `NutrientProgressBars` | `HorizontalProgressBar.tsx` | Preset nutrient bar configurations (carbs, protein, fiber, fat, sugar, fluids) |
 
 ### Chart Components (`/components/charts`)
 
@@ -51,12 +54,41 @@ This document provides an overview of the project's components, utilities, and d
 | `HabitCard` | `HabitCard.tsx` | Generic habit display card |
 | `StreakBadge` | `StreakBadge.tsx` | Habit streak display |
 
+### Navigation Components (`/components/navigation`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `HamburgerMenu` | `HamburgerMenu.tsx` | Slide-in drawer menu with extended functions |
+| `HamburgerMenuButton` | `HamburgerMenu.tsx` | Button to trigger the hamburger menu |
+
+### Home Components (`/components/home`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `DailyQuote` | `DailyQuote.tsx` | Daily motivational quote/health tip display card |
+
+### Profile Components (`/components/profile`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `QuickActions` | `QuickActions.tsx` | Row of 5 quick action buttons (settings, notifications, feedback, theme, export) |
+| `GoalsCard` | `GoalsCard.tsx` | User health goals with checkboxes and edit button |
+
+### Timeline Components (`/components/timeline`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `EntryCard` | `EntryCard.tsx` | Single timeline entry display (food, exercise, habit) |
+| `CalendarView` | `CalendarView.tsx` | Monthly calendar for timeline navigation |
+| `ListView` | `ListView.tsx` | Chronological list of timeline entries grouped by date |
+
 ### Settings Components (`/components/settings`)
 
 | Component | File | Purpose |
 |-----------|------|---------|
 | `SettingRow` | `SettingRow.tsx` | Reusable settings list item with icon, label, value, and trailing element |
 | `ProfileHeader` | `ProfileHeader.tsx` | User profile card with avatar, stats, and edit button |
+| `LanguageSwitcher` | `LanguageSwitcher.tsx` | Language selection modal for switching between English and Traditional Chinese |
 
 ### Wellness Components (`/components/wellness`)
 
@@ -81,11 +113,11 @@ This document provides an overview of the project's components, utilities, and d
 
 | Screen | File | Purpose |
 |--------|------|---------|
-| Home | `index.tsx` | Dashboard with 3 pie charts, nutrition summary, quick actions |
+| Home | `index.tsx` | Dashboard with circular progress, horizontal nutrient bars, daily quote, quick actions |
 | Camera | `camera.tsx` | Food photo capture and AI analysis |
 | Chat | `chat.tsx` | AI nutritionist conversation interface |
 | Habits | `habits.tsx` | All habit trackers grid with quick-log |
-| Settings | `settings.tsx` | User profile, app settings, data management |
+| Profile | `settings.tsx` | User profile with quick actions, goals card, timeline link |
 
 ### Settings Screens (`/app`)
 
@@ -94,14 +126,20 @@ This document provides an overview of the project's components, utilities, and d
 | Profile Edit | `profile-edit.tsx` | Edit user profile (name, height, weight, goal, activity level) |
 | About | `about.tsx` | App information, version, features, credits |
 | Privacy Policy | `privacy-policy.tsx` | Privacy policy and data handling information |
+| Timeline | `timeline.tsx` | View all entries in calendar or list format |
+| Consultation | `consultation.tsx` | Book appointments with dietitians |
+| Contact | `contact.tsx` | Contact information and feedback form |
 
 ### Tools (`/app/tools`)
 
 | Screen | File | Purpose |
 |--------|------|---------|
-| Carb Counter | `carb-counter.tsx` | Carbohydrate counting tool for meals |
-| Portion Guide | `portion-guide.tsx` | Visual portion reference guide |
-| Exercise Guides | `exercise-guides.tsx` | Light exercise and stretching guides |
+| Carb Counting | `carb-counting.tsx` | Carbohydrate counting calculator for common foods |
+| Medications | `medications.tsx` | Manage medications and supplements |
+| Portion Guide | `portion-guide.tsx` | Visual portion reference guide with hand comparison |
+| Lifestyle Tips | `lifestyle-tips.tsx` | Health and lifestyle tips by category |
+| Nutrition Facts | `nutrition-facts.tsx` | Educational content about nutrients |
+| Exercise Guide | `exercise-guide.tsx` | Light exercise and stretching guides with steps |
 | Insulin Calculator | `calculators/insulin-calculator.tsx` | Insulin dose calculator |
 | Creon Calculator | `calculators/creon-calculator.tsx` | Pancreatic enzyme dosing |
 
@@ -136,6 +174,7 @@ This document provides an overview of the project's components, utilities, and d
 |---------|------|---------|
 | `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
 | `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) |
+| `i18n.ts` | `i18n.ts` | Internationalization service (i18n-js) with language detection and persistence |
 | `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
 | `secure-storage.ts` | `secure-storage.ts` | Secure token storage (sensitive data) |
 | `supabase.ts` | `supabase.ts` | Supabase client configuration |
@@ -274,3 +313,50 @@ Before creating a new component:
 2. If creating, add entry to this structure.md
 3. Place in appropriate directory based on usage scope
 4. Follow naming conventions: PascalCase for components, camelCase for utilities
+
+## Internationalization (`/locales`, `/hooks`)
+
+### Localization Files (`/locales`)
+
+| File | Purpose |
+|------|---------|
+| `en.ts` | English translations |
+| `zh-TW.ts` | Traditional Chinese (繁體中文) translations |
+| `index.ts` | Export all locale files |
+
+### Hooks (`/hooks`)
+
+| Hook | File | Purpose |
+|------|------|---------|
+| `useTranslation` | `useTranslation.ts` | React hook for accessing translations, setting language, and getting raw translation values |
+
+### Usage
+
+```tsx
+import { useTranslation } from '@/hooks/useTranslation';
+
+function MyComponent() {
+  const { t, language, setLanguage, getRawTranslation } = useTranslation();
+  
+  // Basic translation
+  const greeting = t('home.greeting', { name: 'John' });
+  
+  // Change language
+  await setLanguage('zh-TW');
+  
+  // Get array or object from translations
+  const tips = getRawTranslation('tools.lifestyleTips.categories.eating.tips');
+}
+```
+
+### Supported Languages
+
+- `en` - English
+- `zh-TW` - Traditional Chinese (繁體中文)
+
+### Adding Translations
+
+1. Add keys to both `locales/en.ts` and `locales/zh-TW.ts`
+2. Use `t('key.path')` in components
+3. For interpolation: `t('key', { variable: value })`
+4. For arrays, use `getRawTranslation('key')` and cast to appropriate type

@@ -98,6 +98,7 @@ export interface User {
   health_goals: HealthGoal[];
   medical_conditions: MedicalCondition[];
   medications: Medication[];
+  onboarding_completed?: boolean;
   supplements: Supplement[];
   allergies: string[];
   dietary_preferences: DietaryPreference[];

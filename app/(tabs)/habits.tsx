@@ -27,96 +27,101 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useHabitStore } from '../../stores/habitStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Card, CircularProgress } from '../../components/ui';
 import type { HabitType, MoodLevel, BristolStoolType } from '../../types';
 
 // Habit card configuration
 interface HabitConfig {
   type: HabitType;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
-  unit?: string;
+  unitKey?: string;
   quickAdd?: number[];
   maxValue?: number;
 }
 
-const HABIT_CONFIGS: HabitConfig[] = [
+const HABIT_CONFIG_BASE: HabitConfig[] = [
   {
     type: 'hydration',
-    label: '飲水',
+    labelKey: 'habits.types.hydration',
     icon: 'water',
     color: COLORS.sodium,
-    unit: 'ml',
+    unitKey: 'units.ml',
     quickAdd: [250, 500],
     maxValue: 3000,
   },
   {
     type: 'sleep_duration',
-    label: '睡眠',
+    labelKey: 'habits.types.sleep',
     icon: 'moon',
     color: COLORS.protein,
-    unit: '小時',
+    unitKey: 'units.hours',
     maxValue: 12,
   },
   {
     type: 'mood',
-    label: '心情',
+    labelKey: 'habits.types.mood',
     icon: 'happy',
     color: COLORS.carbs,
     maxValue: 5,
   },
   {
     type: 'five_a_day',
-    label: '蔬果',
+    labelKey: 'habits.types.fiveADay',
     icon: 'nutrition',
     color: COLORS.fiber,
-    unit: '份',
+    unitKey: 'units.servings',
     quickAdd: [1],
     maxValue: 5,
   },
   {
     type: 'weight',
-    label: '體重',
+    labelKey: 'habits.types.weight',
     icon: 'scale',
     color: COLORS.calories,
-    unit: 'kg',
+    unitKey: 'units.kg',
   },
   {
     type: 'bowels',
-    label: '腸道',
+    labelKey: 'habits.types.bowels',
     icon: 'fitness',
     color: COLORS.fat,
   },
 ];
 
-// Mood emojis
-const MOOD_EMOJIS: Record<MoodLevel, { emoji: string; label: string }> = {
-  1: { emoji: '😢', label: '很差' },
-  2: { emoji: '😔', label: '不好' },
-  3: { emoji: '😐', label: '一般' },
-  4: { emoji: '😊', label: '好' },
-  5: { emoji: '😄', label: '很好' },
-};
-
-// Bristol stool types
-const BRISTOL_TYPES: Record<BristolStoolType, { label: string; desc: string }> = {
-  1: { label: '第1型', desc: '硬塊狀' },
-  2: { label: '第2型', desc: '香腸狀但有結塊' },
-  3: { label: '第3型', desc: '香腸狀有裂紋' },
-  4: { label: '第4型', desc: '光滑香腸狀' },
-  5: { label: '第5型', desc: '軟塊狀' },
-  6: { label: '第6型', desc: '糊狀' },
-  7: { label: '第7型', desc: '水狀' },
-};
-
 export default function HabitsScreen() {
   const { user } = useUserStore();
   const { todayLogs, fetchTodayLogs, isLoading, logHydration, logMood, logFiveADay, logSleep, logWeight, logBowels, getTodayHydration } = useHabitStore();
+  const { t } = useTranslation();
 
   const [selectedHabit, setSelectedHabit] = useState<HabitConfig | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [inputValue, setInputValue] = useState('');
+
+  // Get mood emojis with translations
+  const getMoodEmojis = (): Record<MoodLevel, { emoji: string; label: string }> => ({
+    1: { emoji: '😢', label: t('habits.mood.veryBad') },
+    2: { emoji: '😔', label: t('habits.mood.bad') },
+    3: { emoji: '😐', label: t('habits.mood.okay') },
+    4: { emoji: '😊', label: t('habits.mood.good') },
+    5: { emoji: '😄', label: t('habits.mood.veryGood') },
+  });
+
+  // Get Bristol stool types with translations
+  const getBristolTypes = (): Record<BristolStoolType, { label: string; desc: string }> => ({
+    1: { label: t('habits.bristol.type1'), desc: t('habits.bristol.type1Desc') },
+    2: { label: t('habits.bristol.type2'), desc: t('habits.bristol.type2Desc') },
+    3: { label: t('habits.bristol.type3'), desc: t('habits.bristol.type3Desc') },
+    4: { label: t('habits.bristol.type4'), desc: t('habits.bristol.type4Desc') },
+    5: { label: t('habits.bristol.type5'), desc: t('habits.bristol.type5Desc') },
+    6: { label: t('habits.bristol.type6'), desc: t('habits.bristol.type6Desc') },
+    7: { label: t('habits.bristol.type7'), desc: t('habits.bristol.type7Desc') },
+  });
+
+  const MOOD_EMOJIS = getMoodEmojis();
+  const BRISTOL_TYPES = getBristolTypes();
 
   useEffect(() => {
     if (user?.id) {
@@ -154,7 +159,7 @@ export default function HabitsScreen() {
 
     const value = parseFloat(inputValue);
     if (isNaN(value)) {
-      Alert.alert('錯誤', '請輸入有效數字');
+      Alert.alert(t('common.error'), t('habits.invalidNumber'));
       return;
     }
 
@@ -173,7 +178,7 @@ export default function HabitsScreen() {
         success = await logFiveADay(user.id, value);
         break;
       default:
-        Alert.alert('錯誤', '暫不支援此習慣類型');
+        Alert.alert(t('common.error'), t('habits.notSupported'));
     }
 
     if (success) {
@@ -210,6 +215,9 @@ export default function HabitsScreen() {
     return Math.min((value / max) * 100, 100);
   };
 
+  const getHabitLabel = (habit: HabitConfig): string => t(habit.labelKey);
+  const getHabitUnit = (habit: HabitConfig): string | undefined => habit.unitKey ? t(habit.unitKey) : undefined;
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -220,8 +228,8 @@ export default function HabitsScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
-          <Text style={styles.headerTitle}>習慣追蹤</Text>
-          <Text style={styles.headerSubtitle}>建立健康習慣，每日堅持</Text>
+          <Text style={styles.headerTitle}>{t('habits.title')}</Text>
+          <Text style={styles.headerSubtitle}>{t('habits.subtitle')}</Text>
         </LinearGradient>
       </Animated.View>
 
@@ -239,7 +247,7 @@ export default function HabitsScreen() {
       >
         {/* Habit Grid */}
         <View style={styles.habitGrid}>
-          {HABIT_CONFIGS.map((habit, index) => (
+          {HABIT_CONFIG_BASE.map((habit, index) => (
             <Animated.View
               key={habit.type}
               entering={FadeInDown.delay(index * 100).springify()}
@@ -247,6 +255,8 @@ export default function HabitsScreen() {
             >
               <HabitCard
                 habit={habit}
+                label={getHabitLabel(habit)}
+                unit={getHabitUnit(habit)}
                 value={getHabitValue(habit.type)}
                 progress={getHabitProgress(habit)}
                 onPress={() => openHabitModal(habit)}
@@ -262,15 +272,17 @@ export default function HabitsScreen() {
             <View style={styles.summaryHeader}>
               <View style={styles.summaryTitleRow}>
                 <View style={styles.summaryDot} />
-                <Text style={styles.summaryTitle}>今日記錄</Text>
+                <Text style={styles.summaryTitle}>{t('habits.todayRecord')}</Text>
               </View>
-              <Text style={styles.summaryCount}>{todayLogs.length} 項</Text>
+              <Text style={styles.summaryCount}>{todayLogs.length} {t('common.items')}</Text>
             </View>
 
             {todayLogs.length > 0 ? (
               <View style={styles.logsList}>
                 {todayLogs.map((log, index) => {
-                  const config = HABIT_CONFIGS.find((h) => h.type === log.habit_type);
+                  const config = HABIT_CONFIG_BASE.find((h) => h.type === log.habit_type);
+                  const label = config ? t(config.labelKey) : log.habit_type;
+                  const unit = config?.unitKey ? t(config.unitKey) : '';
                   return (
                     <Animated.View
                       key={log.id}
@@ -284,9 +296,9 @@ export default function HabitsScreen() {
                           color={config?.color || COLORS.primary}
                         />
                       </View>
-                      <Text style={styles.logLabel}>{config?.label || log.habit_type}</Text>
+                      <Text style={styles.logLabel}>{label}</Text>
                       <Text style={[styles.logValue, { color: config?.color || COLORS.primary }]}>
-                        {log.value} {config?.unit || ''}
+                        {log.value} {unit}
                       </Text>
                     </Animated.View>
                   );
@@ -294,8 +306,8 @@ export default function HabitsScreen() {
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>今日未有記錄</Text>
-                <Text style={styles.emptySubtext}>點擊上面嘅卡片開始追蹤</Text>
+                <Text style={styles.emptyText}>{t('habits.noRecords')}</Text>
+                <Text style={styles.emptySubtext}>{t('habits.tapToStart')}</Text>
               </View>
             )}
           </Card>
@@ -315,7 +327,7 @@ export default function HabitsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                記錄{selectedHabit?.label}
+                {t('habits.record')} {selectedHabit ? t(selectedHabit.labelKey) : ''}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
@@ -353,15 +365,15 @@ export default function HabitsScreen() {
                 <View style={styles.inputContainer}>
                   <TextInput
                     style={styles.input}
-                    placeholder={`輸入${selectedHabit?.label || ''}數值`}
+                    placeholder={t('habits.inputPlaceholder', { habit: selectedHabit ? t(selectedHabit.labelKey) : '' })}
                     placeholderTextColor={COLORS.textTertiary}
                     value={inputValue}
                     onChangeText={setInputValue}
                     keyboardType="numeric"
                     autoFocus
                   />
-                  {selectedHabit?.unit && (
-                    <Text style={styles.inputUnit}>{selectedHabit.unit}</Text>
+                  {selectedHabit?.unitKey && (
+                    <Text style={styles.inputUnit}>{t(selectedHabit.unitKey)}</Text>
                   )}
                 </View>
                 <TouchableOpacity style={styles.submitButton} onPress={handleLogHabit}>
@@ -369,7 +381,7 @@ export default function HabitsScreen() {
                     colors={GRADIENTS.primary}
                     style={styles.submitGradient}
                   >
-                    <Text style={styles.submitText}>記錄</Text>
+                    <Text style={styles.submitText}>{t('habits.record')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </>
@@ -384,12 +396,16 @@ export default function HabitsScreen() {
 // Habit Card Component
 function HabitCard({
   habit,
+  label,
+  unit,
   value,
   progress: _progress,
   onPress,
   onQuickAdd,
 }: {
   habit: HabitConfig;
+  label: string;
+  unit?: string;
   value: number | string;
   progress: number;
   onPress: () => void;
@@ -415,13 +431,13 @@ function HabitCard({
             )}
           </View>
           
-          <Text style={styles.habitLabel}>{habit.label}</Text>
+          <Text style={styles.habitLabel}>{label}</Text>
           <View style={styles.habitValueRow}>
             <Text style={[styles.habitValue, { color: habit.color }]}>
               {value || 0}
             </Text>
-            {habit.unit && (
-              <Text style={styles.habitUnit}>{habit.unit}</Text>
+            {unit && (
+              <Text style={styles.habitUnit}>{unit}</Text>
             )}
           </View>
         </View>

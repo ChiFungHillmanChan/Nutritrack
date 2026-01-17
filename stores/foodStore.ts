@@ -14,6 +14,7 @@ import { foodRepository } from '../services/database';
 interface FoodState {
   // State
   todayLogs: FoodLog[];
+  allLogs: FoodLog[];
   todayNutrition: NutritionData;
   isLoading: boolean;
   error: string | null;
@@ -24,6 +25,7 @@ interface FoodState {
 
   // Food log actions
   fetchTodayLogs: (userId: string) => Promise<void>;
+  fetchAllLogs: (userId: string) => Promise<void>;
   addFoodLog: (log: Omit<FoodLog, 'id'>) => Promise<boolean>;
   deleteFoodLog: (logId: string) => Promise<boolean>;
   updateFoodLog: (logId: string, updates: Partial<FoodLog>) => Promise<boolean>;
@@ -44,6 +46,7 @@ const emptyNutrition: NutritionData = {
 export const useFoodStore = create<FoodState>((set, get) => ({
   // Initial state
   todayLogs: [],
+  allLogs: [],
   todayNutrition: emptyNutrition,
   isLoading: false,
   error: null,
@@ -81,6 +84,23 @@ export const useFoodStore = create<FoodState>((set, get) => ({
     } catch (error) {
       console.error('[FoodStore] Fetch error:', error);
       set({ isLoading: false, error: 'Failed to fetch food logs' });
+    }
+  },
+
+  // Fetch all food logs for timeline
+  fetchAllLogs: async (userId: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      // Fetch all logs from SQLite
+      const logs = foodRepository.getFoodLogsByUserId(userId);
+      set({
+        allLogs: logs,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('[FoodStore] Fetch all error:', error);
+      set({ isLoading: false, error: 'Failed to fetch all food logs' });
     }
   },
 

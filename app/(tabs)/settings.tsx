@@ -1,7 +1,12 @@
 /**
- * Settings Screen
- *
- * Main settings page with profile, app settings, and data management.
+ * Profile Screen - Redesigned
+ * 
+ * User profile page with:
+ * - Profile header with avatar and sync time
+ * - Quick actions row (5 icons)
+ * - My Goals section with checkboxes
+ * - Timeline entry card
+ * - Language switcher
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -11,23 +16,27 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Switch,
+  TouchableOpacity,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { signOut } from '../../services/auth';
 import { Card } from '../../components/ui';
-import { SettingRow, ProfileHeader } from '../../components/settings';
+import { QuickActions, GoalsCard } from '../../components/profile';
+import { LanguageSwitcher } from '../../components/settings';
 import { settingsRepository } from '../../services/database';
+import { useTranslation } from '../../hooks/useTranslation';
 
-export default function SettingsScreen() {
+export default function ProfileScreen() {
   const { user, signOut: storeSignOut } = useUserStore();
+  const { t } = useTranslation();
   
-  // App settings state
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('--');
   const [dataStats, setDataStats] = useState({
     foodLogsCount: 0,
     chatMessagesCount: 0,
@@ -35,22 +44,19 @@ export default function SettingsScreen() {
     exerciseLogsCount: 0,
   });
 
-  // Load settings and stats on mount
+  // Load stats on mount
   useEffect(() => {
-    const settings = settingsRepository.getAllSettings();
-    setNotificationsEnabled(settings.notifications_enabled);
-    
     if (user?.id) {
       const stats = settingsRepository.getDatabaseStats(user.id);
       setDataStats(stats);
+      
+      // Set last sync time to now (for demo purposes)
+      const now = new Date();
+      setLastSyncTime(
+        `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+      );
     }
   }, [user?.id]);
-
-  // Handle notification toggle
-  const handleNotificationToggle = useCallback((value: boolean) => {
-    setNotificationsEnabled(value);
-    settingsRepository.setSetting('notifications_enabled', value);
-  }, []);
 
   // Handle profile edit
   const handleEditProfile = useCallback(() => {
@@ -59,10 +65,10 @@ export default function SettingsScreen() {
 
   // Handle sign out
   const handleSignOut = useCallback(async () => {
-    Alert.alert('登出', '你確定要登出嗎？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('auth.logout.title'), t('auth.logout.confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '登出',
+        text: t('auth.logout.button'),
         style: 'destructive',
         onPress: async () => {
           await signOut();
@@ -71,38 +77,12 @@ export default function SettingsScreen() {
         },
       },
     ]);
-  }, [storeSignOut]);
+  }, [storeSignOut, t]);
 
-  // Handle clear data
-  const handleClearData = useCallback(() => {
-    Alert.alert(
-      '清除所有數據',
-      '這將刪除你的所有食物記錄、聊天記錄和習慣數據。此操作無法撤銷。',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '清除',
-          style: 'destructive',
-          onPress: () => {
-            if (user?.id) {
-              const success = settingsRepository.clearAllUserData(user.id);
-              if (success) {
-                setDataStats({
-                  foodLogsCount: 0,
-                  chatMessagesCount: 0,
-                  habitLogsCount: 0,
-                  exerciseLogsCount: 0,
-                });
-                Alert.alert('完成', '所有數據已清除');
-              } else {
-                Alert.alert('錯誤', '清除數據失敗');
-              }
-            }
-          },
-        },
-      ]
-    );
-  }, [user?.id]);
+  // Handle timeline navigation
+  const handleTimelinePress = useCallback(() => {
+    router.push('/timeline' as never);
+  }, []);
 
   const totalRecords =
     dataStats.foodLogsCount +
@@ -118,117 +98,86 @@ export default function SettingsScreen() {
     >
       {/* Profile Header */}
       <Animated.View entering={FadeIn.delay(100)}>
-        <ProfileHeader user={user} onEditPress={handleEditProfile} />
-      </Animated.View>
+        <Card style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            {/* Avatar */}
+            <TouchableOpacity onPress={handleEditProfile}>
+              <LinearGradient
+                colors={GRADIENTS.primary}
+                style={styles.avatar}
+              >
+                <Text style={styles.avatarText}>
+                  {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
 
-      {/* Daily Targets Summary */}
-      {user?.daily_targets && (
-        <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <Card style={styles.card}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <View style={styles.sectionDot} />
-                <Text style={styles.sectionTitle}>每日營養目標</Text>
-              </View>
+            {/* Name and Sync Time */}
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{user?.name ?? t('home.userDefault')}</Text>
+              <Text style={styles.syncTime}>
+                {t('settings.lastSync')}: {lastSyncTime}
+              </Text>
             </View>
 
-            <View style={styles.targetsList}>
-              <TargetRow
-                label="卡路里"
-                value={`${user.daily_targets.calories.min} - ${user.daily_targets.calories.max}`}
-                unit="kcal"
-                color={COLORS.calories}
-              />
-              <TargetRow
-                label="蛋白質"
-                value={`${user.daily_targets.protein.min} - ${user.daily_targets.protein.max}`}
-                unit="g"
-                color={COLORS.protein}
-              />
-              <TargetRow
-                label="碳水化合物"
-                value={`${user.daily_targets.carbs.min} - ${user.daily_targets.carbs.max}`}
-                unit="g"
-                color={COLORS.carbs}
-              />
-              <TargetRow
-                label="脂肪"
-                value={`${user.daily_targets.fat.min} - ${user.daily_targets.fat.max}`}
-                unit="g"
-                color={COLORS.fat}
-              />
-            </View>
-          </Card>
-        </Animated.View>
-      )}
-
-      {/* App Settings */}
-      <Animated.View entering={FadeInDown.delay(300).springify()}>
-        <Card style={styles.card}>
-          <Text style={styles.groupTitle}>應用程式設定</Text>
-
-          <SettingRow
-            icon="notifications"
-            iconBg={COLORS.caloriesBg}
-            iconColor={COLORS.calories}
-            label="通知提醒"
-            trailing={
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={handleNotificationToggle}
-                trackColor={{
-                  false: COLORS.backgroundTertiary,
-                  true: COLORS.primaryMuted,
-                }}
-                thumbColor={notificationsEnabled ? COLORS.primary : COLORS.textMuted}
-              />
-            }
-          />
-
-          <SettingRow
-            icon="language"
-            iconBg={COLORS.proteinBg}
-            iconColor={COLORS.protein}
-            label="語言"
-            value="繁體中文"
-            onPress={() => Alert.alert('語言', '目前只支援繁體中文')}
-          />
-        </Card>
-      </Animated.View>
-
-      {/* Data Management */}
-      <Animated.View entering={FadeInDown.delay(400).springify()}>
-        <Card style={styles.card}>
-          <Text style={styles.groupTitle}>數據管理</Text>
-
-          <View style={styles.statsRow}>
-            <StatItem label="食物記錄" count={dataStats.foodLogsCount} />
-            <StatItem label="聊天記錄" count={dataStats.chatMessagesCount} />
-            <StatItem label="習慣記錄" count={dataStats.habitLogsCount} />
+            {/* Edit Button */}
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleEditProfile}
+            >
+              <Ionicons name="sync" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
           </View>
 
-          <SettingRow
-            icon="trash"
-            iconBg={COLORS.errorLight}
-            iconColor={COLORS.error}
-            label="清除所有數據"
-            value={`${totalRecords} 筆記錄`}
-            onPress={handleClearData}
-            danger
-          />
+          {/* Quick Actions */}
+          <QuickActions />
         </Card>
+      </Animated.View>
+
+      {/* My Goals */}
+      <Animated.View entering={FadeInDown.delay(200).springify()}>
+        <GoalsCard
+          goals={user?.health_goals || []}
+          style={styles.goalsCard}
+        />
+      </Animated.View>
+
+      {/* Timeline Entry Card */}
+      <Animated.View entering={FadeInDown.delay(300).springify()}>
+        <TouchableOpacity onPress={handleTimelinePress} activeOpacity={0.8}>
+          <Card style={styles.timelineCard}>
+            <View style={styles.timelineContent}>
+              <View style={styles.timelineIcon}>
+                <Ionicons name="document-text" size={32} color={COLORS.primary} />
+              </View>
+              <View style={styles.timelineInfo}>
+                <Text style={styles.timelineTitle}>{t('settings.timeline.title')}</Text>
+                <Text style={styles.timelineSubtitle}>
+                  {t('settings.timeline.subtitle')}
+                </Text>
+                <Text style={styles.timelineCount}>
+                  {t('settings.timeline.totalRecords', { count: totalRecords })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textTertiary} />
+            </View>
+          </Card>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* Support & Info */}
-      <Animated.View entering={FadeInDown.delay(500).springify()}>
+      <Animated.View entering={FadeInDown.delay(400).springify()}>
         <Card style={styles.card}>
-          <Text style={styles.groupTitle}>支援及資訊</Text>
+          <Text style={styles.groupTitle}>{t('settings.supportInfo')}</Text>
+
+          {/* Language Switcher */}
+          <LanguageSwitcher />
 
           <SettingRow
             icon="document-text"
             iconBg={COLORS.fiberBg}
             iconColor={COLORS.fiber}
-            label="私隱政策"
+            label={t('settings.privacyPolicy')}
             onPress={() => router.push('/privacy-policy' as never)}
           />
 
@@ -236,8 +185,63 @@ export default function SettingsScreen() {
             icon="information-circle"
             iconBg={COLORS.sodiumBg}
             iconColor={COLORS.sodium}
-            label="關於 Nutritrack"
+            label={t('settings.about')}
             onPress={() => router.push('/about' as never)}
+          />
+
+          <SettingRow
+            icon="help-circle"
+            iconBg={COLORS.infoBg}
+            iconColor={COLORS.info}
+            label={t('settings.faq')}
+            onPress={() => Alert.alert(t('settings.faq'), t('settings.faqComingSoon'))}
+          />
+        </Card>
+      </Animated.View>
+
+      {/* Data Management */}
+      <Animated.View entering={FadeInDown.delay(500).springify()}>
+        <Card style={styles.card}>
+          <Text style={styles.groupTitle}>{t('settings.dataManagement')}</Text>
+
+          <View style={styles.statsRow}>
+            <StatItem label={t('settings.foodLogs')} count={dataStats.foodLogsCount} />
+            <StatItem label={t('settings.chatLogs')} count={dataStats.chatMessagesCount} />
+            <StatItem label={t('settings.habitLogs')} count={dataStats.habitLogsCount} />
+          </View>
+
+          <SettingRow
+            icon="trash"
+            iconBg={COLORS.errorLight}
+            iconColor={COLORS.error}
+            label={t('settings.clearAllData')}
+            value={`${totalRecords} ${t('common.items')}`}
+            onPress={() => {
+              Alert.alert(
+                t('settings.clearConfirm.title'),
+                t('settings.clearConfirm.message'),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('settings.clearConfirm.clear'),
+                    style: 'destructive',
+                    onPress: () => {
+                      if (user?.id) {
+                        settingsRepository.clearAllUserData(user.id);
+                        setDataStats({
+                          foodLogsCount: 0,
+                          chatMessagesCount: 0,
+                          habitLogsCount: 0,
+                          exerciseLogsCount: 0,
+                        });
+                        Alert.alert(t('settings.cleared'), t('settings.clearedMessage'));
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            danger
           />
         </Card>
       </Animated.View>
@@ -249,7 +253,7 @@ export default function SettingsScreen() {
             icon="log-out"
             iconBg={COLORS.errorLight}
             iconColor={COLORS.error}
-            label="登出"
+            label={t('auth.logout.button')}
             onPress={handleSignOut}
             showChevron={false}
             danger
@@ -268,24 +272,42 @@ export default function SettingsScreen() {
 }
 
 // Helper Components
-function TargetRow({
+function SettingRow({
+  icon,
+  iconBg,
+  iconColor,
   label,
   value,
-  unit,
-  color,
+  onPress,
+  showChevron = true,
+  danger = false,
 }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
   label: string;
-  value: string;
-  unit: string;
-  color: string;
+  value?: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+  danger?: boolean;
 }) {
   return (
-    <View style={styles.targetRow}>
-      <View style={[styles.targetDot, { backgroundColor: color }]} />
-      <Text style={styles.targetLabel}>{label}</Text>
-      <Text style={[styles.targetValue, { color }]}>{value}</Text>
-      <Text style={styles.targetUnit}>{unit}</Text>
-    </View>
+    <TouchableOpacity
+      style={styles.settingRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={20} color={iconColor} />
+      </View>
+      <Text style={[styles.settingLabel, danger && styles.settingLabelDanger]}>
+        {label}
+      </Text>
+      {value && <Text style={styles.settingValue}>{value}</Text>}
+      {showChevron && (
+        <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -306,67 +328,139 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.lg,
   },
+
+  // Profile Card
+  profileCard: {
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+  },
+  avatarText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.textInverse,
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  profileName: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  syncTime: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Goals Card
+  goalsCard: {
+    marginBottom: SPACING.lg,
+  },
+
+  // Timeline Card
+  timelineCard: {
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    backgroundColor: COLORS.primaryMuted,
+  },
+  timelineContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timelineIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  timelineInfo: {
+    flex: 1,
+  },
+  timelineTitle: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.primaryDark,
+    marginBottom: 2,
+  },
+  timelineSubtitle: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.primary,
+    fontStyle: 'italic',
+  },
+  timelineCount: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+
+  // Cards
   card: {
     marginBottom: SPACING.lg,
+    padding: SPACING.lg,
   },
   signOutCard: {
     marginBottom: SPACING.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionDot: {
-    width: 4,
-    height: 16,
-    borderRadius: 2,
-    backgroundColor: COLORS.primary,
-    marginRight: SPACING.sm,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.text,
+    padding: SPACING.lg,
   },
   groupTitle: {
     ...TYPOGRAPHY.overline,
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
   },
-  targetsList: {
-    gap: SPACING.sm,
-  },
-  targetRow: {
+
+  // Setting Row
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.sm,
   },
-  targetDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: SPACING.sm,
+  settingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
   },
-  targetLabel: {
+  settingLabel: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    color: COLORS.text,
     flex: 1,
   },
-  targetValue: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontWeight: '600',
+  settingLabelDanger: {
+    color: COLORS.error,
   },
-  targetUnit: {
+  settingValue: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginLeft: SPACING.xs,
-    width: 35,
+    marginRight: SPACING.sm,
   },
+
+  // Stats
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -387,12 +481,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+
+  // Version
   versionText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: SPACING.sm,
   },
+
+  // Bottom spacer
   bottomSpacer: {
     height: SPACING['3xl'],
   },

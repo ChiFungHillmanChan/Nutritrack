@@ -23,22 +23,31 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Card, Button, NutritionBadge } from '../../components/ui';
 import { MealType, NutritionData } from '../../types';
 import { analyzeFood as analyzeFoodAI } from '../../services/ai';
 
 const { width } = Dimensions.get('window');
 
-const MEAL_TYPES: { type: MealType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { type: 'breakfast', label: '早餐', icon: 'sunny', color: COLORS.calories },
-  { type: 'lunch', label: '午餐', icon: 'partly-sunny', color: COLORS.carbs },
-  { type: 'dinner', label: '晚餐', icon: 'moon', color: COLORS.protein },
-  { type: 'snack', label: '小食', icon: 'cafe', color: COLORS.fat },
+interface MealTypeConfig {
+  type: MealType;
+  labelKey: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+}
+
+const MEAL_TYPES: MealTypeConfig[] = [
+  { type: 'breakfast', labelKey: 'mealTypes.breakfast', icon: 'sunny', color: COLORS.calories },
+  { type: 'lunch', labelKey: 'mealTypes.lunch', icon: 'partly-sunny', color: COLORS.carbs },
+  { type: 'dinner', labelKey: 'mealTypes.dinner', icon: 'moon', color: COLORS.protein },
+  { type: 'snack', labelKey: 'mealTypes.snack', icon: 'cafe', color: COLORS.fat },
 ];
 
 export default function CameraScreen() {
   const { user } = useUserStore();
   const { addFoodLog } = useFoodStore();
+  const { t } = useTranslation();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -54,7 +63,7 @@ export default function CameraScreen() {
   const handleTakePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要權限', '請允許 Nutritrack 使用相機');
+      Alert.alert(t('camera.permissionRequired'), t('camera.cameraPermission'));
       return;
     }
 
@@ -69,12 +78,12 @@ export default function CameraScreen() {
       setImageBase64(result.assets[0].base64 ?? null);
       setAnalysisResult(null);
     }
-  }, []);
+  }, [t]);
 
   const handlePickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要權限', '請允許 Nutritrack 存取相簿');
+      Alert.alert(t('camera.permissionRequired'), t('camera.galleryPermission'));
       return;
     }
 
@@ -89,7 +98,7 @@ export default function CameraScreen() {
       setImageBase64(result.assets[0].base64 ?? null);
       setAnalysisResult(null);
     }
-  }, []);
+  }, [t]);
 
   const handleAnalyze = useCallback(async () => {
     if (!imageBase64) return;
@@ -97,7 +106,7 @@ export default function CameraScreen() {
     setIsAnalyzing(true);
     try {
       // Get meal type label for context
-      const mealTypeLabel = MEAL_TYPES.find((m) => m.type === selectedMealType)?.label;
+      const mealTypeLabel = t(MEAL_TYPES.find((m) => m.type === selectedMealType)?.labelKey ?? 'mealTypes.lunch');
       
       // Call the AI service with Gemini
       const response = await analyzeFoodAI(imageBase64, mealTypeLabel);
@@ -110,14 +119,14 @@ export default function CameraScreen() {
           confidence: response.data.confidence,
         });
       } else {
-        Alert.alert('分析失敗', response.error ?? '請再試一次');
+        Alert.alert(t('camera.analysisFailed'), response.error ?? t('camera.tryAgain'));
       }
     } catch {
-      Alert.alert('分析失敗', '請再試一次');
+      Alert.alert(t('camera.analysisFailed'), t('camera.tryAgain'));
     } finally {
       setIsAnalyzing(false);
     }
-  }, [imageBase64, selectedMealType]);
+  }, [imageBase64, selectedMealType, t]);
 
   const handleSave = useCallback(async () => {
     if (!user?.id || !analysisResult) return;
@@ -134,15 +143,15 @@ export default function CameraScreen() {
     });
 
     if (success) {
-      Alert.alert('已記錄', `${analysisResult.food_name} 已加入今日記錄`);
+      Alert.alert(t('camera.recorded'), t('camera.recordedMessage', { food: analysisResult.food_name }));
       // Reset state
       setImageUri(null);
       setImageBase64(null);
       setAnalysisResult(null);
     } else {
-      Alert.alert('儲存失敗', '請再試一次');
+      Alert.alert(t('camera.saveFailed'), t('camera.tryAgain'));
     }
-  }, [user?.id, analysisResult, selectedMealType, imageUri, addFoodLog]);
+  }, [user?.id, analysisResult, selectedMealType, imageUri, addFoodLog, t]);
 
   const handleReset = useCallback(() => {
     setImageUri(null);
@@ -169,9 +178,9 @@ export default function CameraScreen() {
                   <Ionicons name="camera" size={48} color={COLORS.primary} />
                 </View>
               </LinearGradient>
-              <Text style={styles.placeholderTitle}>拍攝食物相片</Text>
+              <Text style={styles.placeholderTitle}>{t('camera.placeholderTitle')}</Text>
               <Text style={styles.placeholderSubtitle}>
-                AI 會自動分析營養成分
+                {t('camera.placeholderSubtitle')}
               </Text>
             </View>
 
@@ -186,7 +195,7 @@ export default function CameraScreen() {
                   style={styles.captureButtonGradient}
                 >
                   <Ionicons name="camera" size={24} color={COLORS.textInverse} />
-                  <Text style={styles.captureButtonText}>拍攝</Text>
+                  <Text style={styles.captureButtonText}>{t('camera.takePhoto')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -197,7 +206,7 @@ export default function CameraScreen() {
               >
                 <View style={styles.secondaryButtonInner}>
                   <Ionicons name="images" size={24} color={COLORS.primary} />
-                  <Text style={styles.secondaryButtonText}>相簿</Text>
+                  <Text style={styles.secondaryButtonText}>{t('camera.choosePhoto')}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -218,7 +227,7 @@ export default function CameraScreen() {
               <View style={styles.confidenceBadge}>
                 <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
                 <Text style={styles.confidenceText}>
-                  {Math.round(analysisResult.confidence * 100)}% 準確
+                  {Math.round(analysisResult.confidence * 100)}% {t('camera.accuracy')}
                 </Text>
               </View>
             )}
@@ -230,7 +239,7 @@ export default function CameraScreen() {
       {imageUri && (
         <Animated.View entering={FadeInDown.delay(100).springify()}>
           <Card style={styles.mealTypeCard}>
-            <Text style={styles.sectionLabel}>選擇餐類</Text>
+            <Text style={styles.sectionLabel}>{t('camera.mealType')}</Text>
             <View style={styles.mealTypeGrid}>
               {MEAL_TYPES.map((meal, index) => (
                 <Animated.View
@@ -265,7 +274,7 @@ export default function CameraScreen() {
                         selectedMealType === meal.type && { color: meal.color, fontWeight: '600' },
                       ]}
                     >
-                      {meal.label}
+                      {t(meal.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 </Animated.View>
@@ -293,12 +302,12 @@ export default function CameraScreen() {
               {isAnalyzing ? (
                 <>
                   <ActivityIndicator color={COLORS.textInverse} size="small" />
-                  <Text style={styles.analyzeButtonText}>AI 分析緊...</Text>
+                  <Text style={styles.analyzeButtonText}>{t('camera.analyzing')}</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="sparkles" size={22} color={COLORS.textInverse} />
-                  <Text style={styles.analyzeButtonText}>AI 分析營養</Text>
+                  <Text style={styles.analyzeButtonText}>{t('camera.analyzeButton')}</Text>
                 </>
               )}
             </LinearGradient>
@@ -319,7 +328,7 @@ export default function CameraScreen() {
                 <View>
                   <Text style={styles.resultTitle}>{analysisResult.food_name}</Text>
                   <Text style={styles.resultPortion}>
-                    估計份量: {analysisResult.portion_size_grams}g
+                    {t('camera.estimatedPortion')}: {analysisResult.portion_size_grams}g
                   </Text>
                 </View>
               </View>
@@ -328,12 +337,12 @@ export default function CameraScreen() {
             {/* Calories Highlight */}
             <View style={styles.caloriesHighlight}>
               <View style={styles.caloriesLeft}>
-                <Text style={styles.caloriesLabel}>總卡路里</Text>
+                <Text style={styles.caloriesLabel}>{t('camera.totalCalories')}</Text>
                 <View style={styles.caloriesValueRow}>
                   <Text style={styles.caloriesValue}>
                     {Math.round(analysisResult.nutrition.calories)}
                   </Text>
-                  <Text style={styles.caloriesUnit}>kcal</Text>
+                  <Text style={styles.caloriesUnit}>{t('units.kcal')}</Text>
                 </View>
               </View>
               <View style={styles.caloriesIcon}>
@@ -375,7 +384,7 @@ export default function CameraScreen() {
 
             {/* Save Button */}
             <Button
-              title="記錄呢餐"
+              title={t('camera.recordMeal')}
               icon="checkmark-circle"
               onPress={handleSave}
               gradient

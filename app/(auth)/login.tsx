@@ -24,6 +24,7 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useUserStore } from '../../stores/userStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { height } = Dimensions.get('window');
 
@@ -33,15 +34,17 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const enterDemoMode = useUserStore((state) => state.enterDemoMode);
+  const { t } = useTranslation();
 
   const handleDemoLogin = () => {
     enterDemoMode();
-    router.replace('/(tabs)');
+    // Navigate to onboarding for demo mode
+    router.replace('/(auth)/onboarding');
   };
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
-      Alert.alert('錯誤', '請填寫電郵同密碼');
+      Alert.alert(t('common.error'), t('auth.login.fillEmailPassword'));
       return;
     }
 
@@ -52,7 +55,7 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('登入失敗', result.error ?? '請再試一次');
+      Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
@@ -64,7 +67,7 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('登入失敗', result.error ?? '請再試一次');
+      Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
@@ -76,7 +79,7 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('登入失敗', result.error ?? '請再試一次');
+      Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
@@ -103,8 +106,8 @@ export default function LoginScreen() {
               <Ionicons name="nutrition" size={44} color={COLORS.textInverse} />
             </LinearGradient>
           </View>
-          <Text style={styles.appName}>Nutritrack</Text>
-          <Text style={styles.tagline}>追蹤營養，活出健康</Text>
+          <Text style={styles.appName}>{t('common.appName')}</Text>
+          <Text style={styles.tagline}>{t('common.tagline')}</Text>
         </Animated.View>
 
         {/* Login Form */}
@@ -120,7 +123,7 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="電郵地址"
+                placeholder={t('auth.login.email')}
                 placeholderTextColor={COLORS.textTertiary}
                 value={email}
                 onChangeText={setEmail}
@@ -142,7 +145,7 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="密碼"
+                placeholder={t('auth.login.password')}
                 placeholderTextColor={COLORS.textTertiary}
                 value={password}
                 onChangeText={setPassword}
@@ -163,7 +166,7 @@ export default function LoginScreen() {
 
           {/* Forgot Password */}
           <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>忘記密碼？</Text>
+            <Text style={styles.forgotPasswordText}>{t('auth.login.forgotPassword')}</Text>
           </TouchableOpacity>
 
           {/* Login Button */}
@@ -183,7 +186,7 @@ export default function LoginScreen() {
                 <ActivityIndicator color={COLORS.textInverse} />
               ) : (
                 <>
-                  <Text style={styles.loginButtonText}>登入</Text>
+                  <Text style={styles.loginButtonText}>{t('auth.login.loginButton')}</Text>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.textInverse} />
                 </>
               )}
@@ -193,7 +196,7 @@ export default function LoginScreen() {
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>或者使用</Text>
+            <Text style={styles.dividerText}>{t('auth.login.orUse')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -225,10 +228,10 @@ export default function LoginScreen() {
 
         {/* Register Link */}
         <Animated.View entering={FadeInUp.delay(400)} style={styles.footer}>
-          <Text style={styles.registerText}>未有帳戶？</Text>
+          <Text style={styles.registerText}>{t('auth.login.noAccount')}</Text>
           <Link href="/(auth)/register" asChild>
             <TouchableOpacity>
-              <Text style={styles.registerLink}>立即註冊</Text>
+              <Text style={styles.registerLink}>{t('auth.login.registerNow')}</Text>
             </TouchableOpacity>
           </Link>
         </Animated.View>
@@ -243,7 +246,7 @@ export default function LoginScreen() {
             <View style={styles.demoIconContainer}>
               <Ionicons name="flask-outline" size={18} color={COLORS.warning} />
             </View>
-            <Text style={styles.demoButtonText}>示範模式（無需登入）</Text>
+            <Text style={styles.demoButtonText}>{t('auth.login.demoMode')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>

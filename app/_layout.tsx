@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/userStore';
 import { onAuthStateChange } from '../services/auth';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import { initializeDatabase } from '../services/database';
+import type { User } from '../types';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,7 +23,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
-  const { setUser, setLoading, isAuthenticated, isInitialized, initialize } = useUserStore();
+  const { setUser, setLoading, isAuthenticated, isInitialized, initialize, user } = useUserStore();
 
   const initializeApp = useCallback(async () => {
     try {
@@ -52,13 +53,20 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isReady || !isInitialized) return;
 
-    // If user is already authenticated from SQLite, navigate to main app
-    if (isAuthenticated) {
+    // If user is authenticated from SQLite
+    if (isAuthenticated && user) {
       setTimeout(() => {
-        router.replace('/(tabs)');
+        // Check if onboarding is completed
+        if (user.onboarding_completed === false) {
+          // Redirect to onboarding if not completed
+          router.replace('/(auth)/onboarding');
+        } else {
+          // Navigate to main app
+          router.replace('/(tabs)');
+        }
       }, 100);
     }
-  }, [isReady, isInitialized, isAuthenticated]);
+  }, [isReady, isInitialized, isAuthenticated, user]);
 
   // Listen for Supabase auth changes (when not in demo mode)
   useEffect(() => {

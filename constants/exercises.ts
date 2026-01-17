@@ -27,7 +27,7 @@ export type ExerciseCategory =
   | 'outdoor'
   | 'other';
 
-export const EXERCISE_CATEGORIES: Record<ExerciseCategory, { label: string; labelZh: string }> = {
+export const EXERCISE_CATEGORY_INFO: Record<ExerciseCategory, { label: string; labelZh: string }> = {
   cardio: { label: 'Cardio', labelZh: '有氧運動' },
   strength: { label: 'Strength', labelZh: '力量訓練' },
   flexibility: { label: 'Flexibility', labelZh: '柔韌性' },
@@ -262,3 +262,153 @@ export function formatDuration(minutes: number): string {
 export function formatCaloriesBurned(calories: number): string {
   return `${calories} kcal`;
 }
+
+/**
+ * Get localized exercise label based on language
+ */
+export function getLocalizedExerciseLabel(exercise: ExerciseTypeInfo, language: 'en' | 'zh-TW'): string {
+  return language === 'en' ? exercise.label : exercise.labelZh;
+}
+
+/**
+ * Get localized category label based on language
+ */
+export function getLocalizedCategoryLabel(category: ExerciseCategory, language: 'en' | 'zh-TW'): string {
+  const categoryInfo = EXERCISE_CATEGORY_INFO[category];
+  return language === 'en' ? categoryInfo.label : categoryInfo.labelZh;
+}
+
+// ============================================
+// EXERCISE GUIDE DATA (for Exercise Guide tool)
+// ============================================
+
+export interface Exercise {
+  id: string;
+  name: string;
+  duration: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  description: string;
+  steps: string[];
+  icon: keyof typeof Ionicons.glyphMap;
+}
+
+export interface ExerciseGuideCategory {
+  id: string;
+  color: string;
+  exercises: Exercise[];
+}
+
+/**
+ * Exercise categories with detailed exercises for the Exercise Guide tool
+ * Note: Category names and descriptions are stored in locales for i18n
+ */
+export const EXERCISE_GUIDE_CATEGORIES: ExerciseGuideCategory[] = [
+  {
+    id: 'stretching',
+    color: COLORS.fiber,
+    exercises: [
+      {
+        id: 'neck-stretch',
+        name: '頸部伸展',
+        duration: '2 分鐘',
+        difficulty: 'easy',
+        description: '放鬆頸部肌肉，減少緊張感',
+        steps: [
+          '坐直或站立，放鬆肩膀',
+          '慢慢將頭向右傾斜，耳朵靠近肩膀',
+          '保持 15-30 秒',
+          '回到中間位置，換左邊重複',
+          '前後傾斜頭部各 15 秒',
+        ],
+        icon: 'body',
+      },
+      {
+        id: 'shoulder-roll',
+        name: '肩膀滾動',
+        duration: '1 分鐘',
+        difficulty: 'easy',
+        description: '釋放肩膀壓力',
+        steps: [
+          '站立或坐直',
+          '聳起肩膀至耳朵',
+          '向後滾動肩膀',
+          '重複 10 次',
+          '換方向向前滾動 10 次',
+        ],
+        icon: 'fitness',
+      },
+    ],
+  },
+  {
+    id: 'cardio',
+    color: COLORS.calories,
+    exercises: [
+      {
+        id: 'walking',
+        name: '室內步行',
+        duration: '10 分鐘',
+        difficulty: 'easy',
+        description: '不出門也能運動',
+        steps: [
+          '在室內來回步行',
+          '保持中等步速',
+          '擺動手臂增加運動量',
+          '可以在廣告時間進行',
+          '目標每日累計 30 分鐘',
+        ],
+        icon: 'walk',
+      },
+      {
+        id: 'marching',
+        name: '原地踏步',
+        duration: '5 分鐘',
+        difficulty: 'easy',
+        description: '簡單有效的熱身運動',
+        steps: [
+          '站立，雙腳與肩同寬',
+          '交替抬起膝蓋',
+          '膝蓋盡量抬至腰部高度',
+          '同時擺動手臂',
+          '保持穩定呼吸',
+        ],
+        icon: 'footsteps',
+      },
+    ],
+  },
+  {
+    id: 'strength',
+    color: COLORS.protein,
+    exercises: [
+      {
+        id: 'wall-pushup',
+        name: '牆壁俯臥撐',
+        duration: '3 分鐘',
+        difficulty: 'easy',
+        description: '適合初學者的上身訓練',
+        steps: [
+          '面對牆壁站立，距離約一臂長',
+          '雙手放在牆上，與肩同寬',
+          '彎曲手肘，身體向牆壁靠近',
+          '推回起始位置',
+          '重複 10-15 次',
+        ],
+        icon: 'body',
+      },
+      {
+        id: 'chair-squat',
+        name: '椅子深蹲',
+        duration: '3 分鐘',
+        difficulty: 'medium',
+        description: '強化下肢肌肉',
+        steps: [
+          '站在椅子前面',
+          '雙腳與肩同寬',
+          '慢慢坐下，臀部輕觸椅子',
+          '立即站起來',
+          '重複 10-15 次',
+        ],
+        icon: 'accessibility',
+      },
+    ],
+  },
+];

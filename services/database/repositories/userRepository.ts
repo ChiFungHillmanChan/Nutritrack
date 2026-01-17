@@ -31,6 +31,7 @@ interface UserRow {
   dietary_preferences: string;
   daily_targets: string;
   notification_settings: string | null;
+  onboarding_completed: number;
   is_demo_user: number;
   created_at: string;
   updated_at: string;
@@ -68,6 +69,7 @@ function rowToUser(row: UserRow): User {
     notification_settings: row.notification_settings
       ? parseJSON(row.notification_settings, undefined)
       : undefined,
+    onboarding_completed: row.onboarding_completed === 1,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -108,21 +110,22 @@ export function getDemoUser(): User {
 }
 
 /**
- * Create a new demo user with sample data
+ * Create a new demo user (requires onboarding completion)
  */
 function createDemoUser(): User {
   const db = getDatabase();
   const timestamp = getCurrentTimestamp();
   const id = 'demo-user-001';
 
+  // Default daily targets (will be recalculated during onboarding)
   const dailyTargets: DailyTargets = {
     calories: { min: 1800, max: 2200 },
-    protein: { min: 104, max: 143 },
-    carbs: { min: 200, max: 275 },
-    fat: { min: 44, max: 73 },
+    protein: { min: 100, max: 150 },
+    carbs: { min: 200, max: 300 },
+    fat: { min: 50, max: 80 },
     fiber: { min: 25, max: 35 },
     sodium: { min: 1500, max: 2300 },
-    water: 2275,
+    water: 2000,
   };
 
   db.runSync(
@@ -130,26 +133,27 @@ function createDemoUser(): User {
       id, email, name, gender, date_of_birth, height_cm, weight_kg,
       activity_level, goal, health_goals, medical_conditions,
       medications, supplements, allergies, dietary_preferences,
-      daily_targets, is_demo_user, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      daily_targets, onboarding_completed, is_demo_user, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       'demo@nutritrack.app',
-      '示範用戶',
-      'prefer_not_to_say',
-      '1990-01-01',
-      170,
-      65,
-      'moderate',
-      'maintain',
-      stringifyJSON(['healthy_balanced_eating', 'improve_hydration']),
+      '', // Empty name - will be set in onboarding
+      null, // No gender - will be set in onboarding
+      null, // No date of birth - will be set in onboarding
+      170, // Default height
+      65, // Default weight
+      'moderate', // Default activity level
+      'maintain', // Default goal
+      stringifyJSON([]),
       stringifyJSON([]),
       stringifyJSON([]),
       stringifyJSON([]),
       stringifyJSON([]),
       stringifyJSON([]),
       stringifyJSON(dailyTargets),
-      1,
+      0, // onboarding_completed = false
+      1, // is_demo_user = true
       timestamp,
       timestamp,
     ]
@@ -171,8 +175,8 @@ export function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>)
       id, email, name, gender, date_of_birth, height_cm, weight_kg,
       activity_level, goal, health_goals, medical_conditions,
       medications, supplements, allergies, dietary_preferences,
-      daily_targets, notification_settings, is_demo_user, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      daily_targets, notification_settings, onboarding_completed, is_demo_user, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       data.email,
@@ -191,7 +195,8 @@ export function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>)
       stringifyJSON(data.dietary_preferences),
       stringifyJSON(data.daily_targets),
       data.notification_settings ? stringifyJSON(data.notification_settings) : null,
-      0,
+      data.onboarding_completed ? 1 : 0,
+      0, // is_demo_user = false for regular users
       timestamp,
       timestamp,
     ]
@@ -277,6 +282,10 @@ export function updateUser(id: string, updates: Partial<User>): User | null {
   if (updates.notification_settings !== undefined) {
     fields.push('notification_settings = ?');
     values.push(updates.notification_settings ? stringifyJSON(updates.notification_settings) : null);
+  }
+  if (updates.onboarding_completed !== undefined) {
+    fields.push('onboarding_completed = ?');
+    values.push(updates.onboarding_completed ? 1 : 0);
   }
 
   values.push(id);

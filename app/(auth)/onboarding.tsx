@@ -22,6 +22,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore, calculateAge } from '../../stores/userStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import {
   UserGoal,
   HealthGoal,
@@ -53,86 +54,99 @@ type Step = 'basics' | 'metrics' | 'goals' | 'conditions' | 'medications' | 'die
 
 const STEPS: Step[] = ['basics', 'metrics', 'goals', 'conditions', 'medications', 'dietary', 'summary'];
 
-// Gender options
-const GENDERS: { value: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'male', label: '男性', icon: 'male' },
-  { value: 'female', label: '女性', icon: 'female' },
-  { value: 'other', label: '其他', icon: 'person' },
-  { value: 'prefer_not_to_say', label: '不願透露', icon: 'help-circle' },
-];
+// Helper function to get gender options with translations
+function getGenderOptions(t: (key: string) => string): { value: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[] {
+  return [
+    { value: 'male', label: t('onboarding.gender.male'), icon: 'male' },
+    { value: 'female', label: t('onboarding.gender.female'), icon: 'female' },
+    { value: 'other', label: t('onboarding.gender.other'), icon: 'person' },
+    { value: 'prefer_not_to_say', label: t('onboarding.gender.preferNotToSay'), icon: 'help-circle' },
+  ];
+}
 
-// Activity levels
-const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; desc: string }[] = [
-  { value: 'sedentary', label: '久坐', desc: '幾乎不運動，辦公室工作' },
-  { value: 'light', label: '輕度活動', desc: '每週運動1-3次' },
-  { value: 'moderate', label: '中度活動', desc: '每週運動3-5次' },
-  { value: 'active', label: '活躍', desc: '每週運動6-7次' },
-  { value: 'very_active', label: '非常活躍', desc: '每天高強度運動或體力勞動' },
-];
+// Helper function to get activity levels with translations
+function getActivityLevels(t: (key: string) => string): { value: ActivityLevel; label: string; desc: string }[] {
+  return [
+    { value: 'sedentary', label: t('onboarding.activity.sedentary'), desc: t('onboarding.activity.sedentaryDesc') },
+    { value: 'light', label: t('onboarding.activity.light'), desc: t('onboarding.activity.lightDesc') },
+    { value: 'moderate', label: t('onboarding.activity.moderate'), desc: t('onboarding.activity.moderateDesc') },
+    { value: 'active', label: t('onboarding.activity.active'), desc: t('onboarding.activity.activeDesc') },
+    { value: 'very_active', label: t('onboarding.activity.veryActive'), desc: t('onboarding.activity.veryActiveDesc') },
+  ];
+}
 
-// Primary goals (for calorie calculation)
-const PRIMARY_GOALS: { value: UserGoal; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string; color: string }[] = [
-  { value: 'lose_weight', label: '減重', icon: 'trending-down', desc: '減少體脂，變得更健康', color: COLORS.calories },
-  { value: 'gain_weight', label: '增重', icon: 'trending-up', desc: '增加體重，變得更強壯', color: COLORS.carbs },
-  { value: 'maintain', label: '維持', icon: 'remove', desc: '保持現有體重同狀態', color: COLORS.fiber },
-  { value: 'build_muscle', label: '增肌', icon: 'barbell', desc: '增加肌肉量，塑造體態', color: COLORS.protein },
-];
+// Helper function to get primary goals with translations
+function getPrimaryGoals(t: (key: string) => string): { value: UserGoal; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string; color: string }[] {
+  return [
+    { value: 'lose_weight', label: t('onboarding.primaryGoals.loseWeight'), icon: 'trending-down', desc: t('onboarding.primaryGoals.loseWeightDesc'), color: COLORS.calories },
+    { value: 'gain_weight', label: t('onboarding.primaryGoals.gainWeight'), icon: 'trending-up', desc: t('onboarding.primaryGoals.gainWeightDesc'), color: COLORS.carbs },
+    { value: 'maintain', label: t('onboarding.primaryGoals.maintain'), icon: 'remove', desc: t('onboarding.primaryGoals.maintainDesc'), color: COLORS.fiber },
+    { value: 'build_muscle', label: t('onboarding.primaryGoals.buildMuscle'), icon: 'barbell', desc: t('onboarding.primaryGoals.buildMuscleDesc'), color: COLORS.protein },
+  ];
+}
 
-// Health goals (multi-select)
-const HEALTH_GOALS: { value: HealthGoal; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'healthy_balanced_eating', label: '均衡飲食', icon: 'nutrition' },
-  { value: 'weight_loss', label: '減重', icon: 'trending-down' },
-  { value: 'weight_gain', label: '增重', icon: 'trending-up' },
-  { value: 'healthy_bowels', label: '改善腸道健康', icon: 'fitness' },
-  { value: 'muscle_gain', label: '增肌', icon: 'barbell' },
-  { value: 'improve_hydration', label: '改善水分攝取', icon: 'water' },
-  { value: 'blood_sugar_control', label: '控制血糖', icon: 'pulse' },
-  { value: 'fix_micros', label: '改善微量營養', icon: 'leaf' },
-  { value: 'improve_sleep', label: '改善睡眠', icon: 'moon' },
-  { value: 'improve_breathing', label: '改善呼吸', icon: 'cloud' },
-  { value: 'reduce_alcohol', label: '減少酒精', icon: 'beer' },
-  { value: 'reduce_smoking', label: '減少吸煙', icon: 'ban' },
-  { value: 'achieve_10k_steps', label: '每日萬步', icon: 'footsteps' },
-  { value: 'improve_mental_health', label: '改善心理健康', icon: 'happy' },
-];
+// Helper function to get health goals with translations
+function getHealthGoals(t: (key: string) => string): { value: HealthGoal; label: string; icon: keyof typeof Ionicons.glyphMap }[] {
+  return [
+    { value: 'healthy_balanced_eating', label: t('onboarding.healthGoals.healthyBalancedEating'), icon: 'nutrition' },
+    { value: 'weight_loss', label: t('onboarding.healthGoals.weightLoss'), icon: 'trending-down' },
+    { value: 'weight_gain', label: t('onboarding.healthGoals.weightGain'), icon: 'trending-up' },
+    { value: 'healthy_bowels', label: t('onboarding.healthGoals.healthyBowels'), icon: 'fitness' },
+    { value: 'muscle_gain', label: t('onboarding.healthGoals.muscleGain'), icon: 'barbell' },
+    { value: 'improve_hydration', label: t('onboarding.healthGoals.improveHydration'), icon: 'water' },
+    { value: 'blood_sugar_control', label: t('onboarding.healthGoals.bloodSugarControl'), icon: 'pulse' },
+    { value: 'fix_micros', label: t('onboarding.healthGoals.fixMicros'), icon: 'leaf' },
+    { value: 'improve_sleep', label: t('onboarding.healthGoals.improveSleep'), icon: 'moon' },
+    { value: 'improve_breathing', label: t('onboarding.healthGoals.improveBreathing'), icon: 'cloud' },
+    { value: 'reduce_alcohol', label: t('onboarding.healthGoals.reduceAlcohol'), icon: 'beer' },
+    { value: 'reduce_smoking', label: t('onboarding.healthGoals.reduceSmoking'), icon: 'ban' },
+    { value: 'achieve_10k_steps', label: t('onboarding.healthGoals.achieve10kSteps'), icon: 'footsteps' },
+    { value: 'improve_mental_health', label: t('onboarding.healthGoals.improveMentalHealth'), icon: 'happy' },
+  ];
+}
 
-// Medical conditions
-const CONDITIONS: { value: MedicalCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'none', label: '冇以上情況', icon: 'checkmark-circle' },
-  { value: 't1dm', label: '一型糖尿病', icon: 'water' },
-  { value: 't2dm', label: '二型糖尿病', icon: 'water' },
-  { value: 'hypertension', label: '高血壓', icon: 'pulse' },
-  { value: 'coronary_heart_disease', label: '冠心病', icon: 'heart' },
-  { value: 'high_cholesterol', label: '高膽固醇', icon: 'analytics' },
-  { value: 'kidney_disease', label: '腎病', icon: 'medical' },
-  { value: 'copd', label: 'COPD', icon: 'cloud' },
-  { value: 'asthma', label: '哮喘', icon: 'cloud-outline' },
-  { value: 'cancer', label: '癌症', icon: 'ribbon' },
-  { value: 'celiac_disease', label: '乳糜瀉', icon: 'nutrition' },
-  { value: 'lactose_intolerance', label: '乳糖不耐症', icon: 'cafe' },
-  { value: 'pcos', label: '多囊卵巢症', icon: 'female' },
-  { value: 'thyroid_disorders', label: '甲狀腺問題', icon: 'body' },
-  { value: 'ibs', label: '腸易激綜合症', icon: 'fitness' },
-  { value: 'crohns_disease', label: '克隆氏症', icon: 'fitness' },
-  { value: 'ulcerative_colitis', label: '潰瘍性結腸炎', icon: 'fitness' },
-];
+// Helper function to get conditions with translations
+function getConditions(t: (key: string) => string): { value: MedicalCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] {
+  return [
+    { value: 'none', label: t('onboarding.conditions.none'), icon: 'checkmark-circle' },
+    { value: 't1dm', label: t('onboarding.conditions.t1dm'), icon: 'water' },
+    { value: 't2dm', label: t('onboarding.conditions.t2dm'), icon: 'water' },
+    { value: 'hypertension', label: t('onboarding.conditions.hypertension'), icon: 'pulse' },
+    { value: 'coronary_heart_disease', label: t('onboarding.conditions.coronaryHeartDisease'), icon: 'heart' },
+    { value: 'high_cholesterol', label: t('onboarding.conditions.highCholesterol'), icon: 'analytics' },
+    { value: 'kidney_disease', label: t('onboarding.conditions.kidneyDisease'), icon: 'medical' },
+    { value: 'copd', label: t('onboarding.conditions.copd'), icon: 'cloud' },
+    { value: 'asthma', label: t('onboarding.conditions.asthma'), icon: 'cloud-outline' },
+    { value: 'cancer', label: t('onboarding.conditions.cancer'), icon: 'ribbon' },
+    { value: 'celiac_disease', label: t('onboarding.conditions.celiacDisease'), icon: 'nutrition' },
+    { value: 'lactose_intolerance', label: t('onboarding.conditions.lactoseIntolerance'), icon: 'cafe' },
+    { value: 'pcos', label: t('onboarding.conditions.pcos'), icon: 'female' },
+    { value: 'thyroid_disorders', label: t('onboarding.conditions.thyroidDisorders'), icon: 'body' },
+    { value: 'ibs', label: t('onboarding.conditions.ibs'), icon: 'fitness' },
+    { value: 'crohns_disease', label: t('onboarding.conditions.crohnsDisease'), icon: 'fitness' },
+    { value: 'ulcerative_colitis', label: t('onboarding.conditions.ulcerativeColitis'), icon: 'fitness' },
+  ];
+}
 
-// Dietary preferences
-const DIETARY_PREFS: { value: DietaryPreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'vegetarian', label: '素食', icon: 'leaf' },
-  { value: 'vegan', label: '純素', icon: 'flower' },
-  { value: 'pescatarian', label: '魚素', icon: 'fish' },
-  { value: 'halal', label: '清真', icon: 'moon' },
-  { value: 'kosher', label: '猶太潔食', icon: 'star' },
-  { value: 'gluten_free', label: '無麩質', icon: 'nutrition' },
-  { value: 'dairy_free', label: '無乳製品', icon: 'cafe-outline' },
-  { value: 'nut_free', label: '無堅果', icon: 'warning' },
-  { value: 'low_sodium', label: '低鈉', icon: 'water-outline' },
-  { value: 'low_carb', label: '低碳水', icon: 'cellular' },
-  { value: 'keto', label: '生酮', icon: 'flame' },
-];
+// Helper function to get dietary preferences with translations
+function getDietaryPrefs(t: (key: string) => string): { value: DietaryPreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] {
+  return [
+    { value: 'vegetarian', label: t('onboarding.dietaryPrefs.vegetarian'), icon: 'leaf' },
+    { value: 'vegan', label: t('onboarding.dietaryPrefs.vegan'), icon: 'flower' },
+    { value: 'pescatarian', label: t('onboarding.dietaryPrefs.pescatarian'), icon: 'fish' },
+    { value: 'halal', label: t('onboarding.dietaryPrefs.halal'), icon: 'moon' },
+    { value: 'kosher', label: t('onboarding.dietaryPrefs.kosher'), icon: 'star' },
+    { value: 'gluten_free', label: t('onboarding.dietaryPrefs.glutenFree'), icon: 'nutrition' },
+    { value: 'dairy_free', label: t('onboarding.dietaryPrefs.dairyFree'), icon: 'cafe-outline' },
+    { value: 'nut_free', label: t('onboarding.dietaryPrefs.nutFree'), icon: 'warning' },
+    { value: 'low_sodium', label: t('onboarding.dietaryPrefs.lowSodium'), icon: 'water-outline' },
+    { value: 'low_carb', label: t('onboarding.dietaryPrefs.lowCarb'), icon: 'cellular' },
+    { value: 'keto', label: t('onboarding.dietaryPrefs.keto'), icon: 'flame' },
+  ];
+}
 
 export default function OnboardingScreen() {
+  const { t, language } = useTranslation();
   const [step, setStep] = useState<Step>('basics');
   
   // Basic info
@@ -167,6 +181,14 @@ export default function OnboardingScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { updateProfile, calculateDailyTargets } = useUserStore();
+
+  // Get translated options
+  const GENDERS = getGenderOptions(t);
+  const ACTIVITY_LEVELS = getActivityLevels(t);
+  const PRIMARY_GOALS = getPrimaryGoals(t);
+  const HEALTH_GOALS = getHealthGoals(t);
+  const CONDITIONS = getConditions(t);
+  const DIETARY_PREFS = getDietaryPrefs(t);
 
   const handleHealthGoalToggle = (goal: HealthGoal) => {
     if (healthGoals.includes(goal)) {
@@ -251,25 +273,25 @@ export default function OnboardingScreen() {
     switch (step) {
       case 'basics':
         if (!name) {
-          Alert.alert('錯誤', '請輸入你嘅名字');
+          Alert.alert(t('common.error'), t('onboarding.validation.enterName'));
           return false;
         }
         return true;
       case 'metrics':
         if (!height || !weight) {
-          Alert.alert('錯誤', '請填寫身高同體重');
+          Alert.alert(t('common.error'), t('onboarding.validation.enterHeightWeight'));
           return false;
         }
         return true;
       case 'goals':
         if (!primaryGoal) {
-          Alert.alert('錯誤', '請選擇你嘅主要目標');
+          Alert.alert(t('common.error'), t('onboarding.validation.selectGoal'));
           return false;
         }
         return true;
       case 'conditions':
         if (conditions.length === 0) {
-          Alert.alert('錯誤', '請選擇你嘅健康狀況');
+          Alert.alert(t('common.error'), t('onboarding.validation.selectConditions'));
           return false;
         }
         return true;
@@ -331,6 +353,7 @@ export default function OnboardingScreen() {
       dietary_preferences: dietaryPrefs,
       allergies,
       daily_targets: dailyTargets,
+      onboarding_completed: true, // Mark onboarding as complete
     });
 
     setIsLoading(false);
@@ -338,7 +361,7 @@ export default function OnboardingScreen() {
     if (success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('錯誤', '儲存資料失敗，請再試一次');
+      Alert.alert(t('common.error'), t('onboarding.validation.saveFailed'));
     }
   };
 
@@ -350,7 +373,7 @@ export default function OnboardingScreen() {
       {/* Progress Header */}
       <Animated.View entering={FadeIn} style={styles.progressHeader}>
         <View style={styles.progressInfo}>
-          <Text style={styles.stepText}>步驟 {getStepNumber()} / {totalSteps}</Text>
+          <Text style={styles.stepText}>{t('common.step')} {getStepNumber()} / {totalSteps}</Text>
           <Text style={styles.progressPercentage}>{Math.round((getStepNumber() / totalSteps) * 100)}%</Text>
         </View>
         <View style={styles.progressBarContainer}>
@@ -379,6 +402,9 @@ export default function OnboardingScreen() {
             setDateOfBirth={setDateOfBirth}
             showDatePicker={showDatePicker}
             setShowDatePicker={setShowDatePicker}
+            t={t}
+            language={language}
+            genders={GENDERS}
           />
         )}
         {step === 'metrics' && (
@@ -389,6 +415,8 @@ export default function OnboardingScreen() {
             setWeight={setWeight}
             activityLevel={activityLevel}
             setActivityLevel={setActivityLevel}
+            t={t}
+            activityLevels={ACTIVITY_LEVELS}
           />
         )}
         {step === 'goals' && (
@@ -397,12 +425,17 @@ export default function OnboardingScreen() {
             setPrimaryGoal={setPrimaryGoal}
             healthGoals={healthGoals}
             handleHealthGoalToggle={handleHealthGoalToggle}
+            t={t}
+            primaryGoals={PRIMARY_GOALS}
+            healthGoalOptions={HEALTH_GOALS}
           />
         )}
         {step === 'conditions' && (
           <ConditionsStep
             conditions={conditions}
             handleConditionToggle={handleConditionToggle}
+            t={t}
+            conditionOptions={CONDITIONS}
           />
         )}
         {step === 'medications' && (
@@ -417,6 +450,7 @@ export default function OnboardingScreen() {
             removeMedication={removeMedication}
             addSupplement={addSupplement}
             removeSupplement={removeSupplement}
+            t={t}
           />
         )}
         {step === 'dietary' && (
@@ -428,6 +462,8 @@ export default function OnboardingScreen() {
             setNewAllergy={setNewAllergy}
             addAllergy={addAllergy}
             removeAllergy={removeAllergy}
+            t={t}
+            dietaryPrefOptions={DIETARY_PREFS}
           />
         )}
         {step === 'summary' && (
@@ -446,6 +482,13 @@ export default function OnboardingScreen() {
             dietaryPrefs={dietaryPrefs}
             allergies={allergies}
             calculateDailyTargets={calculateDailyTargets}
+            t={t}
+            genders={GENDERS}
+            activityLevels={ACTIVITY_LEVELS}
+            primaryGoals={PRIMARY_GOALS}
+            healthGoalOptions={HEALTH_GOALS}
+            conditionOptions={CONDITIONS}
+            dietaryPrefOptions={DIETARY_PREFS}
           />
         )}
       </ScrollView>
@@ -455,7 +498,7 @@ export default function OnboardingScreen() {
         {step !== 'basics' ? (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={20} color={COLORS.text} />
-            <Text style={styles.backButtonText}>返回</Text>
+            <Text style={styles.backButtonText}>{t('common.back')}</Text>
           </TouchableOpacity>
         ) : (
           <View />
@@ -477,7 +520,7 @@ export default function OnboardingScreen() {
             ) : (
               <>
                 <Text style={styles.nextButtonText}>
-                  {step === 'summary' ? '開始使用' : '繼續'}
+                  {step === 'summary' ? t('onboarding.summary.startUsing') : t('common.continue')}
                 </Text>
                 <Ionicons
                   name={step === 'summary' ? 'checkmark' : 'arrow-forward'}
@@ -506,6 +549,9 @@ function BasicsStep({
   setDateOfBirth,
   showDatePicker,
   setShowDatePicker,
+  t,
+  language,
+  genders,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -515,6 +561,9 @@ function BasicsStep({
   setDateOfBirth: (v: Date) => void;
   showDatePicker: boolean;
   setShowDatePicker: (v: boolean) => void;
+  t: (key: string) => string;
+  language: string;
+  genders: { value: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[];
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -524,16 +573,16 @@ function BasicsStep({
             <Ionicons name="person" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>基本資料</Text>
-        <Text style={styles.stepDescription}>讓我哋認識你多啲</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.basics.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.basics.description')}</Text>
       </View>
 
       <Card style={styles.formCard}>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>姓名</Text>
+          <Text style={styles.inputLabel}>{t('onboarding.basics.name')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="你嘅名"
+            placeholder={t('onboarding.basics.namePlaceholder')}
             placeholderTextColor={COLORS.textTertiary}
             value={name}
             onChangeText={setName}
@@ -541,9 +590,9 @@ function BasicsStep({
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>性別</Text>
+          <Text style={styles.inputLabel}>{t('onboarding.basics.gender')}</Text>
           <View style={styles.genderGrid}>
-            {GENDERS.map((item) => (
+            {genders.map((item) => (
               <TouchableOpacity
                 key={item.value}
                 style={[
@@ -572,21 +621,21 @@ function BasicsStep({
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>出生日期</Text>
+          <Text style={styles.inputLabel}>{t('onboarding.basics.dateOfBirth')}</Text>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
             <Ionicons name="calendar" size={20} color={COLORS.primary} />
             <Text style={styles.dateButtonText}>
-              {dateOfBirth.toLocaleDateString('zh-HK', {
+              {dateOfBirth.toLocaleDateString(language === 'zh-TW' ? 'zh-HK' : 'en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
               })}
             </Text>
             <Text style={styles.ageText}>
-              ({calculateAge(dateOfBirth.toISOString().split('T')[0])} 歲)
+              ({calculateAge(dateOfBirth.toISOString().split('T')[0])} {t('units.years')})
             </Text>
           </TouchableOpacity>
           {showDatePicker && (
@@ -617,6 +666,8 @@ function MetricsStep({
   setWeight,
   activityLevel,
   setActivityLevel,
+  t,
+  activityLevels,
 }: {
   height: string;
   setHeight: (v: string) => void;
@@ -624,6 +675,8 @@ function MetricsStep({
   setWeight: (v: string) => void;
   activityLevel: ActivityLevel;
   setActivityLevel: (v: ActivityLevel) => void;
+  t: (key: string) => string;
+  activityLevels: { value: ActivityLevel; label: string; desc: string }[];
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -633,14 +686,14 @@ function MetricsStep({
             <Ionicons name="body" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>身體數據</Text>
-        <Text style={styles.stepDescription}>用嚟計算你嘅每日營養需求</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.metrics.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.metrics.description')}</Text>
       </View>
 
       <Card style={styles.formCard}>
         <View style={styles.rowInputs}>
           <View style={[styles.inputGroup, styles.halfInput]}>
-            <Text style={styles.inputLabel}>身高</Text>
+            <Text style={styles.inputLabel}>{t('onboarding.metrics.height')}</Text>
             <View style={styles.unitInput}>
               <TextInput
                 style={[styles.input, styles.unitInputField]}
@@ -650,12 +703,12 @@ function MetricsStep({
                 onChangeText={setHeight}
                 keyboardType="numeric"
               />
-              <Text style={styles.unitText}>cm</Text>
+              <Text style={styles.unitText}>{t('units.cm')}</Text>
             </View>
           </View>
 
           <View style={[styles.inputGroup, styles.halfInput]}>
-            <Text style={styles.inputLabel}>體重</Text>
+            <Text style={styles.inputLabel}>{t('onboarding.metrics.weight')}</Text>
             <View style={styles.unitInput}>
               <TextInput
                 style={[styles.input, styles.unitInputField]}
@@ -665,15 +718,15 @@ function MetricsStep({
                 onChangeText={setWeight}
                 keyboardType="numeric"
               />
-              <Text style={styles.unitText}>kg</Text>
+              <Text style={styles.unitText}>{t('units.kg')}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>活動水平</Text>
+          <Text style={styles.inputLabel}>{t('onboarding.metrics.activityLevel')}</Text>
           <View style={styles.activityList}>
-            {ACTIVITY_LEVELS.map((item) => (
+            {activityLevels.map((item) => (
               <TouchableOpacity
                 key={item.value}
                 style={[
@@ -713,11 +766,17 @@ function GoalsStep({
   setPrimaryGoal,
   healthGoals,
   handleHealthGoalToggle,
+  t,
+  primaryGoals,
+  healthGoalOptions,
 }: {
   primaryGoal: UserGoal | null;
   setPrimaryGoal: (v: UserGoal) => void;
   healthGoals: HealthGoal[];
   handleHealthGoalToggle: (g: HealthGoal) => void;
+  t: (key: string) => string;
+  primaryGoals: { value: UserGoal; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string; color: string }[];
+  healthGoalOptions: { value: HealthGoal; label: string; icon: keyof typeof Ionicons.glyphMap }[];
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -727,14 +786,14 @@ function GoalsStep({
             <Ionicons name="trophy" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>健康目標</Text>
-        <Text style={styles.stepDescription}>選擇你想達成嘅目標</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.goals.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.goals.description')}</Text>
       </View>
 
       {/* Primary Goal */}
-      <Text style={styles.sectionLabel}>主要目標（選擇一個）</Text>
+      <Text style={styles.sectionLabel}>{t('onboarding.goals.primaryGoal')}</Text>
       <View style={styles.goalsGrid}>
-        {PRIMARY_GOALS.map((item, index) => (
+        {primaryGoals.map((item, index) => (
           <Animated.View key={item.value} entering={FadeInRight.delay(index * 100)}>
             <TouchableOpacity
               style={[
@@ -765,10 +824,10 @@ function GoalsStep({
       </View>
 
       {/* Additional Health Goals */}
-      <Text style={[styles.sectionLabel, { marginTop: SPACING.xl }]}>其他健康目標（可多選）</Text>
+      <Text style={[styles.sectionLabel, { marginTop: SPACING.xl }]}>{t('onboarding.goals.additionalGoals')}</Text>
       <Card style={styles.conditionsCard}>
         <View style={styles.conditionsGrid}>
-          {HEALTH_GOALS.map((item, index) => (
+          {healthGoalOptions.map((item, index) => (
             <Animated.View key={item.value} entering={FadeInRight.delay(index * 30)}>
               <TouchableOpacity
                 style={[
@@ -803,9 +862,13 @@ function GoalsStep({
 function ConditionsStep({
   conditions,
   handleConditionToggle,
+  t,
+  conditionOptions,
 }: {
   conditions: MedicalCondition[];
   handleConditionToggle: (c: MedicalCondition) => void;
+  t: (key: string) => string;
+  conditionOptions: { value: MedicalCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[];
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -815,13 +878,13 @@ function ConditionsStep({
             <Ionicons name="medical" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>健康狀況</Text>
-        <Text style={styles.stepDescription}>如果你有以下情況，我哋會調整營養建議</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.conditions.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.conditions.description')}</Text>
       </View>
 
       <Card style={styles.conditionsCard}>
         <View style={styles.conditionsGrid}>
-          {CONDITIONS.map((item, index) => (
+          {conditionOptions.map((item, index) => (
             <Animated.View key={item.value} entering={FadeInRight.delay(index * 30)}>
               <TouchableOpacity
                 style={[
@@ -864,6 +927,7 @@ function MedicationsStep({
   removeMedication,
   addSupplement,
   removeSupplement,
+  t,
 }: {
   medications: Medication[];
   supplements: Supplement[];
@@ -875,6 +939,7 @@ function MedicationsStep({
   removeMedication: (id: string) => void;
   addSupplement: () => void;
   removeSupplement: (id: string) => void;
+  t: (key: string) => string;
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -884,17 +949,17 @@ function MedicationsStep({
             <Ionicons name="medkit" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>藥物及補充品</Text>
-        <Text style={styles.stepDescription}>記錄你正在服用嘅藥物（選填）</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.medications.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.medications.description')}</Text>
       </View>
 
       {/* Medications */}
       <Card style={styles.formCard}>
-        <Text style={styles.cardTitle}>目前藥物</Text>
+        <Text style={styles.cardTitle}>{t('onboarding.medications.currentMeds')}</Text>
         <View style={styles.addItemRow}>
           <TextInput
             style={[styles.input, styles.addItemInput]}
-            placeholder="藥物名稱"
+            placeholder={t('onboarding.medications.medNamePlaceholder')}
             placeholderTextColor={COLORS.textTertiary}
             value={newMedName}
             onChangeText={setNewMedName}
@@ -921,11 +986,11 @@ function MedicationsStep({
 
       {/* Supplements */}
       <Card style={[styles.formCard, styles.marginTopMd]}>
-        <Text style={styles.cardTitle}>營養補充品 / ONS</Text>
+        <Text style={styles.cardTitle}>{t('onboarding.medications.supplements')}</Text>
         <View style={styles.addItemRow}>
           <TextInput
             style={[styles.input, styles.addItemInput]}
-            placeholder="補充品名稱"
+            placeholder={t('onboarding.medications.suppNamePlaceholder')}
             placeholderTextColor={COLORS.textTertiary}
             value={newSuppName}
             onChangeText={setNewSuppName}
@@ -961,6 +1026,8 @@ function DietaryStep({
   setNewAllergy,
   addAllergy,
   removeAllergy,
+  t,
+  dietaryPrefOptions,
 }: {
   dietaryPrefs: DietaryPreference[];
   handleDietaryPrefToggle: (p: DietaryPreference) => void;
@@ -969,6 +1036,8 @@ function DietaryStep({
   setNewAllergy: (v: string) => void;
   addAllergy: () => void;
   removeAllergy: (a: string) => void;
+  t: (key: string) => string;
+  dietaryPrefOptions: { value: DietaryPreference; label: string; icon: keyof typeof Ionicons.glyphMap }[];
 }) {
   return (
     <Animated.View entering={FadeInDown.springify()}>
@@ -978,15 +1047,15 @@ function DietaryStep({
             <Ionicons name="restaurant" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>飲食偏好</Text>
-        <Text style={styles.stepDescription}>幫助我哋提供合適嘅食物建議</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.dietary.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.dietary.description')}</Text>
       </View>
 
       {/* Dietary Preferences */}
-      <Text style={styles.sectionLabel}>飲食方式</Text>
+      <Text style={styles.sectionLabel}>{t('onboarding.dietary.dietaryWays')}</Text>
       <Card style={styles.conditionsCard}>
         <View style={styles.conditionsGrid}>
-          {DIETARY_PREFS.map((item, index) => (
+          {dietaryPrefOptions.map((item, index) => (
             <Animated.View key={item.value} entering={FadeInRight.delay(index * 30)}>
               <TouchableOpacity
                 style={[
@@ -1016,12 +1085,12 @@ function DietaryStep({
       </Card>
 
       {/* Allergies */}
-      <Text style={[styles.sectionLabel, { marginTop: SPACING.lg }]}>食物過敏</Text>
+      <Text style={[styles.sectionLabel, { marginTop: SPACING.lg }]}>{t('onboarding.dietary.allergies')}</Text>
       <Card style={styles.formCard}>
         <View style={styles.addItemRow}>
           <TextInput
             style={[styles.input, styles.addItemInput]}
-            placeholder="輸入過敏食物"
+            placeholder={t('onboarding.dietary.allergyPlaceholder')}
             placeholderTextColor={COLORS.textTertiary}
             value={newAllergy}
             onChangeText={setNewAllergy}
@@ -1063,6 +1132,13 @@ function SummaryStep({
   dietaryPrefs,
   allergies,
   calculateDailyTargets,
+  t,
+  genders,
+  activityLevels,
+  primaryGoals,
+  healthGoalOptions,
+  conditionOptions,
+  dietaryPrefOptions,
 }: {
   name: string;
   gender: Gender | null;
@@ -1078,6 +1154,13 @@ function SummaryStep({
   dietaryPrefs: DietaryPreference[];
   allergies: string[];
   calculateDailyTargets: CalculateDailyTargetsFunction;
+  t: (key: string) => string;
+  genders: { value: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[];
+  activityLevels: { value: ActivityLevel; label: string; desc: string }[];
+  primaryGoals: { value: UserGoal; label: string; icon: keyof typeof Ionicons.glyphMap; desc: string; color: string }[];
+  healthGoalOptions: { value: HealthGoal; label: string; icon: keyof typeof Ionicons.glyphMap }[];
+  conditionOptions: { value: MedicalCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[];
+  dietaryPrefOptions: { value: DietaryPreference; label: string; icon: keyof typeof Ionicons.glyphMap }[];
 }) {
   const heightNum = parseFloat(height) || 0;
   const weightNum = parseFloat(weight) || 0;
@@ -1097,15 +1180,15 @@ function SummaryStep({
     : null;
 
   const getGenderLabel = (g: Gender | null) => {
-    return GENDERS.find((item) => item.value === g)?.label || '-';
+    return genders.find((item) => item.value === g)?.label || '-';
   };
 
   const getActivityLabel = (a: ActivityLevel) => {
-    return ACTIVITY_LEVELS.find((item) => item.value === a)?.label || '-';
+    return activityLevels.find((item) => item.value === a)?.label || '-';
   };
 
   const getGoalLabel = (g: UserGoal | null) => {
-    return PRIMARY_GOALS.find((item) => item.value === g)?.label || '-';
+    return primaryGoals.find((item) => item.value === g)?.label || '-';
   };
 
   return (
@@ -1116,8 +1199,8 @@ function SummaryStep({
             <Ionicons name="sparkles" size={28} color={COLORS.textInverse} />
           </LinearGradient>
         </View>
-        <Text style={styles.stepTitle}>準備就緒！</Text>
-        <Text style={styles.stepDescription}>以下係你嘅個人化設定</Text>
+        <Text style={styles.stepTitle}>{t('onboarding.summary.title')}</Text>
+        <Text style={styles.stepDescription}>{t('onboarding.summary.description')}</Text>
       </View>
 
       {/* Profile Summary */}
@@ -1129,7 +1212,7 @@ function SummaryStep({
           <View style={styles.summaryInfo}>
             <Text style={styles.summaryName}>{name}</Text>
             <Text style={styles.summaryMeta}>
-              {getGenderLabel(gender)} · {age}歲 · {height}cm · {weight}kg
+              {getGenderLabel(gender)} · {age}{t('units.years')} · {height}{t('units.cm')} · {weight}{t('units.kg')}
             </Text>
             <Text style={styles.summaryMeta}>
               {getActivityLabel(activityLevel)} · {getGoalLabel(primaryGoal)}
@@ -1143,23 +1226,23 @@ function SummaryStep({
         <Card style={[styles.summaryCard, styles.marginTopMd]}>
           {healthGoals.length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>健康目標</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.healthGoalsTitle')}</Text>
               <Text style={styles.summarySectionText}>
-                {healthGoals.map(g => HEALTH_GOALS.find(h => h.value === g)?.label).join('、')}
+                {healthGoals.map(g => healthGoalOptions.find(h => h.value === g)?.label).join('、')}
               </Text>
             </View>
           )}
           {conditions.filter(c => c !== 'none').length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>健康狀況</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.conditionsTitle')}</Text>
               <Text style={styles.summarySectionText}>
-                {conditions.filter(c => c !== 'none').map(c => CONDITIONS.find(cond => cond.value === c)?.label).join('、')}
+                {conditions.filter(c => c !== 'none').map(c => conditionOptions.find(cond => cond.value === c)?.label).join('、')}
               </Text>
             </View>
           )}
           {medications.length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>藥物</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.medicationsTitle')}</Text>
               <Text style={styles.summarySectionText}>
                 {medications.map(m => m.name).join('、')}
               </Text>
@@ -1167,7 +1250,7 @@ function SummaryStep({
           )}
           {supplements.length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>補充品</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.supplementsTitle')}</Text>
               <Text style={styles.summarySectionText}>
                 {supplements.map(s => s.name).join('、')}
               </Text>
@@ -1175,15 +1258,15 @@ function SummaryStep({
           )}
           {dietaryPrefs.length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>飲食偏好</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.dietaryPrefsTitle')}</Text>
               <Text style={styles.summarySectionText}>
-                {dietaryPrefs.map(p => DIETARY_PREFS.find(pref => pref.value === p)?.label).join('、')}
+                {dietaryPrefs.map(p => dietaryPrefOptions.find(pref => pref.value === p)?.label).join('、')}
               </Text>
             </View>
           )}
           {allergies.length > 0 && (
             <View style={styles.summarySection}>
-              <Text style={styles.summarySectionTitle}>過敏</Text>
+              <Text style={styles.summarySectionTitle}>{t('onboarding.summary.allergiesTitle')}</Text>
               <Text style={styles.summarySectionText}>{allergies.join('、')}</Text>
             </View>
           )}
@@ -1193,14 +1276,14 @@ function SummaryStep({
       {/* Targets Card */}
       {targets && (
         <Card style={[styles.targetsCard, styles.marginTopMd]}>
-          <Text style={styles.targetsTitle}>每日營養目標</Text>
+          <Text style={styles.targetsTitle}>{t('onboarding.summary.dailyTargets')}</Text>
           <View style={styles.targetsList}>
-            <TargetRow label="卡路里" value={`${targets.calories.min} - ${targets.calories.max}`} unit="kcal" color={COLORS.calories} icon="flame" />
-            <TargetRow label="蛋白質" value={`${targets.protein.min} - ${targets.protein.max}`} unit="g" color={COLORS.protein} icon="fish" />
-            <TargetRow label="碳水化合物" value={`${targets.carbs.min} - ${targets.carbs.max}`} unit="g" color={COLORS.carbs} icon="nutrition" />
-            <TargetRow label="脂肪" value={`${targets.fat.min} - ${targets.fat.max}`} unit="g" color={COLORS.fat} icon="water" />
-            <TargetRow label="纖維" value={`${targets.fiber.min} - ${targets.fiber.max}`} unit="g" color={COLORS.fiber} icon="leaf" />
-            <TargetRow label="水分" value={`${Math.round(targets.water / 1000 * 10) / 10}`} unit="L" color={COLORS.sodium} icon="water-outline" />
+            <TargetRow label={t('onboarding.nutrients.calories')} value={`${targets.calories.min} - ${targets.calories.max}`} unit={t('units.kcal')} color={COLORS.calories} icon="flame" />
+            <TargetRow label={t('onboarding.nutrients.protein')} value={`${targets.protein.min} - ${targets.protein.max}`} unit={t('units.g')} color={COLORS.protein} icon="fish" />
+            <TargetRow label={t('onboarding.nutrients.carbs')} value={`${targets.carbs.min} - ${targets.carbs.max}`} unit={t('units.g')} color={COLORS.carbs} icon="nutrition" />
+            <TargetRow label={t('onboarding.nutrients.fat')} value={`${targets.fat.min} - ${targets.fat.max}`} unit={t('units.g')} color={COLORS.fat} icon="water" />
+            <TargetRow label={t('onboarding.nutrients.fiber')} value={`${targets.fiber.min} - ${targets.fiber.max}`} unit={t('units.g')} color={COLORS.fiber} icon="leaf" />
+            <TargetRow label={t('onboarding.nutrients.water')} value={`${Math.round(targets.water / 1000 * 10) / 10}`} unit={t('units.l')} color={COLORS.sodium} icon="water-outline" />
           </View>
         </Card>
       )}

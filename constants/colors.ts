@@ -8,11 +8,11 @@
 import { Platform } from 'react-native';
 
 export const COLORS = {
-  // Primary Brand Colors - Fresh, healthy greens
-  primary: '#10B981', // Emerald green
-  primaryLight: '#34D399',
-  primaryDark: '#059669',
-  primaryMuted: '#D1FAE5',
+  // Primary Brand Colors - Mint green theme
+  primary: '#5DBAA2', // Mint green
+  primaryLight: '#7BCDB8',
+  primaryDark: '#4A9A86',
+  primaryMuted: '#D4EFE8',
 
   // Secondary accent - Warm coral for energy/calories
   accent: '#F97316', // Warm orange
@@ -20,16 +20,16 @@ export const COLORS = {
   accentDark: '#EA580C',
   accentMuted: '#FED7AA',
 
-  // Background colors - Clean, subtle depth
+  // Background colors - Mint green tinted
   background: '#FFFFFF',
-  backgroundSecondary: '#F8FAFC',
-  backgroundTertiary: '#F1F5F9',
+  backgroundSecondary: '#E8F5F1', // Light mint background
+  backgroundTertiary: '#D4EFE8', // Muted mint
   backgroundElevated: '#FFFFFF',
 
-  // Surface colors for cards
+  // Surface colors for cards - Mint tinted
   surface: '#FFFFFF',
-  surfaceSecondary: '#F8FAFC',
-  surfaceTertiary: '#F1F5F9',
+  surfaceSecondary: '#E8F5F1',
+  surfaceTertiary: '#D4EFE8',
 
   // Text colors - High contrast, readable
   text: '#0F172A', // Slate 900
@@ -45,9 +45,9 @@ export const COLORS = {
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
   warningMuted: '#FDE68A',
-  success: '#10B981',
-  successLight: '#D1FAE5',
-  successMuted: '#A7F3D0',
+  success: '#5DBAA2',
+  successLight: '#D4EFE8',
+  successMuted: '#B8E4D8',
   info: '#3B82F6',
   infoLight: '#DBEAFE',
   infoMuted: '#BFDBFE',
@@ -55,7 +55,7 @@ export const COLORS = {
   // Border colors
   border: '#E2E8F0', // Slate 200
   borderLight: '#F1F5F9', // Slate 100
-  borderFocus: '#10B981',
+  borderFocus: '#5DBAA2',
 
   // Nutrition colors - Vibrant, distinct
   calories: '#F97316', // Orange - Energy
@@ -74,9 +74,9 @@ export const COLORS = {
   fatLight: '#FBCFE8',
   fatBg: '#FDF2F8',
   
-  fiber: '#10B981', // Green - Healthy
-  fiberLight: '#A7F3D0',
-  fiberBg: '#ECFDF5',
+  fiber: '#5DBAA2', // Mint green - Healthy
+  fiberLight: '#B8E4D8',
+  fiberBg: '#E8F5F1',
   
   sodium: '#06B6D4', // Cyan - Minerals
   sodiumLight: '#A5F3FC',
@@ -95,16 +95,16 @@ export const COLORS = {
 
 // Gradient definitions for LinearGradient components
 export const GRADIENTS = {
-  primary: ['#10B981', '#059669'],
-  primarySoft: ['#D1FAE5', '#A7F3D0'],
+  primary: ['#5DBAA2', '#4A9A86'],
+  primarySoft: ['#D4EFE8', '#B8E4D8'],
   accent: ['#F97316', '#EA580C'],
   accentSoft: ['#FED7AA', '#FDBA74'],
   calories: ['#F97316', '#EA580C'],
   protein: ['#8B5CF6', '#7C3AED'],
   carbs: ['#F59E0B', '#D97706'],
   fat: ['#EC4899', '#DB2777'],
-  fiber: ['#10B981', '#059669'],
-  card: ['#FFFFFF', '#F8FAFC'],
+  fiber: ['#5DBAA2', '#4A9A86'],
+  card: ['#FFFFFF', '#E8F5F1'],
   dark: ['#1E293B', '#0F172A'],
   glass: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)'],
 } as const;

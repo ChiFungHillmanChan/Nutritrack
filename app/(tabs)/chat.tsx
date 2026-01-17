@@ -26,6 +26,7 @@ import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { useChatStore, ChatMessage } from '../../stores/chatStore';
 import { sendChatMessage } from '../../services/ai';
+import { useTranslation } from '../../hooks/useTranslation';
 
 // Parse markdown-style text into structured segments for rendering
 interface TextSegment {
@@ -64,6 +65,7 @@ export default function ChatScreen() {
   const { messages, addMessage, getChatHistory, isLoading, setLoading, initializeChat } = useChatStore();
   const { width } = useWindowDimensions();
   const maxBubbleWidth = Math.min(width * 0.72, 320);
+  const { t, language } = useTranslation();
   
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -108,18 +110,18 @@ export default function ChatScreen() {
         // Show error but keep conversation going
         addMessage({
           role: 'assistant',
-          content: response.error ?? '抱歉，出咗啲問題。請再試一次。',
+          content: response.error ?? t('chat.errorMessage'),
         });
       }
     } catch {
       addMessage({
         role: 'assistant',
-        content: '抱歉，出咗啲問題。請再試一次。',
+        content: t('chat.errorMessage'),
       });
     } finally {
       setLoading(false);
     }
-  }, [inputText, isLoading, addMessage, getChatHistory, setLoading, todayNutrition, user?.daily_targets, user?.goal]);
+  }, [inputText, isLoading, addMessage, getChatHistory, setLoading, todayNutrition, user?.daily_targets, user?.goal, t]);
 
   // Render formatted text with bold support
   const renderFormattedText = useCallback(
@@ -170,19 +172,19 @@ export default function ChatScreen() {
             <Text
               style={[styles.messageTime, isUser && styles.userMessageTime]}
             >
-              {formatTime(new Date(item.timestamp))}
+              {formatTime(new Date(item.timestamp), language)}
             </Text>
           </View>
         </Animated.View>
       );
     },
-    [maxBubbleWidth, renderFormattedText]
+    [maxBubbleWidth, renderFormattedText, language]
   );
 
   const suggestedQuestions = [
-    '今日應該食咩？',
-    '點樣健康減重？',
-    '邊啲食物高蛋白？',
+    t('chat.suggestions.whatToEat'),
+    t('chat.suggestions.healthyWeightLoss'),
+    t('chat.suggestions.highProtein'),
   ];
 
   return (
@@ -230,7 +232,7 @@ export default function ChatScreen() {
           entering={FadeInUp.delay(300).springify()}
           style={styles.suggestionsContainer}
         >
-          <Text style={styles.suggestionsTitle}>試下問：</Text>
+          <Text style={styles.suggestionsTitle}>{t('chat.tryAsking')}</Text>
           <View style={styles.suggestionsRow}>
             {suggestedQuestions.map((question, index) => (
               <Animated.View
@@ -260,7 +262,7 @@ export default function ChatScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="輸入你嘅問題..."
+            placeholder={t('chat.inputPlaceholder')}
             placeholderTextColor={COLORS.textTertiary}
             value={inputText}
             onChangeText={setInputText}
@@ -292,8 +294,8 @@ export default function ChatScreen() {
   );
 }
 
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('zh-HK', {
+function formatTime(date: Date, language: string): string {
+  return date.toLocaleTimeString(language === 'zh-TW' ? 'zh-HK' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
   });
