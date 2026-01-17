@@ -787,19 +787,34 @@ function BasicsStep({
             </Text>
           </TouchableOpacity>
           {showDatePicker && (
-            <DateTimePicker
-              value={dateOfBirth}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
-                setShowDatePicker(Platform.OS === 'ios');
-                if (selectedDate) {
-                  setDateOfBirth(selectedDate);
-                }
-              }}
-              maximumDate={new Date()}
-              minimumDate={new Date(1920, 0, 1)}
-            />
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={dateOfBirth}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
+                  // On Android, close picker after selection
+                  if (Platform.OS === 'android') {
+                    setShowDatePicker(false);
+                  }
+                  if (selectedDate) {
+                    setDateOfBirth(selectedDate);
+                  }
+                }}
+                maximumDate={new Date()}
+                minimumDate={new Date(1920, 0, 1)}
+                style={Platform.OS === 'ios' ? styles.iosDatePicker : undefined}
+              />
+              {/* iOS needs a confirm button since spinner stays open */}
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.datePickerConfirmButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.datePickerConfirmText}>{t('common.confirm')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
       </Card>
@@ -1662,6 +1677,30 @@ const styles = StyleSheet.create({
   ageText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
+  },
+
+  // Date Picker Container (for iOS spinner)
+  datePickerContainer: {
+    marginTop: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    overflow: 'hidden',
+  },
+  iosDatePicker: {
+    height: 200,
+    width: '100%',
+  },
+  datePickerConfirmButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerConfirmText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.textInverse,
   },
 
   // Activity List
