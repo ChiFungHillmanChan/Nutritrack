@@ -4,7 +4,7 @@
  * Displays nutrition progress as horizontal bars with labels.
  */
 
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -13,7 +13,6 @@ import Animated, {
 import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 
-const { width: screenWidth } = Dimensions.get('window');
 
 interface NutrientData {
   label: string;
@@ -71,7 +70,7 @@ function NutrientBar({
   showValue,
   barHeight,
   animated,
-  delay,
+  delay: _delay,
 }: NutrientBarProps) {
   const percentage = Math.min((item.value / item.max) * 100, 100);
 
