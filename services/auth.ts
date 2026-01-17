@@ -4,6 +4,9 @@
  * Handles all authentication operations with Supabase.
  * Supports Email/Password, Google, and Apple Sign-In.
  * Supports DEMO MODE when Supabase is not configured.
+ * 
+ * For native platforms (iOS/Android), uses native sign-in flows for better UX.
+ * For web, uses OAuth redirect flow.
  */
 
 import { getSupabaseClient, isDemoMode } from './supabase';
@@ -11,6 +14,12 @@ import { saveSecure, deleteSecure, STORAGE_KEYS } from './secure-storage';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import {
+  signInWithApple as nativeAppleSignIn,
+  signInWithGoogle as nativeGoogleSignIn,
+  isAppleSignInAvailable,
+  isGoogleSignInAvailable,
+} from './social-auth';
 
 // Complete auth session for web browser
 WebBrowser.maybeCompleteAuthSession();
@@ -91,6 +100,9 @@ export async function signUpWithEmail(email: string, password: string): Promise<
 
 /**
  * Sign in with Google OAuth
+ * 
+ * Uses native Google Sign-In on mobile platforms for better UX.
+ * Falls back to web OAuth on web platform.
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
   // Demo mode - not supported
@@ -103,6 +115,23 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     return { success: false, error: 'Supabase not configured' };
   }
 
+  // Use native Google Sign-In on mobile platforms
+  if (Platform.OS !== 'web' && isGoogleSignInAvailable()) {
+    const result = await nativeGoogleSignIn();
+    
+    if (result.error === 'cancelled') {
+      return { success: false, error: '登入已取消' };
+    }
+    
+    if (!result.success) {
+      return { success: false, error: result.error ?? 'Google 登入失敗' };
+    }
+    
+    // Session is already stored by Supabase auth
+    return { success: true, userId: result.user?.id };
+  }
+
+  // Fall back to web OAuth
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -135,7 +164,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
       return { success: true };
     }
 
-    return { success: false, error: 'Authentication was cancelled' };
+    return { success: false, error: '登入已取消' };
   }
 
   return { success: true };
@@ -143,6 +172,9 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
 /**
  * Sign in with Apple
+ * 
+ * Uses native Apple Sign-In on iOS for the best user experience.
+ * Falls back to web OAuth on other platforms.
  */
 export async function signInWithApple(): Promise<AuthResult> {
   // Demo mode - not supported
@@ -155,6 +187,23 @@ export async function signInWithApple(): Promise<AuthResult> {
     return { success: false, error: 'Supabase not configured' };
   }
 
+  // Use native Apple Sign-In on iOS
+  if (Platform.OS === 'ios' && await isAppleSignInAvailable()) {
+    const result = await nativeAppleSignIn();
+    
+    if (result.error === 'cancelled') {
+      return { success: false, error: '登入已取消' };
+    }
+    
+    if (!result.success) {
+      return { success: false, error: result.error ?? 'Apple 登入失敗' };
+    }
+    
+    // Session is already stored by Supabase auth
+    return { success: true, userId: result.user?.id };
+  }
+
+  // Fall back to web OAuth for non-iOS platforms
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'apple',
     options: {
@@ -186,7 +235,7 @@ export async function signInWithApple(): Promise<AuthResult> {
       return { success: true };
     }
 
-    return { success: false, error: 'Authentication was cancelled' };
+    return { success: false, error: '登入已取消' };
   }
 
   return { success: true };

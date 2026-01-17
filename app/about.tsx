@@ -5,22 +5,26 @@
  */
 
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/typography';
 import { Card } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
 import Constants from 'expo-constants';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const BUILD_NUMBER = Constants.expoConfig?.ios?.buildNumber ?? '1';
 
 export default function AboutScreen() {
+  const { t } = useTranslation();
+
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '關於 Nutritrack',
+          title: t('aboutScreen.title'),
           headerStyle: { backgroundColor: COLORS.background },
           headerTintColor: COLORS.text,
         }}
@@ -37,67 +41,67 @@ export default function AboutScreen() {
             <Ionicons name="nutrition" size={48} color={COLORS.primary} />
           </View>
           <Text style={styles.appName}>Nutritrack</Text>
-          <Text style={styles.tagline}>智能營養追蹤助手</Text>
+          <Text style={styles.tagline}>{t('aboutScreen.tagline')}</Text>
           <Text style={styles.version}>
-            版本 {APP_VERSION} ({BUILD_NUMBER})
+            {t('aboutScreen.version', { version: APP_VERSION, build: BUILD_NUMBER })}
           </Text>
         </View>
 
         {/* Features */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>功能特色</Text>
+          <Text style={styles.sectionTitle}>{t('aboutScreen.features')}</Text>
           
           <FeatureItem
             icon="camera"
-            title="AI 食物辨識"
-            description="拍照即可自動辨識食物並計算營養成分"
+            title={t('aboutScreen.aiRecognition')}
+            description={t('aboutScreen.aiRecognitionDesc')}
           />
           <FeatureItem
             icon="chatbubbles"
-            title="營養諮詢"
-            description="AI 營養師隨時解答你的飲食問題"
+            title={t('aboutScreen.nutritionConsult')}
+            description={t('aboutScreen.nutritionConsultDesc')}
           />
           <FeatureItem
             icon="fitness"
-            title="習慣追蹤"
-            description="記錄水分、睡眠、運動等生活習慣"
+            title={t('aboutScreen.habitTracking')}
+            description={t('aboutScreen.habitTrackingDesc')}
           />
           <FeatureItem
             icon="analytics"
-            title="數據分析"
-            description="視覺化呈現營養攝取趨勢"
+            title={t('aboutScreen.dataAnalysis')}
+            description={t('aboutScreen.dataAnalysisDesc')}
           />
         </Card>
 
         {/* Data & Privacy */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>數據與私隱</Text>
+          <Text style={styles.sectionTitle}>{t('aboutScreen.dataPrivacy')}</Text>
           <Text style={styles.bodyText}>
-            你的健康數據安全地儲存在你的設備上。我們重視你的私隱，絕不會在未經你同意的情況下分享你的個人資料。
+            {t('aboutScreen.dataPrivacyText')}
           </Text>
         </Card>
 
         {/* Credits */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>致謝</Text>
+          <Text style={styles.sectionTitle}>{t('aboutScreen.credits')}</Text>
           <Text style={styles.bodyText}>
-            Nutritrack 使用先進的 AI 技術提供準確的營養分析。感謝所有貢獻者和用戶的支持。
+            {t('aboutScreen.creditsText')}
           </Text>
         </Card>
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.copyright}>
-            © 2024 Nutritrack. All rights reserved.
+            {t('aboutScreen.copyright')}
           </Text>
           <Text style={styles.madeWith}>
-            Made for healthy living
+            {t('aboutScreen.madeWith')}
           </Text>
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -128,6 +132,10 @@ function FeatureItem({
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

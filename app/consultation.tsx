@@ -13,82 +13,49 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/typography';
 import { Card, Button } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ConsultationType {
   id: string;
-  name: string;
-  description: string;
-  duration: string;
-  price: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }
 
 const CONSULTATION_TYPES: ConsultationType[] = [
-  {
-    id: 'initial',
-    name: '初次諮詢',
-    description: '全面營養評估及個人化飲食計劃',
-    duration: '60 分鐘',
-    price: 'HK$800',
-    icon: 'clipboard',
-    color: COLORS.primary,
-  },
-  {
-    id: 'followup',
-    name: '跟進諮詢',
-    description: '檢視進度及調整飲食計劃',
-    duration: '30 分鐘',
-    price: 'HK$500',
-    icon: 'refresh',
-    color: COLORS.info,
-  },
-  {
-    id: 'diabetes',
-    name: '糖尿病營養諮詢',
-    description: '專為糖尿病患者設計的飲食管理',
-    duration: '45 分鐘',
-    price: 'HK$700',
-    icon: 'medkit',
-    color: COLORS.error,
-  },
-  {
-    id: 'sports',
-    name: '運動營養諮詢',
-    description: '為運動愛好者優化營養攝取',
-    duration: '45 分鐘',
-    price: 'HK$650',
-    icon: 'fitness',
-    color: COLORS.calories,
-  },
+  { id: 'initial', icon: 'clipboard', color: COLORS.primary },
+  { id: 'followup', icon: 'refresh', color: COLORS.info },
+  { id: 'diabetes', icon: 'medkit', color: COLORS.error },
+  { id: 'sports', icon: 'fitness', color: COLORS.calories },
 ];
 
 export default function ConsultationScreen() {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const handleBooking = () => {
     if (!selectedType) {
-      Alert.alert('請選擇', '請先選擇諮詢類型');
+      Alert.alert(t('consultation.pleaseSelect'), t('consultation.selectTypeFirst'));
       return;
     }
 
     Alert.alert(
-      '預約諮詢',
-      '我們會透過電郵聯絡你確認預約詳情。\n\n你亦可以直接致電預約。',
+      t('consultation.bookingTitle'),
+      t('consultation.bookingMessage'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('consultation.cancel'), style: 'cancel' },
         {
-          text: '致電預約',
+          text: t('consultation.callToBook'),
           onPress: () => Linking.openURL('tel:+85212345678'),
         },
         {
-          text: '發送電郵',
+          text: t('consultation.sendEmail'),
           onPress: () => Linking.openURL('mailto:booking@nutritrack.app?subject=預約諮詢'),
         },
       ]
@@ -96,10 +63,10 @@ export default function ConsultationScreen() {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '預約諮詢',
+          title: t('consultation.title'),
           headerStyle: { backgroundColor: COLORS.backgroundSecondary },
         }}
       />
@@ -109,15 +76,15 @@ export default function ConsultationScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(100)}>
-          <Text style={styles.title}>預約營養師諮詢</Text>
+          <Text style={styles.title}>{t('consultation.headerTitle')}</Text>
           <Text style={styles.subtitle}>
-            與專業註冊營養師一對一諮詢，獲取個人化建議
+            {t('consultation.subtitle')}
           </Text>
         </Animated.View>
 
         {/* Consultation Types */}
         <Animated.View entering={FadeInDown.delay(200)}>
-          <Text style={styles.sectionTitle}>選擇諮詢類型</Text>
+          <Text style={styles.sectionTitle}>{t('consultation.selectType')}</Text>
           
           {CONSULTATION_TYPES.map((type, index) => (
             <Animated.View
@@ -136,8 +103,8 @@ export default function ConsultationScreen() {
                     <Ionicons name={type.icon} size={24} color={type.color} />
                   </View>
                   <View style={styles.typeInfo}>
-                    <Text style={styles.typeName}>{type.name}</Text>
-                    <Text style={styles.typeDesc}>{type.description}</Text>
+                    <Text style={styles.typeName}>{t(`consultation.types.${type.id}.name`)}</Text>
+                    <Text style={styles.typeDesc}>{t(`consultation.types.${type.id}.description`)}</Text>
                   </View>
                   {selectedType === type.id && (
                     <View style={styles.checkmark}>
@@ -148,9 +115,9 @@ export default function ConsultationScreen() {
                 <View style={styles.typeMeta}>
                   <View style={styles.metaItem}>
                     <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
-                    <Text style={styles.metaText}>{type.duration}</Text>
+                    <Text style={styles.metaText}>{t(`consultation.types.${type.id}.duration`)}</Text>
                   </View>
-                  <Text style={styles.typePrice}>{type.price}</Text>
+                  <Text style={styles.typePrice}>{t(`consultation.types.${type.id}.price`)}</Text>
                 </View>
               </Card>
             </Animated.View>
@@ -160,7 +127,7 @@ export default function ConsultationScreen() {
         {/* Book Button */}
         <Animated.View entering={FadeInDown.delay(500)}>
           <Button
-            title="預約諮詢"
+            title={t('consultation.bookButton')}
             onPress={handleBooking}
             gradient
             style={styles.bookButton}
@@ -171,33 +138,37 @@ export default function ConsultationScreen() {
         {/* Info */}
         <Animated.View entering={FadeInDown.delay(600)}>
           <Card style={styles.infoCard}>
-            <Text style={styles.infoTitle}>關於我們的營養師</Text>
+            <Text style={styles.infoTitle}>{t('consultation.aboutDietitians')}</Text>
             <View style={styles.infoItem}>
               <Ionicons name="school" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>註冊營養師</Text>
+              <Text style={styles.infoText}>{t('consultation.registeredDietitian')}</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="briefcase" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>超過 10 年臨床經驗</Text>
+              <Text style={styles.infoText}>{t('consultation.yearsExperience')}</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="language" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>粵語、普通話、英語</Text>
+              <Text style={styles.infoText}>{t('consultation.languages')}</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>面對面或視像諮詢</Text>
+              <Text style={styles.infoText}>{t('consultation.consultMode')}</Text>
             </View>
           </Card>
         </Animated.View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

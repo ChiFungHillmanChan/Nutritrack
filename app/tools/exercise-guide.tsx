@@ -12,6 +12,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,7 +52,7 @@ export default function ExerciseGuideScreen() {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
           title: t('tools.exerciseGuide.title'),
@@ -152,11 +153,15 @@ export default function ExerciseGuideScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

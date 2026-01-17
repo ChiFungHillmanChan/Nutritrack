@@ -173,12 +173,14 @@ This document provides an overview of the project's components, utilities, and d
 | Service | File | Purpose |
 |---------|------|---------|
 | `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
-| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) |
+| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) with native social auth support |
+| `social-auth.ts` | `social-auth.ts` | Native Apple Sign-In and Google Sign-In using expo-apple-authentication and expo-auth-session |
 | `i18n.ts` | `i18n.ts` | Internationalization service (i18n-js) with language detection and persistence |
 | `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
+| `rate-limiter.ts` | `rate-limiter.ts` | Client-side rate limiting service to prevent API abuse |
 | `secure-storage.ts` | `secure-storage.ts` | Secure token storage (sensitive data) |
 | `supabase.ts` | `supabase.ts` | Supabase client configuration |
-| `health-integration.ts` | `health-integration.ts` | Apple Health / Google Fit integration |
+| `health-integration.ts` | `health-integration.ts` | Apple Health / Google Fit integration (disabled for initial release, manual input only) |
 
 ## Database (`/services/database`)
 
@@ -236,6 +238,7 @@ const todayLogs = foodRepository.getTodayFoodLogs(userId);
 | `nutrition-calculator.ts` | `nutrition-calculator.ts` | Daily target calculations |
 | `ai-models.ts` | `ai-models.ts` | AI model configuration |
 | `ai-model-status.ts` | `ai-model-status.ts` | AI model availability check |
+| `ai-response-validator.ts` | `ai-response-validator.ts` | Zod schemas for validating AI responses from Gemini API |
 
 ## Types (`/types`)
 

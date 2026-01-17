@@ -191,7 +191,7 @@ export default function ProfileScreen() {
 
           <SettingRow
             icon="help-circle"
-            iconBg={COLORS.infoBg}
+            iconBg={COLORS.infoLight}
             iconColor={COLORS.info}
             label={t('settings.faq')}
             onPress={() => Alert.alert(t('settings.faq'), t('settings.faqComingSoon'))}

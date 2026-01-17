@@ -24,6 +24,35 @@ interface FoodAnalysisRequest {
   meal_type?: string;
 }
 
+/**
+ * Sanitize user input to prevent prompt injection attacks.
+ * For meal_type, we only allow specific valid values.
+ */
+function sanitizeMealType(mealType?: string): string | undefined {
+  if (!mealType) return undefined;
+  
+  // Only allow known meal types
+  const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', '早餐', '午餐', '晚餐', '小食'];
+  const normalized = mealType.toLowerCase().trim();
+  
+  if (validMealTypes.includes(normalized)) {
+    return normalized;
+  }
+  
+  // If not a valid meal type, sanitize it heavily
+  const sanitized = mealType
+    .replace(/\[SYSTEM\]/gi, '')
+    .replace(/\[INST\]/gi, '')
+    .replace(/<<SYS>>/gi, '')
+    .replace(/<\/s>/gi, '')
+    .replace(/```/g, '')
+    .replace(/[<>{}]/g, '')
+    .trim()
+    .slice(0, 50);
+  
+  return sanitized || undefined;
+}
+
 interface NutritionData {
   calories: number;
   protein: number;
@@ -212,7 +241,21 @@ serve(async (req: Request) => {
       );
     }
 
-    const result = await analyzeWithGemini(image_base64, meal_type);
+    // Validate base64 length to prevent abuse (max ~10MB image)
+    if (image_base64.length > 15_000_000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Image too large' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Sanitize meal_type to prevent prompt injection
+    const sanitizedMealType = sanitizeMealType(meal_type);
+
+    const result = await analyzeWithGemini(image_base64, sanitizedMealType);
 
     return new Response(
       JSON.stringify(result),

@@ -4,7 +4,7 @@
  * Allows users to view and manage their medications.
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,33 +12,36 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../../constants/colors';
+import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { Card, Button } from '../../components/ui';
 import { useUserStore } from '../../stores/userStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { Medication } from '../../types';
 
 export default function MedicationsScreen() {
+  const { t } = useTranslation();
   const { user } = useUserStore();
   const medications = user?.medications || [];
   const supplements = user?.supplements || [];
 
   const handleAddMedication = useCallback(() => {
-    Alert.alert('新增藥物', '此功能即將推出');
-  }, []);
+    Alert.alert(t('tools.medications.addMedication'), t('tools.medications.comingSoon'));
+  }, [t]);
 
-  const handleEditMedication = useCallback((med: Medication) => {
-    Alert.alert('編輯藥物', `編輯 ${med.name} 的功能即將推出`);
-  }, []);
+  const handleEditMedication = useCallback((_med: Medication) => {
+    Alert.alert(t('tools.medications.editMedication'), t('tools.medications.comingSoon'));
+  }, [t]);
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '我的藥物',
+          title: t('tools.medications.title'),
           headerStyle: { backgroundColor: COLORS.backgroundSecondary },
         }}
       />
@@ -48,9 +51,9 @@ export default function MedicationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(100)}>
-          <Text style={styles.title}>我的藥物</Text>
+          <Text style={styles.title}>{t('tools.medications.headerTitle')}</Text>
           <Text style={styles.subtitle}>
-            管理你的藥物和營養補充品
+            {t('tools.medications.subtitle')}
           </Text>
         </Animated.View>
 
@@ -62,20 +65,20 @@ export default function MedicationsScreen() {
                 <View style={[styles.iconContainer, { backgroundColor: COLORS.errorLight }]}>
                   <Ionicons name="medkit" size={20} color={COLORS.error} />
                 </View>
-                <Text style={styles.cardTitle}>處方藥物</Text>
+                <Text style={styles.cardTitle}>{t('tools.medications.prescriptionMeds')}</Text>
               </View>
               <Button
-                title="新增"
+                title={t('tools.medications.add')}
                 icon="add"
                 onPress={handleAddMedication}
                 variant="secondary"
-                size="small"
+                size="sm"
               />
             </View>
 
             {medications.length > 0 ? (
               <View style={styles.medicationList}>
-                {medications.map((med, index) => (
+                {medications.map((med) => (
                   <MedicationItem
                     key={med.id}
                     medication={med}
@@ -86,7 +89,7 @@ export default function MedicationsScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="medical-outline" size={40} color={COLORS.textTertiary} />
-                <Text style={styles.emptyText}>未有記錄任何藥物</Text>
+                <Text style={styles.emptyText}>{t('tools.medications.noMedications')}</Text>
               </View>
             )}
           </Card>
@@ -100,14 +103,14 @@ export default function MedicationsScreen() {
                 <View style={[styles.iconContainer, { backgroundColor: COLORS.successLight }]}>
                   <Ionicons name="leaf" size={20} color={COLORS.success} />
                 </View>
-                <Text style={styles.cardTitle}>營養補充品</Text>
+                <Text style={styles.cardTitle}>{t('tools.medications.supplements')}</Text>
               </View>
               <Button
-                title="新增"
+                title={t('tools.medications.add')}
                 icon="add"
-                onPress={() => Alert.alert('新增補充品', '此功能即將推出')}
+                onPress={() => Alert.alert(t('tools.medications.addSupplement'), t('tools.medications.comingSoon'))}
                 variant="secondary"
-                size="small"
+                size="sm"
               />
             </View>
 
@@ -120,7 +123,7 @@ export default function MedicationsScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="leaf-outline" size={40} color={COLORS.textTertiary} />
-                <Text style={styles.emptyText}>未有記錄任何補充品</Text>
+                <Text style={styles.emptyText}>{t('tools.medications.noSupplements')}</Text>
               </View>
             )}
           </Card>
@@ -131,20 +134,20 @@ export default function MedicationsScreen() {
           <Card style={styles.infoCard}>
             <View style={styles.infoHeader}>
               <Ionicons name="information-circle" size={24} color={COLORS.info} />
-              <Text style={styles.infoTitle}>重要提示</Text>
+              <Text style={styles.infoTitle}>{t('tools.medications.importantTips')}</Text>
             </View>
             <Text style={styles.infoText}>
-              • 請定時服用藥物，切勿自行停藥{'\n'}
-              • 如有任何不適，請諮詢醫生{'\n'}
-              • 此 App 不能取代專業醫療建議{'\n'}
-              • 請確保藥物存放在安全地方
+              • {t('tools.medications.tip1')}{'\n'}
+              • {t('tools.medications.tip2')}{'\n'}
+              • {t('tools.medications.tip3')}{'\n'}
+              • {t('tools.medications.tip4')}
             </Text>
           </Card>
         </Animated.View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -173,7 +176,7 @@ function MedicationItem({
         icon="pencil"
         onPress={onEdit}
         variant="ghost"
-        size="small"
+        size="sm"
       />
     </View>
   );
@@ -193,6 +196,10 @@ function SupplementItem({ supplement }: { supplement: { id: string; name: string
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

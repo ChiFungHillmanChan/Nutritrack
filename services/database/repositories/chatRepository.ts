@@ -178,22 +178,25 @@ export function getChatMessageCount(userId: string): number {
 
 /**
  * Create initial welcome message for a user
+ * @param userId - The user ID
+ * @param welcomeText - The translated welcome message text
  */
-export function createWelcomeMessage(userId: string): ChatMessage {
+export function createWelcomeMessage(userId: string, welcomeText: string): ChatMessage {
   return createChatMessage({
     user_id: userId,
     role: 'assistant',
-    content:
-      '你好！我係你嘅 AI 營養師 🥗\n\n你可以問我任何關於營養、飲食同健康嘅問題。我會根據你今日嘅攝取情況俾你個人化建議！',
+    content: welcomeText,
   });
 }
 
 /**
  * Ensure user has at least a welcome message
+ * @param userId - The user ID
+ * @param welcomeText - The translated welcome message text
  */
-export function ensureWelcomeMessage(userId: string): void {
+export function ensureWelcomeMessage(userId: string, welcomeText: string): void {
   const count = getChatMessageCount(userId);
   if (count === 0) {
-    createWelcomeMessage(userId);
+    createWelcomeMessage(userId, welcomeText);
   }
 }

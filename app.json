@@ -16,9 +16,19 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nutritrack.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Nutritrack needs camera access to take photos of your meals for nutrition analysis.",
-        "NSPhotoLibraryUsageDescription": "Nutritrack needs photo library access to select meal photos for nutrition analysis."
+        "NSPhotoLibraryUsageDescription": "Nutritrack needs photo library access to select meal photos for nutrition analysis.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "nutritrack",
+              "com.nutritrack.app",
+              "com.googleusercontent.apps.269611860485-u65boej0tfss15bkiohna4o9msh3c5ch"
+            ]
+          }
+        ]
       }
     },
     "android": {
@@ -61,7 +71,8 @@
       ],
       "expo-secure-store",
       "expo-sqlite",
-      "expo-localization"
+      "expo-localization",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

@@ -9,11 +9,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SHADOWS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface QuickAction {
   id: string;
   icon: keyof typeof Ionicons.glyphMap;
-  label: string;
+  labelKey: string;
   color: string;
   bgColor: string;
   onPress: () => void;
@@ -34,11 +35,13 @@ export function QuickActions({
   onNotificationsPress,
   style,
 }: QuickActionsProps) {
+  const { t } = useTranslation();
+
   const actions: QuickAction[] = [
     {
       id: 'settings',
       icon: 'settings',
-      label: 'Setting',
+      labelKey: 'settings.quickActions.setting',
       color: COLORS.textSecondary,
       bgColor: COLORS.backgroundTertiary,
       onPress: () => router.push('/profile-edit' as never),
@@ -46,34 +49,34 @@ export function QuickActions({
     {
       id: 'notifications',
       icon: 'notifications',
-      label: 'Notifications',
+      labelKey: 'settings.quickActions.notifications',
       color: COLORS.warning,
       bgColor: COLORS.warningLight,
-      onPress: onNotificationsPress || (() => Alert.alert('通知設定', '此功能即將推出')),
+      onPress: onNotificationsPress ?? (() => Alert.alert(t('settings.quickActions.notifications'), t('settings.quickActions.notificationsAlert'))),
     },
     {
       id: 'feedback',
       icon: 'thumbs-up',
-      label: 'Feedback',
+      labelKey: 'settings.quickActions.feedback',
       color: COLORS.info,
       bgColor: COLORS.infoLight,
-      onPress: onFeedbackPress || (() => Alert.alert('回饋', '感謝你的意見！此功能即將推出')),
+      onPress: onFeedbackPress ?? (() => Alert.alert(t('settings.quickActions.feedback'), t('settings.quickActions.feedbackAlert'))),
     },
     {
       id: 'theme',
       icon: 'shirt',
-      label: 'Theme',
+      labelKey: 'settings.quickActions.theme',
       color: COLORS.protein,
       bgColor: COLORS.proteinBg,
-      onPress: onThemePress || (() => Alert.alert('主題', '深色模式即將推出')),
+      onPress: onThemePress ?? (() => Alert.alert(t('settings.quickActions.theme'), t('settings.quickActions.themeAlert'))),
     },
     {
       id: 'export',
       icon: 'download',
-      label: 'Export',
+      labelKey: 'settings.quickActions.export',
       color: COLORS.primary,
       bgColor: COLORS.primaryMuted,
-      onPress: onExportPress || (() => Alert.alert('匯出報告', '此功能即將推出')),
+      onPress: onExportPress ?? (() => Alert.alert(t('settings.quickActions.export'), t('settings.quickActions.exportAlert'))),
     },
   ];
 
@@ -89,7 +92,7 @@ export function QuickActions({
           <View style={[styles.iconContainer, { backgroundColor: action.bgColor }]}>
             <Ionicons name={action.icon} size={22} color={action.color} />
           </View>
-          <Text style={styles.label}>{action.label}</Text>
+          <Text style={styles.label}>{t(action.labelKey)}</Text>
         </TouchableOpacity>
       ))}
     </View>

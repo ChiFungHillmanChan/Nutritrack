@@ -15,16 +15,18 @@ import {
   Linking,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../constants/colors';
+import { COLORS } from '../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/typography';
 import { Card, Button } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ContactMethod {
   id: string;
-  name: string;
+  nameKey: string;
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
@@ -32,6 +34,7 @@ interface ContactMethod {
 }
 
 export default function ContactScreen() {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -40,7 +43,7 @@ export default function ContactScreen() {
   const contactMethods: ContactMethod[] = [
     {
       id: 'email',
-      name: '電郵',
+      nameKey: 'contact.email',
       value: 'support@nutritrack.app',
       icon: 'mail',
       color: COLORS.primary,
@@ -48,7 +51,7 @@ export default function ContactScreen() {
     },
     {
       id: 'phone',
-      name: '電話',
+      nameKey: 'contact.phone',
       value: '+852 1234 5678',
       icon: 'call',
       color: COLORS.info,
@@ -56,7 +59,7 @@ export default function ContactScreen() {
     },
     {
       id: 'whatsapp',
-      name: 'WhatsApp',
+      nameKey: 'contact.whatsapp',
       value: '+852 1234 5678',
       icon: 'logo-whatsapp',
       color: '#25D366',
@@ -64,7 +67,7 @@ export default function ContactScreen() {
     },
     {
       id: 'instagram',
-      name: 'Instagram',
+      nameKey: 'contact.instagram',
       value: '@nutritrack.hk',
       icon: 'logo-instagram',
       color: '#E4405F',
@@ -74,7 +77,7 @@ export default function ContactScreen() {
 
   const handleSubmit = async () => {
     if (!name.trim() || !email.trim() || !message.trim()) {
-      Alert.alert('請填寫所有欄位', '姓名、電郵和訊息為必填項目');
+      Alert.alert(t('contact.fillAllFields'), t('contact.fillAllFieldsMessage'));
       return;
     }
 
@@ -84,17 +87,17 @@ export default function ContactScreen() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     setIsSubmitting(false);
-    Alert.alert('已發送', '我們已收到你的訊息，將盡快回覆。');
+    Alert.alert(t('contact.sent'), t('contact.sentMessage'));
     setName('');
     setEmail('');
     setMessage('');
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '聯絡我們',
+          title: t('contact.title'),
           headerStyle: { backgroundColor: COLORS.backgroundSecondary },
         }}
       />
@@ -104,16 +107,16 @@ export default function ContactScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(100)}>
-          <Text style={styles.title}>聯絡我們</Text>
+          <Text style={styles.title}>{t('contact.headerTitle')}</Text>
           <Text style={styles.subtitle}>
-            有任何問題或建議？我們樂意聆聽
+            {t('contact.subtitle')}
           </Text>
         </Animated.View>
 
         {/* Contact Methods */}
         <Animated.View entering={FadeInDown.delay(200)}>
           <Card style={styles.methodsCard}>
-            <Text style={styles.sectionTitle}>聯絡方式</Text>
+            <Text style={styles.sectionTitle}>{t('contact.contactMethods')}</Text>
             <View style={styles.methodsGrid}>
               {contactMethods.map((method) => (
                 <TouchableOpacity
@@ -125,7 +128,7 @@ export default function ContactScreen() {
                   <View style={[styles.methodIcon, { backgroundColor: method.color + '20' }]}>
                     <Ionicons name={method.icon} size={24} color={method.color} />
                   </View>
-                  <Text style={styles.methodName}>{method.name}</Text>
+                  <Text style={styles.methodName}>{t(method.nameKey)}</Text>
                   <Text style={styles.methodValue}>{method.value}</Text>
                 </TouchableOpacity>
               ))}
@@ -136,26 +139,26 @@ export default function ContactScreen() {
         {/* Contact Form */}
         <Animated.View entering={FadeInDown.delay(300)}>
           <Card style={styles.formCard}>
-            <Text style={styles.sectionTitle}>發送訊息</Text>
+            <Text style={styles.sectionTitle}>{t('contact.sendMessage')}</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>姓名</Text>
+              <Text style={styles.inputLabel}>{t('contact.name')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="你的姓名"
+                placeholder={t('contact.namePlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>電郵</Text>
+              <Text style={styles.inputLabel}>{t('contact.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="your@email.com"
+                placeholder={t('contact.emailPlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -163,12 +166,12 @@ export default function ContactScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>訊息</Text>
+              <Text style={styles.inputLabel}>{t('contact.message')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={message}
                 onChangeText={setMessage}
-                placeholder="你想告訴我們什麼？"
+                placeholder={t('contact.messagePlaceholder')}
                 placeholderTextColor={COLORS.textTertiary}
                 multiline
                 numberOfLines={4}
@@ -177,7 +180,7 @@ export default function ContactScreen() {
             </View>
 
             <Button
-              title={isSubmitting ? '發送中...' : '發送訊息'}
+              title={isSubmitting ? t('contact.sending') : t('contact.sendButton')}
               onPress={handleSubmit}
               gradient
               disabled={isSubmitting}
@@ -191,20 +194,20 @@ export default function ContactScreen() {
           <Card style={styles.hoursCard}>
             <View style={styles.hoursHeader}>
               <Ionicons name="time" size={24} color={COLORS.primary} />
-              <Text style={styles.hoursTitle}>辦公時間</Text>
+              <Text style={styles.hoursTitle}>{t('contact.officeHours')}</Text>
             </View>
             <View style={styles.hoursList}>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>星期一至五</Text>
+                <Text style={styles.hoursDay}>{t('contact.mondayFriday')}</Text>
                 <Text style={styles.hoursTime}>9:00 - 18:00</Text>
               </View>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>星期六</Text>
+                <Text style={styles.hoursDay}>{t('contact.saturday')}</Text>
                 <Text style={styles.hoursTime}>9:00 - 13:00</Text>
               </View>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>星期日及公眾假期</Text>
-                <Text style={styles.hoursTime}>休息</Text>
+                <Text style={styles.hoursDay}>{t('contact.sundayHolidays')}</Text>
+                <Text style={styles.hoursTime}>{t('contact.closed')}</Text>
               </View>
             </View>
           </Card>
@@ -212,11 +215,15 @@ export default function ContactScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

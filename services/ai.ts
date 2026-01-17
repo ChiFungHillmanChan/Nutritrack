@@ -59,16 +59,13 @@ interface FoodAnalysisResponse {
   error?: string;
 }
 
-// Demo mode mock responses
-const DEMO_CHAT_RESPONSES: Record<string, string> = {
-  default:
-    '多謝你嘅問題！我係你嘅 AI 營養師，可以幫你解答關於營養、飲食同健康嘅問題。\n\n你可以問我：\n• 今日應該食咩？\n• 點樣健康減重？\n• 邊啲食物高蛋白？\n• 我嘅飲食有咩可以改善？',
-  food: '根據你今日嘅攝取情況，我建議你可以考慮以下選擇：\n\n1. 雞胸肉沙律 - 高蛋白低脂\n2. 三文魚配糙米 - 優質蛋白同複合碳水\n3. 希臘乳酪配水果 - 補充蛋白質同纖維\n\n你今日蛋白質攝取偏低，建議揀高蛋白嘅食物！',
-  weight:
-    '減重嘅關鍵係保持適度嘅熱量赤字，同時確保營養均衡。以下係一啲建議：\n\n1. 每餐都要有蛋白質，幫助維持飽足感\n2. 多食蔬菜增加纖維攝取\n3. 減少加工食品同糖分\n4. 保持足夠水分攝取\n\n記住，持續嘅習慣改變比短期節食更有效！',
-  protein:
-    '蛋白質對身體好重要！以下係一啲優質蛋白質來源：\n\n動物性：雞胸肉、魚、蛋、瘦牛肉、乳製品\n植物性：豆腐、豆類、藜麥、堅果\n\n一般建議每公斤體重攝取 1.6-2.2g 蛋白質，如果你有運動習慣可以攝取較多。',
-};
+// Demo response keys for i18n
+export interface DemoResponses {
+  default: string;
+  food: string;
+  weight: string;
+  protein: string;
+}
 
 const DEMO_FOOD_ANALYSIS = {
   food_name: '白飯',
@@ -94,22 +91,27 @@ function hasDirectGeminiAccess(): boolean {
 /**
  * Get demo chat response based on message content
  */
-function getDemoChatResponse(message: string): string {
+function getDemoChatResponse(message: string, demoResponses: DemoResponses): string {
   const lowerMessage = message.toLowerCase();
 
-  if (lowerMessage.includes('食咩') || lowerMessage.includes('建議')) {
-    return DEMO_CHAT_RESPONSES.food;
+  // Check for food-related keywords in both English and Chinese
+  if (lowerMessage.includes('食咩') || lowerMessage.includes('建議') || 
+      lowerMessage.includes('eat') || lowerMessage.includes('suggest') || lowerMessage.includes('recommend')) {
+    return demoResponses.food;
   }
 
-  if (lowerMessage.includes('減肥') || lowerMessage.includes('瘦')) {
-    return DEMO_CHAT_RESPONSES.weight;
+  // Check for weight-related keywords
+  if (lowerMessage.includes('減肥') || lowerMessage.includes('瘦') || 
+      lowerMessage.includes('weight') || lowerMessage.includes('lose') || lowerMessage.includes('diet')) {
+    return demoResponses.weight;
   }
 
+  // Check for protein-related keywords
   if (lowerMessage.includes('蛋白質') || lowerMessage.includes('protein')) {
-    return DEMO_CHAT_RESPONSES.protein;
+    return demoResponses.protein;
   }
 
-  return DEMO_CHAT_RESPONSES.default;
+  return demoResponses.default;
 }
 
 /**
@@ -361,11 +363,16 @@ ${mealContext ? `用戶表示呢係${mealContext}。` : ''}
 
 /**
  * Send a message to the AI chat
+ * @param message - The user's message
+ * @param history - Previous chat history
+ * @param context - User context (nutrition, goals)
+ * @param demoResponses - Optional translated demo responses for demo mode
  */
 export async function sendChatMessage(
   message: string,
   history?: ChatMessage[],
-  context?: ChatContext
+  context?: ChatContext,
+  demoResponses?: DemoResponses
 ): Promise<ChatResponse> {
   // Option 1: Direct Gemini API (local development with API key)
   if (hasDirectGeminiAccess()) {
@@ -397,10 +404,18 @@ export async function sendChatMessage(
   }
 
   // Option 3: Demo mode (no API key, no Supabase)
+  // Use provided translations or fallback to Chinese
+  const fallbackResponses: DemoResponses = {
+    default: '多謝你嘅問題！我係你嘅 AI 營養師，可以幫你解答關於營養、飲食同健康嘅問題。\n\n你可以問我：\n• 今日應該食咩？\n• 點樣健康減重？\n• 邊啲食物高蛋白？\n• 我嘅飲食有咩可以改善？',
+    food: '根據你今日嘅攝取情況，我建議你可以考慮以下選擇：\n\n1. 雞胸肉沙律 - 高蛋白低脂\n2. 三文魚配糙米 - 優質蛋白同複合碳水\n3. 希臘乳酪配水果 - 補充蛋白質同纖維\n\n你今日蛋白質攝取偏低，建議揀高蛋白嘅食物！',
+    weight: '減重嘅關鍵係保持適度嘅熱量赤字，同時確保營養均衡。以下係一啲建議：\n\n1. 每餐都要有蛋白質，幫助維持飽足感\n2. 多食蔬菜增加纖維攝取\n3. 減少加工食品同糖分\n4. 保持足夠水分攝取\n\n記住，持續嘅習慣改變比短期節食更有效！',
+    protein: '蛋白質對身體好重要！以下係一啲優質蛋白質來源：\n\n動物性：雞胸肉、魚、蛋、瘦牛肉、乳製品\n植物性：豆腐、豆類、藜麥、堅果\n\n一般建議每公斤體重攝取 1.6-2.2g 蛋白質，如果你有運動習慣可以攝取較多。',
+  };
+  
   await new Promise((resolve) => setTimeout(resolve, 1500));
   return {
     success: true,
-    message: getDemoChatResponse(message),
+    message: getDemoChatResponse(message, demoResponses ?? fallbackResponses),
   };
 }
 

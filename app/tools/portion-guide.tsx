@@ -9,88 +9,41 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { Card } from '../../components/ui';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface PortionItem {
-  food: string;
-  portion: string;
-  visual: string;
+  id: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }
 
 const PORTION_GUIDES: PortionItem[] = [
-  {
-    food: '蛋白質 (肉類、魚、雞)',
-    portion: '約 100 克',
-    visual: '一副啤牌大小',
-    icon: 'fish',
-    color: COLORS.protein,
-  },
-  {
-    food: '碳水化合物 (飯、麵)',
-    portion: '約 150 克 (熟)',
-    visual: '一個拳頭大小',
-    icon: 'restaurant',
-    color: COLORS.carbs,
-  },
-  {
-    food: '蔬菜',
-    portion: '約 80 克',
-    visual: '兩個手掌大小',
-    icon: 'leaf',
-    color: COLORS.fiber,
-  },
-  {
-    food: '水果',
-    portion: '約 80 克',
-    visual: '一個網球大小',
-    icon: 'nutrition',
-    color: COLORS.success,
-  },
-  {
-    food: '芝士',
-    portion: '約 30 克',
-    visual: '兩個拇指大小',
-    icon: 'cube',
-    color: COLORS.fat,
-  },
-  {
-    food: '堅果',
-    portion: '約 30 克',
-    visual: '一小把',
-    icon: 'ellipse',
-    color: COLORS.calories,
-  },
-  {
-    food: '油脂',
-    portion: '約 5 克',
-    visual: '一茶匙',
-    icon: 'water',
-    color: COLORS.warning,
-  },
-  {
-    food: '醬汁',
-    portion: '約 15 克',
-    visual: '一湯匙',
-    icon: 'flask',
-    color: COLORS.sodium,
-  },
+  { id: 'protein', icon: 'fish', color: COLORS.protein },
+  { id: 'carbs', icon: 'restaurant', color: COLORS.carbs },
+  { id: 'vegetables', icon: 'leaf', color: COLORS.fiber },
+  { id: 'fruit', icon: 'nutrition', color: COLORS.success },
+  { id: 'cheese', icon: 'cube', color: COLORS.fat },
+  { id: 'nuts', icon: 'ellipse', color: COLORS.calories },
+  { id: 'oil', icon: 'water', color: COLORS.warning },
+  { id: 'sauce', icon: 'flask', color: COLORS.sodium },
 ];
 
 export default function PortionGuideScreen() {
+  const { t } = useTranslation();
+
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '份量指南',
+          title: t('tools.portionGuide.title'),
           headerStyle: { backgroundColor: COLORS.backgroundSecondary },
         }}
       />
@@ -100,9 +53,9 @@ export default function PortionGuideScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(100)}>
-          <Text style={styles.title}>份量指南</Text>
+          <Text style={styles.title}>{t('tools.portionGuide.headerTitle')}</Text>
           <Text style={styles.subtitle}>
-            用簡單嘅方法估算食物份量
+            {t('tools.portionGuide.subtitle')}
           </Text>
         </Animated.View>
 
@@ -111,10 +64,10 @@ export default function PortionGuideScreen() {
           <Card style={styles.introCard}>
             <View style={styles.introHeader}>
               <Ionicons name="hand-left" size={32} color={COLORS.primary} />
-              <Text style={styles.introTitle}>用你隻手做參考</Text>
+              <Text style={styles.introTitle}>{t('tools.portionGuide.useYourHand')}</Text>
             </View>
             <Text style={styles.introText}>
-              你隻手係一個方便嘅參考工具，因為佢嘅大小同你嘅身體比例相關。
+              {t('tools.portionGuide.handExplanation')}
             </Text>
           </Card>
         </Animated.View>
@@ -122,7 +75,7 @@ export default function PortionGuideScreen() {
         {/* Portion Items */}
         {PORTION_GUIDES.map((item, index) => (
           <Animated.View
-            key={item.food}
+            key={item.id}
             entering={FadeInDown.delay(300 + index * 50)}
           >
             <Card style={styles.portionCard}>
@@ -131,13 +84,13 @@ export default function PortionGuideScreen() {
                   <Ionicons name={item.icon} size={24} color={item.color} />
                 </View>
                 <View style={styles.portionInfo}>
-                  <Text style={styles.portionFood}>{item.food}</Text>
-                  <Text style={styles.portionAmount}>{item.portion}</Text>
+                  <Text style={styles.portionFood}>{t(`tools.portionGuide.portions.${item.id}.food`)}</Text>
+                  <Text style={styles.portionAmount}>{t(`tools.portionGuide.portions.${item.id}.portion`)}</Text>
                 </View>
               </View>
               <View style={styles.visualContainer}>
                 <Ionicons name="resize" size={16} color={COLORS.textSecondary} />
-                <Text style={styles.visualText}>{item.visual}</Text>
+                <Text style={styles.visualText}>{t(`tools.portionGuide.portions.${item.id}.visual`)}</Text>
               </View>
             </Card>
           </Animated.View>
@@ -146,20 +99,20 @@ export default function PortionGuideScreen() {
         {/* Tips */}
         <Animated.View entering={FadeInDown.delay(700)}>
           <Card style={styles.tipsCard}>
-            <Text style={styles.tipsTitle}>實用貼士</Text>
+            <Text style={styles.tipsTitle}>{t('tools.portionGuide.practicalTips')}</Text>
             <View style={styles.tipsList}>
-              <TipItem text="用細啲嘅碟可以幫你控制份量" />
-              <TipItem text="慢慢食，比你嘅腦有時間感覺飽" />
-              <TipItem text="蔬菜應該佔碟嘅一半" />
-              <TipItem text="蛋白質應該佔碟嘅四分之一" />
-              <TipItem text="碳水化合物應該佔碟嘅四分之一" />
+              <TipItem text={t('tools.portionGuide.tip1')} />
+              <TipItem text={t('tools.portionGuide.tip2')} />
+              <TipItem text={t('tools.portionGuide.tip3')} />
+              <TipItem text={t('tools.portionGuide.tip4')} />
+              <TipItem text={t('tools.portionGuide.tip5')} />
             </View>
           </Card>
         </Animated.View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -173,6 +126,10 @@ function TipItem({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

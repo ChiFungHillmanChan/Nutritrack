@@ -4,12 +4,25 @@
  * Provides integration with Apple Health (iOS) and Google Fit (Android).
  * Uses conditional imports based on platform.
  * 
- * NOTE: Requires additional packages to be installed:
- * - iOS: react-native-health
- * - Android: react-native-google-fit
+ * CURRENT STATUS: Health integration is disabled for initial release.
+ * Users should manually input their health data (weight, exercise, etc.).
+ * This module preserves the type definitions and structure for future implementation.
+ * 
+ * FUTURE IMPLEMENTATION REQUIREMENTS:
+ * - iOS: react-native-health + HealthKit entitlements
+ * - Android: react-native-google-fit + OAuth setup
+ * 
+ * When ready to implement, set HEALTH_INTEGRATION_ENABLED = true and follow
+ * the SETUP_INSTRUCTIONS at the bottom of this file.
  */
 
 import { Platform } from 'react-native';
+
+/**
+ * Feature flag for health integration.
+ * Set to true when health integration packages are installed and configured.
+ */
+export const HEALTH_INTEGRATION_ENABLED = false;
 import { ExerciseLog, ExerciseType } from '../types';
 
 // Health data types we want to access
@@ -57,9 +70,15 @@ export interface HealthSyncResult {
 }
 
 /**
- * Check if health integration is available on this device
+ * Check if health integration is available on this device.
+ * Returns false when HEALTH_INTEGRATION_ENABLED is false (current state).
  */
 export function isHealthAvailable(): boolean {
+  // Health integration is disabled for initial release
+  if (!HEALTH_INTEGRATION_ENABLED) {
+    return false;
+  }
+  
   // Health integration requires native modules which may not be available in Expo Go
   // In a production app with a development build, this would check for the actual module
   return Platform.OS === 'ios' || Platform.OS === 'android';

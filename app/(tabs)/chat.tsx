@@ -25,7 +25,7 @@ import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { useChatStore, ChatMessage } from '../../stores/chatStore';
-import { sendChatMessage } from '../../services/ai';
+import { sendChatMessage, DemoResponses } from '../../services/ai';
 import { useTranslation } from '../../hooks/useTranslation';
 
 // Parse markdown-style text into structured segments for rendering
@@ -73,9 +73,9 @@ export default function ChatScreen() {
   // Initialize chat when user is available
   useEffect(() => {
     if (user?.id) {
-      initializeChat(user.id);
+      initializeChat(user.id, t('chat.welcomeMessage'));
     }
-  }, [user?.id, initializeChat]);
+  }, [user?.id, initializeChat, t]);
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;
@@ -94,12 +94,25 @@ export default function ChatScreen() {
       // Get chat history for context (excludes welcome message)
       const chatHistory = getChatHistory();
 
+      // Get translated demo responses for demo mode
+      const demoResponses: DemoResponses = {
+        default: t('chat.demoResponses.default'),
+        food: t('chat.demoResponses.food'),
+        weight: t('chat.demoResponses.weight'),
+        protein: t('chat.demoResponses.protein'),
+      };
+
       // Call the AI service with Gemini
-      const response = await sendChatMessage(messageToSend, chatHistory, {
-        daily_nutrition: todayNutrition,
-        daily_targets: user?.daily_targets,
-        user_goal: user?.goal,
-      });
+      const response = await sendChatMessage(
+        messageToSend, 
+        chatHistory, 
+        {
+          daily_nutrition: todayNutrition,
+          daily_targets: user?.daily_targets,
+          user_goal: user?.goal,
+        },
+        demoResponses
+      );
 
       if (response.success && response.message) {
         addMessage({

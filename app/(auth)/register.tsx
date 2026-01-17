@@ -21,7 +21,7 @@ import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
-import { signUpWithEmail } from '../../services/auth';
+import { signUpWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const { height } = Dimensions.get('window');
@@ -74,6 +74,32 @@ export default function RegisterScreen() {
         { text: t('common.ok'), onPress: () => router.replace('/(auth)/onboarding') },
       ]);
     } else {
+      Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    const result = await signInWithGoogle();
+    setIsLoading(false);
+
+    if (result.success) {
+      // Social sign-in auto-creates the account, go to onboarding
+      router.replace('/(auth)/onboarding');
+    } else if (result.error !== '登入已取消') {
+      Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
+    }
+  };
+
+  const handleAppleSignUp = async () => {
+    setIsLoading(true);
+    const result = await signInWithApple();
+    setIsLoading(false);
+
+    if (result.success) {
+      // Social sign-in auto-creates the account, go to onboarding
+      router.replace('/(auth)/onboarding');
+    } else if (result.error !== '登入已取消') {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
@@ -242,6 +268,38 @@ export default function RegisterScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('auth.login.orUse')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Sign Up Buttons */}
+          <View style={styles.socialButtons}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignUp}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={20} color={COLORS.text} />
+              <Text style={styles.socialButtonText}>Google</Text>
+            </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleAppleSignUp}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-apple" size={20} color={COLORS.text} />
+                <Text style={styles.socialButtonText}>Apple</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Terms */}
           <Text style={styles.termsText}>
@@ -429,6 +487,45 @@ const styles = StyleSheet.create({
   registerButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textInverse,
+  },
+
+  // Divider
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    ...TYPOGRAPHY.captionMedium,
+    color: COLORS.textSecondary,
+    marginHorizontal: SPACING.md,
+  },
+
+  // Social Buttons
+  socialButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    height: 48,
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  socialButtonText: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.text,
   },
 
   // Terms

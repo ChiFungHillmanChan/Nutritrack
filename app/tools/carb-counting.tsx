@@ -12,6 +12,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS, SHADOWS } from '../../constants/colors';
@@ -65,7 +66,7 @@ export default function CarbCountingScreen() {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
           title: t('tools.carbCounting.title'),
@@ -94,10 +95,9 @@ export default function CarbCountingScreen() {
                   key={food.nameKey}
                   title={getFoodName(food.nameKey)}
                   onPress={() => handleFoodSelect(food)}
-                  style={[
-                    styles.foodButton,
-                    selectedFood?.nameKey === food.nameKey && styles.foodButtonActive,
-                  ]}
+                  style={selectedFood?.nameKey === food.nameKey 
+                    ? { ...styles.foodButton, ...styles.foodButtonActive } 
+                    : styles.foodButton}
                   variant={selectedFood?.nameKey === food.nameKey ? 'primary' : 'secondary'}
                 />
               ))}
@@ -160,11 +160,15 @@ export default function CarbCountingScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

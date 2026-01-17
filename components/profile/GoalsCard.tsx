@@ -7,28 +7,11 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../../constants/colors';
+import { COLORS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { Card } from '../ui';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { HealthGoal } from '../../types';
-
-// Goal labels mapping
-const GOAL_LABELS: Record<HealthGoal, string> = {
-  healthy_balanced_eating: '均衡飲食',
-  weight_loss: '減重',
-  weight_gain: '增重',
-  healthy_bowels: '腸道健康',
-  muscle_gain: '增肌',
-  improve_hydration: '增加飲水',
-  blood_sugar_control: '控制血糖',
-  fix_micros: '改善微量營養素',
-  improve_sleep: '改善睡眠',
-  improve_breathing: '改善呼吸',
-  reduce_alcohol: '減少飲酒',
-  reduce_smoking: '減少吸煙',
-  achieve_10k_steps: '每日萬步',
-  improve_mental_health: '改善心理健康',
-};
 
 interface GoalsCardProps {
   goals: HealthGoal[];
@@ -45,6 +28,7 @@ export function GoalsCard({
   onEditPress,
   style,
 }: GoalsCardProps) {
+  const { t } = useTranslation();
   const [localCompleted, setLocalCompleted] = useState<Set<string>>(
     new Set(completedGoals)
   );
@@ -66,9 +50,14 @@ export function GoalsCard({
     if (onEditPress) {
       onEditPress();
     } else {
-      Alert.alert('編輯目標', '此功能即將推出');
+      Alert.alert(t('settings.goals.editTitle'), t('settings.goals.editComingSoon'));
     }
-  }, [onEditPress]);
+  }, [onEditPress, t]);
+
+  // Get translated goal label
+  const getGoalLabel = (goal: HealthGoal): string => {
+    return t(`goalLabels.${goal}`) ?? goal;
+  };
 
   // Show max 3 goals
   const displayGoals = goals.slice(0, 3);
@@ -76,7 +65,7 @@ export function GoalsCard({
   return (
     <Card style={[styles.container, style]}>
       <View style={styles.header}>
-        <Text style={styles.title}>MY GOALS</Text>
+        <Text style={styles.title}>{t('settings.goals.title').toUpperCase()}</Text>
         <TouchableOpacity onPress={handleEdit} style={styles.editButton}>
           <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
         </TouchableOpacity>
@@ -107,16 +96,16 @@ export function GoalsCard({
                   localCompleted.has(goal) && styles.goalTextCompleted,
                 ]}
               >
-                {GOAL_LABELS[goal] || goal}
+                {getGoalLabel(goal)}
               </Text>
             </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="flag-outline" size={32} color={COLORS.textTertiary} />
-            <Text style={styles.emptyText}>未設定任何目標</Text>
+            <Text style={styles.emptyText}>{t('settings.goals.noGoals')}</Text>
             <TouchableOpacity style={styles.addButton} onPress={handleEdit}>
-              <Text style={styles.addButtonText}>新增目標</Text>
+              <Text style={styles.addButtonText}>{t('settings.goals.addGoal')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -124,7 +113,7 @@ export function GoalsCard({
 
       {goals.length > 3 && (
         <TouchableOpacity style={styles.viewAll} onPress={handleEdit}>
-          <Text style={styles.viewAllText}>查看全部 {goals.length} 個目標</Text>
+          <Text style={styles.viewAllText}>{t('settings.goals.viewAll', { count: goals.length })}</Text>
           <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
         </TouchableOpacity>
       )}

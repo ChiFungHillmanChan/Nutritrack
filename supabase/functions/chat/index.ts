@@ -23,6 +23,52 @@ interface ChatMessage {
   content: string;
 }
 
+/**
+ * Sanitize user input to prevent prompt injection attacks.
+ * Removes common injection patterns and limits input length.
+ */
+function sanitizeUserInput(input: string, maxLength = 2000): string {
+  // Remove potential injection patterns
+  const sanitized = input
+    // Remove system/instruction markers
+    .replace(/\[SYSTEM\]/gi, '')
+    .replace(/\[INST\]/gi, '')
+    .replace(/\[\/INST\]/gi, '')
+    .replace(/<<SYS>>/gi, '')
+    .replace(/<\/s>/gi, '')
+    .replace(/```system/gi, '')
+    // Remove role override attempts
+    .replace(/^(system|assistant|model):/gim, '')
+    .replace(/\n(system|assistant|model):/gi, '\n')
+    // Remove markdown code block escapes that might contain instructions
+    .replace(/```[\s\S]*?```/g, (match) => {
+      // Keep code blocks but remove if they look like instructions
+      if (match.toLowerCase().includes('ignore') || 
+          match.toLowerCase().includes('system') ||
+          match.toLowerCase().includes('instruction')) {
+        return '[code removed]';
+      }
+      return match;
+    })
+    // Trim and limit length
+    .trim()
+    .slice(0, maxLength);
+  
+  return sanitized;
+}
+
+/**
+ * Sanitize chat history messages
+ */
+function sanitizeChatHistory(history?: ChatMessage[]): ChatMessage[] | undefined {
+  if (!history) return undefined;
+  
+  return history.map(msg => ({
+    ...msg,
+    content: sanitizeUserInput(msg.content, 1500),
+  }));
+}
+
 interface ChatRequest {
   message: string;
   history?: ChatMessage[];
@@ -236,7 +282,11 @@ serve(async (req: Request) => {
       );
     }
 
-    const result = await chatWithGemini(message, history, context);
+    // Sanitize user inputs to prevent prompt injection
+    const sanitizedMessage = sanitizeUserInput(message);
+    const sanitizedHistory = sanitizeChatHistory(history);
+
+    const result = await chatWithGemini(sanitizedMessage, sanitizedHistory, context);
 
     return new Response(
       JSON.stringify(result),

@@ -4,7 +4,7 @@
  * Slide-in drawer menu with extended functions as per design specs.
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,14 +26,14 @@ import { router } from 'expo-router';
 import { COLORS, SHADOWS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 const MENU_WIDTH = width * 0.75;
 
 interface MenuItem {
   id: string;
-  label: string;
-  labelEn: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   route?: string;
   onPress?: () => void;
@@ -47,6 +47,7 @@ interface HamburgerMenuProps {
 
 export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
   const { user } = useUserStore();
+  const { t, language } = useTranslation();
 
   // Check if user has medical conditions that require medication tracking
   const hasMedicalConditions = useCallback(() => {
@@ -59,97 +60,105 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
   const menuItems: MenuItem[] = [
     {
       id: 'about',
-      label: '關於我們',
-      labelEn: 'About us',
+      labelKey: 'menu.aboutUs',
       icon: 'information-circle',
       route: '/about',
     },
     {
       id: 'carb-counting',
-      label: '碳水計算',
-      labelEn: 'Carb-counting',
+      labelKey: 'menu.carbCounting',
       icon: 'calculator',
       route: '/tools/carb-counting',
     },
     {
       id: 'medications',
-      label: '我的藥物',
-      labelEn: 'My medications',
+      labelKey: 'menu.myMedications',
       icon: 'medkit',
       route: '/tools/medications',
       showIf: hasMedicalConditions,
     },
     {
       id: 'portion-guide',
-      label: '份量指南',
-      labelEn: 'Portion guide',
+      labelKey: 'menu.portionGuide',
       icon: 'resize',
       route: '/tools/portion-guide',
     },
     {
       id: 'lifestyle-tips',
-      label: '生活貼士',
-      labelEn: 'Lifestyle tips',
+      labelKey: 'menu.lifestyleTips',
       icon: 'bulb',
       route: '/tools/lifestyle-tips',
     },
     {
       id: 'nutrition-facts',
-      label: '營養知識',
-      labelEn: 'Nutrition facts',
+      labelKey: 'menu.nutritionFacts',
       icon: 'nutrition',
       route: '/tools/nutrition-facts',
     },
     {
       id: 'exercise-guide',
-      label: '運動指南',
-      labelEn: 'Exercise guide',
+      labelKey: 'menu.exerciseGuide',
       icon: 'fitness',
       route: '/tools/exercise-guide',
     },
     {
       id: 'meditation',
-      label: '冥想',
-      labelEn: 'Meditation',
+      labelKey: 'menu.meditation',
       icon: 'leaf',
       route: '/wellness/meditation',
     },
     {
       id: 'affirmation',
-      label: '正面語句',
-      labelEn: 'Affirmation',
+      labelKey: 'menu.affirmation',
       icon: 'heart',
       route: '/wellness/affirmations',
     },
     {
       id: 'games',
-      label: '迷你遊戲',
-      labelEn: 'Mini games',
+      labelKey: 'menu.miniGames',
       icon: 'game-controller',
       route: '/tools/games',
     },
     {
       id: 'other-services',
-      label: '其他服務',
-      labelEn: 'Other services',
+      labelKey: 'menu.otherServices',
       icon: 'apps',
       route: '/services',
     },
     {
       id: 'consultation',
-      label: '預約諮詢',
-      labelEn: 'Book a consultation',
+      labelKey: 'menu.bookConsultation',
       icon: 'calendar',
       route: '/consultation',
     },
     {
       id: 'contact',
-      label: '聯絡我們',
-      labelEn: 'Contact us',
+      labelKey: 'menu.contactUs',
       icon: 'mail',
       route: '/contact',
     },
   ];
+
+  // Helper to get English translation for secondary label
+  const getEnglishLabel = (key: string): string => {
+    // Extract the key suffix (e.g., 'aboutUs' from 'menu.aboutUs')
+    const keyMap: Record<string, string> = {
+      'menu.aboutUs': 'About us',
+      'menu.carbCounting': 'Carb-counting',
+      'menu.myMedications': 'My medications',
+      'menu.portionGuide': 'Portion guide',
+      'menu.lifestyleTips': 'Lifestyle tips',
+      'menu.nutritionFacts': 'Nutrition facts',
+      'menu.exerciseGuide': 'Exercise guide',
+      'menu.meditation': 'Meditation',
+      'menu.affirmation': 'Affirmation',
+      'menu.miniGames': 'Mini games',
+      'menu.otherServices': 'Other services',
+      'menu.bookConsultation': 'Book a consultation',
+      'menu.contactUs': 'Contact us',
+    };
+    return keyMap[key] ?? '';
+  };
 
   const handleItemPress = useCallback(
     (item: MenuItem) => {
@@ -196,7 +205,7 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>EXTENDED FUNCTIONS</Text>
+          <Text style={styles.headerTitle}>{t('menu.title').toUpperCase()}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -226,8 +235,10 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
                   />
                 </View>
                 <View style={styles.menuItemText}>
-                  <Text style={styles.menuItemLabel}>{item.label}</Text>
-                  <Text style={styles.menuItemLabelEn}>{item.labelEn}</Text>
+                  <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
+                  {language !== 'en' && (
+                    <Text style={styles.menuItemLabelEn}>{getEnglishLabel(item.labelKey)}</Text>
+                  )}
                 </View>
                 <Ionicons
                   name="chevron-forward"

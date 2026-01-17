@@ -15,9 +15,9 @@ interface ChatState {
   currentUserId: string | null;
 
   // Actions
-  initializeChat: (userId: string) => void;
+  initializeChat: (userId: string, welcomeMessage: string) => void;
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp' | 'user_id'>) => void;
-  clearChat: () => void;
+  clearChat: (welcomeMessage: string) => void;
   setLoading: (loading: boolean) => void;
   
   // Get chat history for AI context
@@ -31,10 +31,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   currentUserId: null,
 
   // Initialize chat for a user - loads from SQLite
-  initializeChat: (userId: string) => {
+  initializeChat: (userId: string, welcomeMessage: string) => {
     try {
       // Ensure welcome message exists
-      chatRepository.ensureWelcomeMessage(userId);
+      chatRepository.ensureWelcomeMessage(userId, welcomeMessage);
       
       // Load messages from SQLite
       const messages = chatRepository.getRecentChatMessages(userId, 100);
@@ -74,7 +74,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Clear all messages and reset to welcome message
-  clearChat: () => {
+  clearChat: (welcomeMessage: string) => {
     const { currentUserId } = get();
     if (!currentUserId) return;
 
@@ -83,10 +83,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       chatRepository.clearChatHistory(currentUserId);
       
       // Create new welcome message
-      const welcomeMessage = chatRepository.createWelcomeMessage(currentUserId);
+      const newWelcomeMessage = chatRepository.createWelcomeMessage(currentUserId, welcomeMessage);
       
       set({
-        messages: [welcomeMessage],
+        messages: [newWelcomeMessage],
       });
     } catch (error) {
       console.error('[ChatStore] Clear chat error:', error);

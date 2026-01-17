@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { SPACING, RADIUS } from '../../constants/typography';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '../../services/i18n';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -62,18 +62,16 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={styles.settingRow}
       onPress={() => setModalVisible(true)}
       activeOpacity={0.7}
     >
-      <View style={styles.leftContent}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="globe-outline" size={22} color={COLORS.primary} />
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.label}>{t('settings.language')}</Text>
-          <Text style={styles.value}>{currentLanguage?.nativeLabel}</Text>
-        </View>
+      <View style={styles.settingIcon}>
+        <Ionicons name="globe-outline" size={20} color={COLORS.primary} />
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={styles.label}>{t('settings.language')}</Text>
+        <Text style={styles.value}>{currentLanguage?.nativeLabel}</Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
 
@@ -144,42 +142,32 @@ function LanguageModal({ currentLanguage, onSelect, onClose, t }: LanguageModalP
 }
 
 const styles = StyleSheet.create({
-  container: {
+  // Match the SettingRow style from settings.tsx
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.lg,
-    marginHorizontal: SPACING.md,
-    marginVertical: SPACING.xs,
+    paddingVertical: SPACING.sm,
   },
-  leftContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
+  settingIcon: {
+    width: 36,
+    height: 36,
     borderRadius: RADIUS.md,
     backgroundColor: `${COLORS.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   textContainer: {
     flex: 1,
   },
   label: {
-    fontSize: TYPOGRAPHY.sizes.md,
+    fontSize: 16,
     fontWeight: '500',
     color: COLORS.text,
     marginBottom: 2,
   },
   value: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   compactContainer: {
@@ -189,7 +177,7 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
   },
   compactText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: 14,
     color: COLORS.primary,
     fontWeight: '500',
   },
@@ -217,7 +205,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -238,7 +226,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionLabel: {
-    fontSize: TYPOGRAPHY.sizes.md,
+    fontSize: 16,
     fontWeight: '500',
     color: COLORS.text,
     marginBottom: 2,
@@ -247,7 +235,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   optionSubtitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
 });
