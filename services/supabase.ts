@@ -185,7 +185,7 @@ export function getSupabaseClient(): SupabaseClient | null {
       storage: secureStorageAdapter,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true, // Enable to detect auth tokens from callback URLs
     },
   });
 

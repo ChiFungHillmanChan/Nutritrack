@@ -200,6 +200,7 @@ const zhTW = {
       demoMode: '示範模式（無需登入）',
       loginFailed: '登入失敗',
       tryAgain: '請再試一次',
+      timeout: '登入逾時，請再試一次',
       fillEmailPassword: '請填寫電郵同密碼',
       cancelled: '登入已取消',
     },

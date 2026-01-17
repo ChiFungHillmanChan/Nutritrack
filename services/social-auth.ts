@@ -151,6 +151,8 @@ export async function signInWithGoogle(): Promise<{
     // Authentication > URL Configuration > Redirect URLs
     const redirectTo = 'nutritrack://auth/callback';
 
+    console.log('[Google Sign-In] Starting OAuth flow with redirect:', redirectTo);
+
     // Start the OAuth flow using Supabase
     // Supabase handles the Google OAuth complexity and redirects
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -162,13 +164,16 @@ export async function signInWithGoogle(): Promise<{
     });
 
     if (error) {
-      console.error('Supabase OAuth error:', error);
+      console.error('[Google Sign-In] Supabase OAuth error:', error);
       return { success: false, error: error.message };
     }
 
     if (!data.url) {
+      console.error('[Google Sign-In] No OAuth URL returned');
       return { success: false, error: 'No OAuth URL returned' };
     }
+
+    console.log('[Google Sign-In] Opening browser for authentication...');
 
     // Open the OAuth URL in a web browser
     // Use the custom scheme for the return URL
@@ -180,6 +185,8 @@ export async function signInWithGoogle(): Promise<{
       }
     );
 
+    console.log('[Google Sign-In] Browser result type:', result.type);
+
     if (result.type === 'cancel' || result.type === 'dismiss') {
       return { success: false, error: 'cancelled' };
     }
@@ -190,6 +197,7 @@ export async function signInWithGoogle(): Promise<{
 
     // Extract the URL parameters from the redirect
     const url = result.url;
+    console.log('[Google Sign-In] Callback URL received:', url);
     
     // Parse the URL to get the auth tokens
     // Supabase returns tokens in the URL fragment or query params
@@ -201,7 +209,13 @@ export async function signInWithGoogle(): Promise<{
     const accessToken = hashParams.get('access_token') ?? queryParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
 
+    console.log('[Google Sign-In] Tokens found:', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken 
+    });
+
     if (accessToken && refreshToken) {
+      console.log('[Google Sign-In] Setting session with tokens...');
       // Set the session manually with the tokens from the URL
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
@@ -209,11 +223,12 @@ export async function signInWithGoogle(): Promise<{
       });
 
       if (sessionError) {
-        console.error('Session error:', sessionError);
+        console.error('[Google Sign-In] Session error:', sessionError);
         return { success: false, error: sessionError.message };
       }
 
       if (sessionData.user) {
+        console.log('[Google Sign-In] Session set successfully for user:', sessionData.user.id);
         return {
           success: true,
           user: {
@@ -225,8 +240,21 @@ export async function signInWithGoogle(): Promise<{
     }
 
     // If no tokens in URL, check if session was set automatically
-    const { data: currentSession } = await supabase.auth.getSession();
+    // Add a small delay and retry logic
+    console.log('[Google Sign-In] No tokens in URL, checking for existing session...');
+    
+    // Wait a moment for Supabase to process
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const { data: currentSession, error: sessionCheckError } = await supabase.auth.getSession();
+    
+    if (sessionCheckError) {
+      console.error('[Google Sign-In] Session check error:', sessionCheckError);
+      return { success: false, error: sessionCheckError.message };
+    }
+    
     if (currentSession.session?.user) {
+      console.log('[Google Sign-In] Found existing session for user:', currentSession.session.user.id);
       return {
         success: true,
         user: {
@@ -236,10 +264,11 @@ export async function signInWithGoogle(): Promise<{
       };
     }
 
-    return { success: false, error: 'Failed to complete authentication' };
+    console.error('[Google Sign-In] No session found after authentication');
+    return { success: false, error: 'Failed to complete authentication. Please try again.' };
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Google Sign-In error:', error);
+      console.error('[Google Sign-In] Error:', error);
       return { success: false, error: error.message };
     }
     return { success: false, error: 'An unexpected error occurred' };

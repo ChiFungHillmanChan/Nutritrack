@@ -61,13 +61,29 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    const result = await signInWithGoogle();
-    setIsLoading(false);
-
-    if (result.success) {
-      router.replace('/(tabs)');
-    } else {
-      Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
+    
+    try {
+      // Add a timeout to prevent hanging indefinitely
+      const timeoutPromise = new Promise<{ success: false; error: string }>((resolve) => {
+        setTimeout(() => {
+          resolve({ success: false, error: t('auth.login.timeout') ?? 'Login timed out. Please try again.' });
+        }, 60000); // 60 second timeout
+      });
+      
+      const result = await Promise.race([signInWithGoogle(), timeoutPromise]);
+      
+      if (result.success) {
+        // Navigation is handled by auth state listener in _layout.tsx
+        // which also extracts OAuth metadata for pre-filling onboarding
+        console.log('[Login] Google login successful, waiting for auth state listener to navigate');
+      } else if (result.error !== 'cancelled') {
+        Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
+      }
+    } catch (error) {
+      console.error('[Login] Google login error:', error);
+      Alert.alert(t('auth.login.loginFailed'), t('auth.login.tryAgain'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,8 +93,10 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (result.success) {
-      router.replace('/(tabs)');
-    } else {
+      // Navigation is handled by auth state listener in _layout.tsx
+      // which also extracts OAuth metadata for pre-filling onboarding
+      console.log('[Login] Apple login successful, waiting for auth state listener to navigate');
+    } else if (result.error !== 'cancelled') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };

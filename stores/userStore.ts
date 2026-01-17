@@ -19,6 +19,16 @@ import {
   UserGoal,
 } from '../types';
 
+/**
+ * OAuth user metadata from social login providers (Google, Apple)
+ * Used to pre-fill onboarding form fields
+ */
+interface OAuthUserMetadata {
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+}
+
 interface UserState {
   // State
   user: User | null;
@@ -27,11 +37,13 @@ interface UserState {
   isDemoMode: boolean;
   isInitialized: boolean;
   error: string | null;
+  oauthMetadata: OAuthUserMetadata | null; // Pre-fill data from OAuth providers
 
   // Actions
   setUser: (newUser: User | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+  setOAuthMetadata: (metadata: OAuthUserMetadata | null) => void;
 
   // Initialization
   initialize: () => void;
@@ -234,11 +246,13 @@ export const useUserStore = create<UserState>((set, get) => ({
   isDemoMode: isDemoMode(),
   isInitialized: false,
   error: null,
+  oauthMetadata: null,
 
   // Basic setters
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
+  setOAuthMetadata: (metadata) => set({ oauthMetadata: metadata }),
 
   // Initialize from SQLite database
   initialize: () => {

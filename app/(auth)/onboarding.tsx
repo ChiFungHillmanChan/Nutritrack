@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -180,7 +180,27 @@ export default function OnboardingScreen() {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  const { updateProfile, calculateDailyTargets } = useUserStore();
+  const { updateProfile, calculateDailyTargets, oauthMetadata, setOAuthMetadata } = useUserStore();
+
+  // Pre-fill form with OAuth metadata (from Google/Apple login)
+  useEffect(() => {
+    if (oauthMetadata) {
+      console.log('[Onboarding] Pre-filling with OAuth metadata:', oauthMetadata);
+      
+      // Pre-fill name if available
+      if (oauthMetadata.name && !name) {
+        setName(oauthMetadata.name);
+      }
+    }
+  }, [oauthMetadata]);
+
+  // Clear OAuth metadata when leaving onboarding
+  useEffect(() => {
+    return () => {
+      // Clear OAuth metadata when component unmounts (onboarding completed)
+      setOAuthMetadata(null);
+    };
+  }, [setOAuthMetadata]);
 
   // Get translated options
   const GENDERS = getGenderOptions(t);
@@ -315,6 +335,10 @@ export default function OnboardingScreen() {
     const currentIndex = STEPS.indexOf(step);
     if (currentIndex > 0) {
       setStep(STEPS[currentIndex - 1]);
+    } else {
+      // On first step, navigate to login screen to allow selecting another login method
+      // Use replace instead of back() because login uses replace() to navigate here
+      router.replace('/(auth)/login');
     }
   };
 
@@ -495,14 +519,10 @@ export default function OnboardingScreen() {
 
       {/* Navigation */}
       <View style={styles.navigation}>
-        {step !== 'basics' ? (
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={20} color={COLORS.text} />
-            <Text style={styles.backButtonText}>{t('common.back')}</Text>
-          </TouchableOpacity>
-        ) : (
-          <View />
-        )}
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={20} color={COLORS.text} />
+          <Text style={styles.backButtonText}>{t('common.back')}</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.nextButton, isLoading && styles.buttonDisabled]}
           onPress={handleNext}

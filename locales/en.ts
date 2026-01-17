@@ -200,6 +200,7 @@ const en = {
       demoMode: 'Demo Mode (No login required)',
       loginFailed: 'Login Failed',
       tryAgain: 'Please try again',
+      timeout: 'Login timed out. Please try again.',
       fillEmailPassword: 'Please fill in email and password',
       cancelled: 'Login cancelled',
     },
