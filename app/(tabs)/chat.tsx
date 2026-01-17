@@ -1,32 +1,32 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   useWindowDimensions,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  Layout,
   SlideInLeft,
   SlideInRight,
-  Layout,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
-import { useUserStore } from '../../stores/userStore';
-import { useFoodStore } from '../../stores/foodStore';
-import { useChatStore, ChatMessage } from '../../stores/chatStore';
-import { sendChatMessage, DemoResponses } from '../../services/ai';
+import { COLORS, GRADIENTS, SHADOWS } from '../../constants/colors';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
+import { DemoResponses, sendChatMessage } from '../../services/ai';
+import { ChatMessage, useChatStore } from '../../stores/chatStore';
+import { useFoodStore } from '../../stores/foodStore';
+import { useUserStore } from '../../stores/userStore';
 
 // Parse markdown-style text into structured segments for rendering
 interface TextSegment {
@@ -62,7 +62,7 @@ function parseMarkdownText(content: string): TextSegment[] {
 export default function ChatScreen() {
   const { user } = useUserStore();
   const { todayNutrition } = useFoodStore();
-  const { messages, addMessage, getChatHistory, isLoading, setLoading, initializeChat } = useChatStore();
+  const { messages, addMessage, getChatHistory, isLoading, setLoading, initializeChat, updateWelcomeMessage } = useChatStore();
   const { width } = useWindowDimensions();
   const maxBubbleWidth = Math.min(width * 0.72, 320);
   const { t, language } = useTranslation();
@@ -76,6 +76,13 @@ export default function ChatScreen() {
       initializeChat(user.id, t('chat.welcomeMessage'));
     }
   }, [user?.id, initializeChat, t]);
+
+  // Update welcome message when language changes
+  useEffect(() => {
+    if (user?.id && messages.length > 0) {
+      updateWelcomeMessage(t('chat.welcomeMessage'));
+    }
+  }, [language, user?.id, messages.length, updateWelcomeMessage, t]);
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;

@@ -4,14 +4,14 @@
  * Displays nutrition progress as horizontal bars with labels.
  */
 
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
 
 
 interface NutrientData {

@@ -27,9 +27,17 @@
               "com.nutritrack.app",
               "com.googleusercontent.apps.269611860485-u65boej0tfss15bkiohna4o9msh3c5ch"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "nutritrack",
+              "com.nutritrack.app",
+              "com.googleusercontent.apps.269611860485-u65boej0tfss15bkiohna4o9msh3c5ch"
+            ]
           }
         ]
-      }
+      },
+      "runtimeVersion": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,8 +53,19 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.SCHEDULE_EXACT_ALARM"
-      ]
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -78,9 +97,14 @@
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": ""
+        "projectId": "766f4cfc-7488-487f-8dba-5c6977f55df1"
       }
+    },
+    "owner": "hillmanchan709",
+    "updates": {
+      "url": "https://u.expo.dev/766f4cfc-7488-487f-8dba-5c6977f55df1"
     }
   }
 }

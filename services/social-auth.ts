@@ -6,28 +6,13 @@
  */
 
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as AuthSession from 'expo-auth-session';
 import * as Crypto from 'expo-crypto';
+import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { getSupabaseClient } from './supabase';
 
-// Google OAuth configuration
-const GOOGLE_CLIENT_ID_IOS = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS;
-const GOOGLE_CLIENT_ID_ANDROID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID;
-const GOOGLE_CLIENT_ID_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-
-/**
- * Get the appropriate Google Client ID based on platform
- */
-function getGoogleClientId(): string | undefined {
-  if (Platform.OS === 'ios') {
-    return GOOGLE_CLIENT_ID_IOS;
-  }
-  if (Platform.OS === 'android') {
-    return GOOGLE_CLIENT_ID_ANDROID;
-  }
-  return GOOGLE_CLIENT_ID_WEB;
-}
+// Ensure web browser auth sessions are completed properly
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Check if Apple Sign-In is available on this device
@@ -40,10 +25,12 @@ export async function isAppleSignInAvailable(): Promise<boolean> {
 }
 
 /**
- * Check if Google Sign-In is configured
+ * Check if Google Sign-In is configured (via Supabase)
  */
 export function isGoogleSignInAvailable(): boolean {
-  return !!getGoogleClientId();
+  // Google Sign-In is available if Supabase is configured
+  // The actual Google OAuth is configured in Supabase dashboard
+  return !!getSupabaseClient();
 }
 
 /**
@@ -138,8 +125,15 @@ export async function signInWithApple(): Promise<{
 /**
  * Sign in with Google
  * 
- * Uses expo-auth-session for OAuth flow with Google.
- * Works on both iOS and Android.
+ * Uses Supabase's OAuth flow which handles all redirect URI complexity.
+ * This approach works in both Expo Go and production builds.
+ * 
+ * Prerequisites:
+ * 1. Configure Google OAuth in Supabase Dashboard (Authentication > Providers > Google)
+ * 2. Add your Supabase callback URL to Google Cloud Console
+ *    (https://YOUR_PROJECT.supabase.co/auth/v1/callback)
+ * 3. Configure Site URL in Supabase Dashboard (Authentication > URL Configuration)
+ *    For Expo Go: Use your app's custom scheme (e.g., nutritrack://auth/callback)
  */
 export async function signInWithGoogle(): Promise<{
   success: boolean;
@@ -147,75 +141,102 @@ export async function signInWithGoogle(): Promise<{
   user?: { id: string; email: string };
 }> {
   try {
-    const clientId = getGoogleClientId();
-    
-    if (!clientId) {
-      return { 
-        success: false, 
-        error: 'Google Sign-In is not configured. Please set the GOOGLE_CLIENT_ID environment variable.' 
-      };
-    }
-
-    // Create the OAuth redirect URI
-    const redirectUri = AuthSession.makeRedirectUri({
-      scheme: 'nutritrack',
-      path: 'auth/callback',
-    });
-
-    // Create the auth request
-    const request = new AuthSession.AuthRequest({
-      clientId,
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri,
-      responseType: AuthSession.ResponseType.IdToken,
-      usePKCE: true,
-    });
-
-    // Start the auth session
-    const discovery = await AuthSession.fetchDiscoveryAsync('https://accounts.google.com');
-    const result = await request.promptAsync(discovery);
-
-    if (result.type !== 'success') {
-      if (result.type === 'cancel' || result.type === 'dismiss') {
-        return { success: false, error: 'cancelled' };
-      }
-      return { success: false, error: `Authentication failed: ${result.type}` };
-    }
-
-    // Extract the ID token from the response
-    const idToken = result.params?.id_token;
-    
-    if (!idToken) {
-      return { success: false, error: 'No ID token received from Google' };
-    }
-
-    // Sign in with Supabase using the Google ID token
     const supabase = getSupabaseClient();
     if (!supabase) {
       return { success: false, error: 'Supabase not configured' };
     }
-    
-    const { data, error } = await supabase.auth.signInWithIdToken({
+
+    // For Expo Go, we need to use a scheme-based redirect
+    // The redirect URL must be configured in Supabase Dashboard under:
+    // Authentication > URL Configuration > Redirect URLs
+    const redirectTo = 'nutritrack://auth/callback';
+
+    // Start the OAuth flow using Supabase
+    // Supabase handles the Google OAuth complexity and redirects
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      token: idToken,
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true, // We'll handle the browser ourselves
+      },
     });
 
     if (error) {
-      console.error('Supabase Google Sign-In error:', error);
+      console.error('Supabase OAuth error:', error);
       return { success: false, error: error.message };
     }
 
-    if (!data.user) {
-      return { success: false, error: 'No user data returned' };
+    if (!data.url) {
+      return { success: false, error: 'No OAuth URL returned' };
     }
 
-    return {
-      success: true,
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? '',
-      },
-    };
+    // Open the OAuth URL in a web browser
+    // Use the custom scheme for the return URL
+    const result = await WebBrowser.openAuthSessionAsync(
+      data.url,
+      redirectTo,
+      {
+        showInRecents: true,
+      }
+    );
+
+    if (result.type === 'cancel' || result.type === 'dismiss') {
+      return { success: false, error: 'cancelled' };
+    }
+
+    if (result.type !== 'success') {
+      return { success: false, error: `Authentication failed: ${result.type}` };
+    }
+
+    // Extract the URL parameters from the redirect
+    const url = result.url;
+    
+    // Parse the URL to get the auth tokens
+    // Supabase returns tokens in the URL fragment or query params
+    const parsedUrl = new URL(url);
+    const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
+    const queryParams = parsedUrl.searchParams;
+    
+    // Get access token and refresh token from URL
+    const accessToken = hashParams.get('access_token') ?? queryParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      // Set the session manually with the tokens from the URL
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        return { success: false, error: sessionError.message };
+      }
+
+      if (sessionData.user) {
+        return {
+          success: true,
+          user: {
+            id: sessionData.user.id,
+            email: sessionData.user.email ?? '',
+          },
+        };
+      }
+    }
+
+    // If no tokens in URL, check if session was set automatically
+    const { data: currentSession } = await supabase.auth.getSession();
+    if (currentSession.session?.user) {
+      return {
+        success: true,
+        user: {
+          id: currentSession.session.user.id,
+          email: currentSession.session.user.email ?? '',
+        },
+      };
+    }
+
+    return { success: false, error: 'Failed to complete authentication' };
   } catch (error) {
     if (error instanceof Error) {
       console.error('Google Sign-In error:', error);

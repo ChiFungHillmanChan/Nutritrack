@@ -13,6 +13,8 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   haptics_enabled: boolean;
   analytics_enabled: boolean;
+  is_logged_in: boolean;
+  current_user_id: string | null;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +23,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   haptics_enabled: true,
   analytics_enabled: true,
+  is_logged_in: false,
+  current_user_id: null,
 };
 
 /**
@@ -64,7 +68,31 @@ export function getAllSettings(): AppSettings {
     theme: getSetting('theme', DEFAULT_SETTINGS.theme),
     haptics_enabled: getSetting('haptics_enabled', DEFAULT_SETTINGS.haptics_enabled),
     analytics_enabled: getSetting('analytics_enabled', DEFAULT_SETTINGS.analytics_enabled),
+    is_logged_in: getSetting('is_logged_in', DEFAULT_SETTINGS.is_logged_in),
+    current_user_id: getSetting('current_user_id', DEFAULT_SETTINGS.current_user_id),
   };
+}
+
+/**
+ * Set login state
+ */
+export function setLoginState(isLoggedIn: boolean, userId: string | null): void {
+  setSetting('is_logged_in', isLoggedIn);
+  setSetting('current_user_id', userId);
+}
+
+/**
+ * Check if user is logged in
+ */
+export function isUserLoggedIn(): boolean {
+  return getSetting('is_logged_in', false);
+}
+
+/**
+ * Get current logged in user ID
+ */
+export function getCurrentUserId(): string | null {
+  return getSetting('current_user_id', null);
 }
 
 /**

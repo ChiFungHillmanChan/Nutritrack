@@ -4,11 +4,11 @@
  * Chronological list of timeline entries.
  */
 
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
 import { EntryCard, TimelineEntry } from './EntryCard';
 
 interface GroupedEntries {

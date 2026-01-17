@@ -9,36 +9,34 @@
  * - Daily motivational quote
  */
 
-import { useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useMemo } from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
 } from 'react-native-reanimated';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
-import { useUserStore, calculateAge } from '../../stores/userStore';
-import { useFoodStore } from '../../stores/foodStore';
-import { useHabitStore } from '../../stores/habitStore';
-import { useTranslation } from '../../hooks/useTranslation';
+import { DailyQuote } from '../../components/home';
 import {
-  CircularProgress,
   Card,
+  CircularProgress,
   NutrientProgressBars,
 } from '../../components/ui';
-import { DailyQuote } from '../../components/home';
-import { calculateEnergyBalance } from '../../lib/energy-calculator';
-import type { ExerciseLog } from '../../types';
+import { COLORS, GRADIENTS, SHADOWS } from '../../constants/colors';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useFoodStore } from '../../stores/foodStore';
+import { useHabitStore } from '../../stores/habitStore';
+import { useUserStore } from '../../stores/userStore';
 
 
 export default function HomeScreen() {
@@ -70,28 +68,26 @@ export default function HomeScreen() {
   }, [user?.id, fetchTodayLogs, fetchTodayHabits]);
 
   // Calculate energy balance (prepared for future use)
-  const _energyBalance = useMemo(() => {
-    if (!user?.daily_targets) return null;
-
-    const age = user.date_of_birth 
-      ? calculateAge(user.date_of_birth)
-      : 30;
-
-    const exercises: ExerciseLog[] = [];
-    const steps = 0;
-
-    return calculateEnergyBalance({
-      weightKg: user.weight_kg,
-      heightCm: user.height_cm,
-      age,
-      gender: user.gender || 'prefer_not_to_say',
-      activityLevel: user.activity_level || 'moderate',
-      caloriesConsumed: todayNutrition.calories,
-      exercises,
-      steps,
-      dailyTargets: user.daily_targets,
-    });
-  }, [user, todayNutrition.calories]);
+  // TODO: Enable when energy balance UI is implemented
+  // const energyBalance = useMemo(() => {
+  //   if (!user?.daily_targets) return null;
+  //   const age = user.date_of_birth 
+  //     ? calculateAge(user.date_of_birth)
+  //     : 30;
+  //   const exercises: ExerciseLog[] = [];
+  //   const steps = 0;
+  //   return calculateEnergyBalance({
+  //     weightKg: user.weight_kg,
+  //     heightCm: user.height_cm,
+  //     age,
+  //     gender: user.gender || 'prefer_not_to_say',
+  //     activityLevel: user.activity_level || 'moderate',
+  //     caloriesConsumed: todayNutrition.calories,
+  //     exercises,
+  //     steps,
+  //     dailyTargets: user.daily_targets,
+  //   });
+  // }, [user, todayNutrition.calories]);
 
   // Calculate BMI
   const bmi = useMemo(() => {

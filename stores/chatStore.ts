@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { chatRepository, ChatMessage } from '../services/database';
+import { ChatMessage, chatRepository } from '../services/database';
 
 interface ChatState {
   // State
@@ -19,6 +19,7 @@ interface ChatState {
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp' | 'user_id'>) => void;
   clearChat: (welcomeMessage: string) => void;
   setLoading: (loading: boolean) => void;
+  updateWelcomeMessage: (newWelcomeText: string) => void;
   
   // Get chat history for AI context
   getChatHistory: () => Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -106,6 +107,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       role: msg.role,
       content: msg.content,
     }));
+  },
+
+  // Update welcome message when language changes
+  updateWelcomeMessage: (newWelcomeText: string) => {
+    const { currentUserId, messages } = get();
+    if (!currentUserId) return;
+
+    try {
+      // Update in SQLite
+      const updated = chatRepository.updateWelcomeMessage(currentUserId, newWelcomeText);
+      
+      if (updated && messages.length > 0) {
+        // Update in memory state
+        const updatedMessages = [...messages];
+        if (updatedMessages[0].role === 'assistant') {
+          updatedMessages[0] = { ...updatedMessages[0], content: newWelcomeText };
+          set({ messages: updatedMessages });
+        }
+      }
+    } catch (error) {
+      console.error('[ChatStore] Update welcome message error:', error);
+    }
   },
 }));
 

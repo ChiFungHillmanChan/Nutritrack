@@ -4,30 +4,30 @@
  * Slide-in drawer menu with extended functions as per design specs.
  */
 
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  Pressable,
   Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
   FadeOut,
   SlideInRight,
   SlideOutRight,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
-import { useUserStore } from '../../stores/userStore';
+import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useUserStore } from '../../stores/userStore';
 
 const { width } = Dimensions.get('window');
 const MENU_WIDTH = width * 0.75;
@@ -204,7 +204,7 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
         exiting={SlideOutRight.duration(200)}
         style={styles.menuContainer}
       >
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right']}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t('menu.title').toUpperCase()}</Text>
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,

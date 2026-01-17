@@ -4,7 +4,7 @@
  * CRUD operations for chat messages in SQLite.
  */
 
-import { getDatabase, generateId, getCurrentTimestamp } from '../database';
+import { generateId, getCurrentTimestamp, getDatabase } from '../database';
 
 export interface ChatMessage {
   id: string;
@@ -199,4 +199,28 @@ export function ensureWelcomeMessage(userId: string, welcomeText: string): void 
   if (count === 0) {
     createWelcomeMessage(userId, welcomeText);
   }
+}
+
+/**
+ * Update the welcome message content (first assistant message)
+ * Used when language changes to update the greeting
+ * @param userId - The user ID
+ * @param newWelcomeText - The new translated welcome message text
+ */
+export function updateWelcomeMessage(userId: string, newWelcomeText: string): boolean {
+  const db = getDatabase();
+  // Get the first message (should be the welcome message)
+  const firstMessage = db.getFirstSync<ChatMessageRow>(
+    'SELECT * FROM chat_messages WHERE user_id = ? ORDER BY timestamp ASC LIMIT 1',
+    [userId]
+  );
+  
+  if (firstMessage && firstMessage.role === 'assistant') {
+    db.runSync(
+      'UPDATE chat_messages SET content = ? WHERE id = ?',
+      [newWelcomeText, firstMessage.id]
+    );
+    return true;
+  }
+  return false;
 }

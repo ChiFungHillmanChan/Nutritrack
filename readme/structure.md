@@ -200,10 +200,10 @@ Local SQLite database for offline-first data persistence. Production-ready for i
 |------------|------|---------|
 | `userRepository` | `userRepository.ts` | User profile CRUD, demo user management |
 | `foodRepository` | `foodRepository.ts` | Food logs CRUD, nutrition calculations |
-| `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message |
+| `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message, updateWelcomeMessage for language changes |
 | `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations |
 | `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries |
-| `settingsRepository` | `settingsRepository.ts` | App settings persistence, data management, clear user data |
+| `settingsRepository` | `settingsRepository.ts` | App settings persistence, login state tracking, data management, clear user data |
 
 ### Database Tables
 

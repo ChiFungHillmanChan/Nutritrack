@@ -1,15 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import 'react-native-reanimated';
-import { useUserStore } from '../stores/userStore';
 import { onAuthStateChange } from '../services/auth';
-import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import { initializeDatabase } from '../services/database';
+import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { useUserStore } from '../stores/userStore';
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -18,11 +18,15 @@ export const unstable_settings = {
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Wrap in try-catch to handle cases where splash screen is not available (e.g., Expo Go reload)
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Splash screen might not be available, which is fine
+});
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const { setUser, setLoading, isAuthenticated, isInitialized, initialize, user } = useUserStore();
+  const splashHiddenRef = useRef(false);
 
   const initializeApp = useCallback(async () => {
     try {
@@ -39,7 +43,13 @@ export default function RootLayout() {
     } finally {
       setLoading(false);
       setIsReady(true);
-      SplashScreen.hideAsync();
+      // Only hide splash screen once to avoid the error
+      if (!splashHiddenRef.current) {
+        splashHiddenRef.current = true;
+        SplashScreen.hideAsync().catch(() => {
+          // Splash screen might not be available, which is fine
+        });
+      }
     }
   }, [setLoading, initialize]);
 

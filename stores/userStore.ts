@@ -7,17 +7,17 @@
  */
 
 import { create } from 'zustand';
+import { settingsRepository, userRepository } from '../services/database';
+import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import {
-  User,
+  ActivityLevel,
   DailyTargets,
-  UserGoal,
+  Gender,
   HealthGoal,
   MedicalCondition,
-  Gender,
-  ActivityLevel,
+  User,
+  UserGoal,
 } from '../types';
-import { getSupabaseClient, isDemoMode } from '../services/supabase';
-import { userRepository } from '../services/database';
 
 interface UserState {
   // State
@@ -243,16 +243,26 @@ export const useUserStore = create<UserState>((set, get) => ({
   // Initialize from SQLite database
   initialize: () => {
     try {
-      // Try to get existing user from SQLite
-      const existingUser = userRepository.getCurrentUser();
+      // Check if user is logged in from settings
+      const isLoggedIn = settingsRepository.isUserLoggedIn();
+      const currentUserId = settingsRepository.getCurrentUserId();
       
-      if (existingUser) {
-        set({
-          user: existingUser,
-          isAuthenticated: true,
-          isDemoMode: true, // Local users are always in "demo" mode (no cloud)
-          isInitialized: true,
-        });
+      if (isLoggedIn && currentUserId) {
+        // Get the user from SQLite
+        const existingUser = userRepository.getUserById(currentUserId);
+        
+        if (existingUser) {
+          set({
+            user: existingUser,
+            isAuthenticated: true,
+            isDemoMode: true, // Local users are always in "demo" mode (no cloud)
+            isInitialized: true,
+          });
+        } else {
+          // User ID in settings but not in database - clear login state
+          settingsRepository.setLoginState(false, null);
+          set({ isInitialized: true });
+        }
       } else {
         set({ isInitialized: true });
       }
@@ -267,6 +277,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       // Get or create demo user in SQLite
       const demoUser = userRepository.getDemoUser();
+      
+      // Save login state to settings
+      settingsRepository.setLoginState(true, demoUser.id);
       
       set({
         user: demoUser,
@@ -294,6 +307,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           const demoUser = userRepository.getDemoUser();
           user = userRepository.updateUser(demoUser.id, { email });
         }
+        
+        // Save login state to settings
+        settingsRepository.setLoginState(true, user!.id);
         
         set({
           user: user!,
@@ -365,6 +381,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         const demoUser = userRepository.getDemoUser();
         const user = userRepository.updateUser(demoUser.id, { email });
         
+        // Save login state to settings
+        settingsRepository.setLoginState(true, user!.id);
+        
         set({
           user: user!,
           isAuthenticated: true,
@@ -408,6 +427,9 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   // Sign out
   signOut: async () => {
+    // Clear login state from settings
+    settingsRepository.setLoginState(false, null);
+    
     const supabase = getSupabaseClient();
     if (supabase) {
       await supabase.auth.signOut();
