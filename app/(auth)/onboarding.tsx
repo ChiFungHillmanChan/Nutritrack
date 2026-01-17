@@ -792,6 +792,8 @@ function BasicsStep({
                 value={dateOfBirth}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant="light"
+                textColor={COLORS.text}
                 onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
                   // On Android, close picker after selection
                   if (Platform.OS === 'android') {
