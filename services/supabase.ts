@@ -57,8 +57,15 @@ export function isDemoMode(): boolean {
 }
 
 /**
+ * SecureStore has a 2048 byte limit per item.
+ * This adapter chunks large values to work around this limitation.
+ */
+const CHUNK_SIZE = 1800; // Leave some margin below 2048
+
+/**
  * Secure storage adapter for Supabase auth
  * Uses SecureStore on native platforms, localStorage on web
+ * Handles large values by chunking them
  */
 const secureStorageAdapter = {
   getItem: async (key: string): Promise<string | null> => {
@@ -68,8 +75,33 @@ const secureStorageAdapter = {
       }
       return null;
     }
-    return SecureStore.getItemAsync(key);
+    
+    // Try to get the value directly first
+    const value = await SecureStore.getItemAsync(key);
+    if (value !== null) {
+      return value;
+    }
+    
+    // Check if it's chunked
+    const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
+    if (!chunkCountStr) {
+      return null;
+    }
+    
+    const chunkCount = parseInt(chunkCountStr, 10);
+    const chunks: string[] = [];
+    
+    for (let i = 0; i < chunkCount; i++) {
+      const chunk = await SecureStore.getItemAsync(`${key}_${i}`);
+      if (chunk === null) {
+        return null; // Corrupted data
+      }
+      chunks.push(chunk);
+    }
+    
+    return chunks.join('');
   },
+  
   setItem: async (key: string, value: string): Promise<void> => {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
@@ -77,10 +109,37 @@ const secureStorageAdapter = {
       }
       return;
     }
-    await SecureStore.setItemAsync(key, value, {
+    
+    // Clear any existing chunks first
+    await secureStorageAdapter.removeItem(key);
+    
+    // If value is small enough, store directly
+    if (value.length <= CHUNK_SIZE) {
+      await SecureStore.setItemAsync(key, value, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED,
+      });
+      return;
+    }
+    
+    // Chunk the value
+    const chunks: string[] = [];
+    for (let i = 0; i < value.length; i += CHUNK_SIZE) {
+      chunks.push(value.slice(i, i + CHUNK_SIZE));
+    }
+    
+    // Store chunk count
+    await SecureStore.setItemAsync(`${key}_chunks`, chunks.length.toString(), {
       keychainAccessible: SecureStore.WHEN_UNLOCKED,
     });
+    
+    // Store each chunk
+    for (let i = 0; i < chunks.length; i++) {
+      await SecureStore.setItemAsync(`${key}_${i}`, chunks[i], {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED,
+      });
+    }
   },
+  
   removeItem: async (key: string): Promise<void> => {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
@@ -88,7 +147,19 @@ const secureStorageAdapter = {
       }
       return;
     }
+    
+    // Try to delete the direct value
     await SecureStore.deleteItemAsync(key);
+    
+    // Check for and delete chunks
+    const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
+    if (chunkCountStr) {
+      const chunkCount = parseInt(chunkCountStr, 10);
+      for (let i = 0; i < chunkCount; i++) {
+        await SecureStore.deleteItemAsync(`${key}_${i}`);
+      }
+      await SecureStore.deleteItemAsync(`${key}_chunks`);
+    }
   },
 };
 

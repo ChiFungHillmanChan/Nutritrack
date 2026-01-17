@@ -7,13 +7,19 @@
  * 
  * For native platforms (iOS/Android), uses native sign-in flows for better UX.
  * For web, uses OAuth redirect flow.
+ * 
+ * IMPORTANT: Supabase handles all token storage internally via its storage adapter.
+ * We do NOT store tokens separately - this follows industry best practices:
+ * - Single source of truth for auth state
+ * - No duplicate storage
+ * - Supabase manages token refresh automatically
  */
 
-import { getSupabaseClient, isDemoMode } from './supabase';
-import { saveSecure, deleteSecure, STORAGE_KEYS } from './secure-storage';
-import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { Platform } from 'react-native';
+
+import { getSupabaseClient, isDemoMode } from './supabase';
 import {
   signInWithApple as nativeAppleSignIn,
   signInWithGoogle as nativeGoogleSignIn,
@@ -59,13 +65,8 @@ export async function signInWithEmail(email: string, password: string): Promise<
     return { success: false, error: error.message };
   }
 
-  if (data.session) {
-    await saveSecure(STORAGE_KEYS.AUTH_TOKEN, data.session.access_token);
-    if (data.session.refresh_token) {
-      await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, data.session.refresh_token);
-    }
-  }
-
+  // Supabase automatically stores the session via its storage adapter
+  // No need to store tokens separately - this avoids duplicate storage
   return { success: true, userId: data.user?.id };
 }
 
@@ -149,18 +150,8 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
 
     if (result.type === 'success' && result.url) {
-      // Extract tokens from URL
-      const url = new URL(result.url);
-      const accessToken = url.searchParams.get('access_token');
-      const refreshToken = url.searchParams.get('refresh_token');
-
-      if (accessToken) {
-        await saveSecure(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-      }
-      if (refreshToken) {
-        await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-      }
-
+      // Supabase handles session storage automatically
+      // Just return success - no need to manually store tokens
       return { success: true };
     }
 
@@ -221,17 +212,8 @@ export async function signInWithApple(): Promise<AuthResult> {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
 
     if (result.type === 'success' && result.url) {
-      const url = new URL(result.url);
-      const accessToken = url.searchParams.get('access_token');
-      const refreshToken = url.searchParams.get('refresh_token');
-
-      if (accessToken) {
-        await saveSecure(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-      }
-      if (refreshToken) {
-        await saveSecure(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-      }
-
+      // Supabase handles session storage automatically
+      // Just return success - no need to manually store tokens
       return { success: true };
     }
 
@@ -245,11 +227,6 @@ export async function signInWithApple(): Promise<AuthResult> {
  * Sign out
  */
 export async function signOut(): Promise<AuthResult> {
-  // Clear secure storage regardless of mode
-  await deleteSecure(STORAGE_KEYS.AUTH_TOKEN);
-  await deleteSecure(STORAGE_KEYS.REFRESH_TOKEN);
-  await deleteSecure(STORAGE_KEYS.USER_ID);
-
   // Demo mode - always succeed
   if (isDemoMode()) {
     return { success: true };
