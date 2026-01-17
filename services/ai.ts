@@ -67,6 +67,81 @@ export interface DemoResponses {
   protein: string;
 }
 
+/**
+ * Sanitize user input to prevent prompt injection attacks.
+ * Removes common injection patterns and limits input length.
+ *
+ * This provides client-side defense-in-depth; server-side Edge Functions
+ * also sanitize inputs, but early sanitization reduces attack surface.
+ */
+function sanitizeUserInput(input: string, maxLength = 2000): string {
+  const sanitized = input
+    // Remove system/instruction markers
+    .replace(/\[SYSTEM\]/gi, '')
+    .replace(/\[INST\]/gi, '')
+    .replace(/\[\/INST\]/gi, '')
+    .replace(/<<SYS>>/gi, '')
+    .replace(/<\/s>/gi, '')
+    .replace(/```system/gi, '')
+    // Remove role override attempts
+    .replace(/^(system|assistant|model):/gim, '')
+    .replace(/\n(system|assistant|model):/gi, '\n')
+    // Remove common jailbreak patterns
+    .replace(/ignore previous instructions/gi, '')
+    .replace(/disregard.*instructions/gi, '')
+    .replace(/pretend you are/gi, '')
+    .replace(/you are now/gi, '')
+    .replace(/act as/gi, '')
+    .replace(/bypass/gi, '')
+    .replace(/override/gi, '')
+    // Trim and limit length
+    .trim()
+    .slice(0, maxLength);
+
+  return sanitized;
+}
+
+/**
+ * Sanitize meal type input to prevent injection via meal context.
+ * Only allows known meal types; otherwise sanitizes heavily.
+ */
+function sanitizeMealType(mealType?: string): string | undefined {
+  if (!mealType) return undefined;
+
+  // Only allow known meal types
+  const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', '早餐', '午餐', '晚餐', '小食'];
+  const normalized = mealType.toLowerCase().trim();
+
+  if (validMealTypes.includes(normalized)) {
+    return normalized;
+  }
+
+  // If not a valid meal type, sanitize it heavily
+  const sanitized = mealType
+    .replace(/\[SYSTEM\]/gi, '')
+    .replace(/\[INST\]/gi, '')
+    .replace(/<<SYS>>/gi, '')
+    .replace(/<\/s>/gi, '')
+    .replace(/```/g, '')
+    .replace(/[<>{}]/g, '')
+    .trim()
+    .slice(0, 50);
+
+  return sanitized || undefined;
+}
+
+/**
+ * Sanitize chat history messages.
+ */
+function sanitizeChatHistory(history?: ChatMessage[]): ChatMessage[] | undefined {
+  if (!history) return undefined;
+
+  return history.map((msg) => ({
+    ...msg,
+    content: sanitizeUserInput(msg.content, 1500),
+  }));
+}
+
 const DEMO_FOOD_ANALYSIS = {
   food_name: '白飯',
   portion_size_grams: 200,
@@ -154,6 +229,10 @@ async function callGeminiChat(
   history?: ChatMessage[],
   context?: ChatContext
 ): Promise<ChatResponse> {
+  // Sanitize user inputs to prevent prompt injection
+  const sanitizedMessage = sanitizeUserInput(message);
+  const sanitizedHistory = sanitizeChatHistory(history);
+
   const systemPrompt = `你係 Nutritrack 嘅 AI 營養師助手，專門幫助用戶管理營養同飲食。
 
 你嘅角色：
@@ -182,9 +261,9 @@ ${context ? formatContext(context) : ''}`;
     parts: [{ text: '明白！我係你嘅 AI 營養師，有咩可以幫到你？' }],
   });
 
-  // Add history
-  if (history) {
-    for (const msg of history) {
+  // Add history (sanitized)
+  if (sanitizedHistory) {
+    for (const msg of sanitizedHistory) {
       contents.push({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }],
@@ -192,10 +271,10 @@ ${context ? formatContext(context) : ''}`;
     }
   }
 
-  // Add current message
+  // Add current message (sanitized)
   contents.push({
     role: 'user',
-    parts: [{ text: message }],
+    parts: [{ text: sanitizedMessage }],
   });
 
   try {
@@ -254,6 +333,9 @@ async function callGeminiVision(
   imageBase64: string,
   mealContext?: string
 ): Promise<FoodAnalysisResponse> {
+  // Sanitize meal context to prevent prompt injection
+  const sanitizedMealContext = sanitizeMealType(mealContext);
+
   const prompt = `你係一個專業嘅營養師助手。分析呢張食物相片，並提供以下資訊：
 
 1. 食物名稱（用繁體中文）
@@ -267,7 +349,7 @@ async function callGeminiVision(
    - 鈉 (mg)
 4. 你對識別結果嘅信心度 (0-1)
 
-${mealContext ? `用戶表示呢係${mealContext}。` : ''}
+${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
 
 用以下 JSON 格式回覆（唔好加任何其他文字）：
 {

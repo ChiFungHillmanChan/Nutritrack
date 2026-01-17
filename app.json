@@ -27,13 +27,6 @@
               "com.nutritrack.app",
               "com.googleusercontent.apps.269611860485-u65boej0tfss15bkiohna4o9msh3c5ch"
             ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "nutritrack",
-              "com.nutritrack.app",
-              "com.googleusercontent.apps.269611860485-u65boej0tfss15bkiohna4o9msh3c5ch"
-            ]
           }
         ]
       },
@@ -48,13 +41,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.nutritrack.app",
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE",
-        "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",

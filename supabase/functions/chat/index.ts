@@ -7,12 +7,24 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { verifyAuth, unauthorizedResponse } from '../_shared/auth.ts';
 
 // AI Model Constants - use GEMINI_2_5_PRO for chat (better conversation ability)
 const AI_MODELS = {
   GEMINI_2_5_PRO: 'gemini-2.5-pro',
 } as const;
 
+/**
+ * CORS headers for Edge Function responses.
+ *
+ * Note: Mobile apps (React Native/Expo) don't enforce CORS like web browsers.
+ * The wildcard origin is acceptable here because:
+ * 1. JWT authentication is now enforced for all non-OPTIONS requests
+ * 2. Mobile apps make requests directly without browser CORS restrictions
+ * 3. The primary consumers are mobile apps, not web browsers
+ *
+ * If web clients are added in the future, consider restricting to specific domains.
+ */
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -267,6 +279,12 @@ serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Verify JWT authentication
+  const authResult = await verifyAuth(req);
+  if (!authResult) {
+    return unauthorizedResponse(corsHeaders);
   }
 
   try {
