@@ -80,6 +80,112 @@ const en = {
     fluids: 'Fluids',
   },
 
+  // Profile Edit Screen
+  profileEdit: {
+    title: 'Edit Profile',
+    saving: 'Saving...',
+    basicInfo: 'Basic Information',
+    name: 'Name',
+    namePlaceholder: 'Enter your name',
+    email: 'Email',
+    emailPlaceholder: 'Enter your email',
+    gender: 'Gender',
+    bodyData: 'Body Data',
+    height: 'Height',
+    weight: 'Weight',
+    healthGoal: 'Health Goal',
+    activityLevel: 'Activity Level',
+    genders: {
+      male: 'Male',
+      female: 'Female',
+      other: 'Other',
+      preferNotToSay: 'Prefer not to say',
+    },
+    goals: {
+      loseWeight: 'Lose Weight',
+      maintain: 'Maintain Weight',
+      gainWeight: 'Gain Weight',
+      buildMuscle: 'Build Muscle',
+    },
+    activity: {
+      sedentary: 'Sedentary',
+      sedentaryDesc: 'Little or no exercise',
+      light: 'Lightly Active',
+      lightDesc: 'Exercise 1-3 days/week',
+      moderate: 'Moderately Active',
+      moderateDesc: 'Exercise 3-5 days/week',
+      active: 'Active',
+      activeDesc: 'Exercise 6-7 days/week',
+      veryActive: 'Very Active',
+      veryActiveDesc: 'Intense exercise daily',
+    },
+    errors: {
+      nameRequired: 'Please enter your name',
+      invalidHeight: 'Please enter a valid height (100-250 cm)',
+      invalidWeight: 'Please enter a valid weight (30-300 kg)',
+      updateFailed: 'Update failed, please try again',
+    },
+    success: {
+      updated: 'Profile updated',
+    },
+  },
+
+  // Timeline Screen
+  timeline: {
+    title: 'Timeline',
+    calendar: 'Calendar',
+    list: 'List',
+    noEntries: 'No entries for this day',
+    mealTypes: {
+      breakfast: 'Breakfast',
+      lunch: 'Lunch',
+      dinner: 'Dinner',
+      snack: 'Snack',
+    },
+  },
+
+  // Calculators
+  calculators: {
+    insulin: {
+      title: 'Insulin Calculator',
+      disclaimer: 'Important Notice',
+      disclaimerText: 'This calculator is for reference only. Please consult your doctor or diabetes specialist nurse and follow your prescription.',
+      carbsInput: 'Carbohydrates (g)',
+      bloodSugar: 'Current Blood Sugar (mg/dL)',
+      targetBloodSugar: 'Target Blood Sugar (mg/dL)',
+      carbRatio: 'Carb Ratio (1 unit per X g)',
+      correctionFactor: 'Correction Factor (1 unit drops X mg/dL)',
+      calculate: 'Calculate',
+      result: 'Calculated Dose',
+      units: 'units',
+      carbCoverage: 'Carb Coverage',
+      correction: 'Correction',
+      total: 'Total',
+      errors: {
+        invalidCarbs: 'Please enter a valid carbohydrate amount',
+        invalidRatio: 'Please enter a valid carb ratio',
+      },
+    },
+    creon: {
+      title: 'Creon Calculator',
+      disclaimer: 'Important Notice',
+      disclaimerText: 'This calculator is for reference only. Creon dosage varies by individual. Please follow your doctor or dietitian\'s prescription.',
+      info: 'About Creon',
+      infoText: 'Creon contains pancreatic enzymes to help digest fats. The typical dosage is 2000-4000 lipase units per gram of fat.',
+      fatInput: 'Fat Content (g)',
+      lipasePerGram: 'Lipase Units per Gram of Fat',
+      capsuleStrength: 'Capsule Strength',
+      calculate: 'Calculate',
+      result: 'Recommended Dosage',
+      capsules: 'capsules',
+      totalLipase: 'Total Lipase Units',
+      errors: {
+        invalidFat: 'Please enter a valid fat amount',
+        invalidLipase: 'Please enter a valid lipase dosage',
+      },
+    },
+  },
+
   // Auth - Login
   auth: {
     login: {
@@ -95,6 +201,7 @@ const en = {
       loginFailed: 'Login Failed',
       tryAgain: 'Please try again',
       fillEmailPassword: 'Please fill in email and password',
+      cancelled: 'Login cancelled',
     },
     register: {
       title: 'Create Account',
@@ -332,7 +439,9 @@ const en = {
       fiveADay: 'Fruits & Veg',
       weight: 'Weight',
       bowels: 'Bowel',
+      periodCycle: 'Period Cycle',
     },
+    habitRecord: 'Habit Record',
     mood: {
       veryBad: 'Very Bad',
       bad: 'Bad',

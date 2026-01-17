@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { COLORS, SHADOWS } from '../constants/colors';
@@ -20,6 +21,7 @@ import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/typography';
 import { useUserStore } from '../stores/userStore';
 import { useFoodStore } from '../stores/foodStore';
 import { useHabitStore } from '../stores/habitStore';
+import { useTranslation } from '../hooks/useTranslation';
 import { CalendarView, ListView, TimelineEntry } from '../components/timeline';
 
 type ViewMode = 'calendar' | 'list';
@@ -28,6 +30,7 @@ export default function TimelineScreen() {
   const { user } = useUserStore();
   const { allLogs, fetchAllLogs, isLoading: foodLoading } = useFoodStore();
   const { allHabits, fetchAllHabits, isLoading: habitLoading } = useHabitStore();
+  const { t } = useTranslation();
   
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -47,6 +50,73 @@ export default function TimelineScreen() {
     }
   }, [user?.id, fetchAllLogs, fetchAllHabits]);
 
+  // Helper to get meal type label
+  const getMealTypeLabel = useCallback((type: string): string => {
+    const labels: Record<string, string> = {
+      breakfast: t('timeline.mealTypes.breakfast'),
+      lunch: t('timeline.mealTypes.lunch'),
+      dinner: t('timeline.mealTypes.dinner'),
+      snack: t('timeline.mealTypes.snack'),
+    };
+    return labels[type] ?? type;
+  }, [t]);
+
+  // Helper to get habit config
+  const getHabitConfig = useCallback((type: string): {
+    label: string;
+    entryType: TimelineEntry['type'];
+    showValue: boolean;
+  } => {
+    const configs: Record<string, { label: string; entryType: TimelineEntry['type']; showValue: boolean }> = {
+      weight: { label: t('habits.types.weight'), entryType: 'weight', showValue: true },
+      hydration: { label: t('habits.types.hydration'), entryType: 'hydration', showValue: true },
+      mood: { label: t('habits.types.mood'), entryType: 'mood', showValue: false },
+      sleep_duration: { label: t('habits.types.sleep'), entryType: 'habit', showValue: true },
+      bowels: { label: t('habits.types.bowels'), entryType: 'habit', showValue: false },
+      five_a_day: { label: t('habits.types.fiveADay'), entryType: 'habit', showValue: true },
+      period_cycle: { label: t('habits.types.periodCycle'), entryType: 'habit', showValue: false },
+    };
+    return configs[type] ?? { label: t('habits.habitRecord'), entryType: 'habit', showValue: false };
+  }, [t]);
+
+  // Helper to format habit value
+  const formatHabitValue = useCallback((type: string, value: number | string): string => {
+    switch (type) {
+      case 'weight':
+        return `${value} ${t('units.kg')}`;
+      case 'hydration':
+        return `${value} ${t('units.ml')}`;
+      case 'sleep_duration':
+        return `${value} ${t('units.hours')}`;
+      case 'five_a_day':
+        return `${value} ${t('units.servings')}`;
+      case 'mood': {
+        const moods = ['', t('habits.mood.veryBad'), t('habits.mood.bad'), t('habits.mood.okay'), t('habits.mood.good'), t('habits.mood.veryGood')];
+        return moods[Number(value)] || '';
+      }
+      case 'bowels':
+        return `Bristol ${value}`;
+      default:
+        return String(value);
+    }
+  }, [t]);
+
+  // Helper to format date display
+  const formatDateDisplay = useCallback((date: Date): string => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (isSameDay(date, today)) {
+      return t('common.today');
+    }
+    if (isSameDay(date, yesterday)) {
+      return t('common.yesterday');
+    }
+
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  }, [t]);
+
   // Convert food logs to timeline entries
   const foodEntries: TimelineEntry[] = useMemo(() => {
     return (allLogs || []).map((log) => ({
@@ -54,10 +124,10 @@ export default function TimelineScreen() {
       type: 'food' as const,
       title: log.food_name,
       subtitle: getMealTypeLabel(log.meal_type),
-      value: `${Math.round(log.nutrition_data.calories)} kcal`,
+      value: `${Math.round(log.nutrition_data.calories)} ${t('units.kcal')}`,
       timestamp: new Date(log.logged_at),
     }));
-  }, [allLogs]);
+  }, [allLogs, getMealTypeLabel, t]);
 
   // Convert habit logs to timeline entries
   const habitEntries: TimelineEntry[] = useMemo(() => {
@@ -72,7 +142,7 @@ export default function TimelineScreen() {
         timestamp: new Date(log.logged_at),
       };
     });
-  }, [allHabits]);
+  }, [allHabits, getHabitConfig, formatHabitValue]);
 
   // Combine all entries
   const allEntries: TimelineEntry[] = useMemo(() => {
@@ -99,10 +169,10 @@ export default function TimelineScreen() {
   const isLoading = foodLoading || habitLoading;
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: 'Timeline',
+          title: t('timeline.title'),
           headerStyle: { backgroundColor: COLORS.backgroundSecondary },
         }}
       />
@@ -134,7 +204,7 @@ export default function TimelineScreen() {
                   viewMode === 'calendar' && styles.toggleTextActive,
                 ]}
               >
-                日曆
+                {t('timeline.calendar')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -150,7 +220,7 @@ export default function TimelineScreen() {
                   viewMode === 'list' && styles.toggleTextActive,
                 ]}
               >
-                清單
+                {t('timeline.list')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -171,7 +241,7 @@ export default function TimelineScreen() {
             {/* Selected Date Entries */}
             <Animated.View entering={FadeInDown.delay(300).springify()}>
               <Text style={styles.sectionTitle}>
-                {formatDateDisplay(selectedDate)} 的記錄
+                {formatDateDisplay(selectedDate)}
               </Text>
               <ListView entries={selectedDateEntries} />
             </Animated.View>
@@ -179,9 +249,9 @@ export default function TimelineScreen() {
         ) : (
           /* List View */
           <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <Text style={styles.sectionTitle}>所有記錄</Text>
+            <Text style={styles.sectionTitle}>{t('timeline.list')}</Text>
             <Text style={styles.totalCount}>
-              共 {allEntries.length} 筆記錄
+              {allEntries.length} {t('common.items')}
             </Text>
             <ListView entries={allEntries} />
           </Animated.View>
@@ -189,75 +259,13 @@ export default function TimelineScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }
 
 // Helper functions
-function getMealTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    breakfast: '早餐',
-    lunch: '午餐',
-    dinner: '晚餐',
-    snack: '小食',
-  };
-  return labels[type] ?? type;
-}
-
-function getHabitConfig(type: string): {
-  label: string;
-  entryType: TimelineEntry['type'];
-  showValue: boolean;
-} {
-  const configs: Record<string, { label: string; entryType: TimelineEntry['type']; showValue: boolean }> = {
-    weight: { label: '體重記錄', entryType: 'weight', showValue: true },
-    hydration: { label: '飲水記錄', entryType: 'hydration', showValue: true },
-    mood: { label: '心情記錄', entryType: 'mood', showValue: false },
-    sleep_duration: { label: '睡眠記錄', entryType: 'habit', showValue: true },
-    bowels: { label: '排便記錄', entryType: 'habit', showValue: false },
-    five_a_day: { label: '五蔬果記錄', entryType: 'habit', showValue: true },
-    period_cycle: { label: '生理週期', entryType: 'habit', showValue: false },
-  };
-  return configs[type] ?? { label: '習慣記錄', entryType: 'habit', showValue: false };
-}
-
-function formatHabitValue(type: string, value: number | string): string {
-  switch (type) {
-    case 'weight':
-      return `${value} kg`;
-    case 'hydration':
-      return `${value} ml`;
-    case 'sleep_duration':
-      return `${value} 小時`;
-    case 'five_a_day':
-      return `${value} 份`;
-    case 'mood':
-      const moods = ['', '很差', '較差', '一般', '較好', '很好'];
-      return moods[Number(value)] || '';
-    case 'bowels':
-      return `Bristol ${value} 型`;
-    default:
-      return String(value);
-  }
-}
-
 function formatDateKey(date: Date): string {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-}
-
-function formatDateDisplay(date: Date): string {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (isSameDay(date, today)) {
-    return '今日';
-  }
-  if (isSameDay(date, yesterday)) {
-    return '昨日';
-  }
-
-  return `${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -269,6 +277,10 @@ function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

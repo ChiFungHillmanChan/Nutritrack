@@ -80,6 +80,112 @@ const zhTW = {
     fluids: '水分',
   },
 
+  // Profile Edit Screen
+  profileEdit: {
+    title: '編輯個人資料',
+    saving: '儲存中...',
+    basicInfo: '基本資料',
+    name: '名稱',
+    namePlaceholder: '輸入你的名稱',
+    email: '電郵',
+    emailPlaceholder: '輸入你的電郵',
+    gender: '性別',
+    bodyData: '身體數據',
+    height: '身高',
+    weight: '體重',
+    healthGoal: '健康目標',
+    activityLevel: '活動水平',
+    genders: {
+      male: '男性',
+      female: '女性',
+      other: '其他',
+      preferNotToSay: '不願透露',
+    },
+    goals: {
+      loseWeight: '減重',
+      maintain: '維持體重',
+      gainWeight: '增重',
+      buildMuscle: '增肌',
+    },
+    activity: {
+      sedentary: '久坐',
+      sedentaryDesc: '很少運動',
+      light: '輕度活動',
+      lightDesc: '每週運動1-3天',
+      moderate: '中度活動',
+      moderateDesc: '每週運動3-5天',
+      active: '活躍',
+      activeDesc: '每週運動6-7天',
+      veryActive: '非常活躍',
+      veryActiveDesc: '每天高強度運動',
+    },
+    errors: {
+      nameRequired: '請輸入名稱',
+      invalidHeight: '請輸入有效的身高 (100-250 cm)',
+      invalidWeight: '請輸入有效的體重 (30-300 kg)',
+      updateFailed: '更新失敗，請稍後再試',
+    },
+    success: {
+      updated: '個人資料已更新',
+    },
+  },
+
+  // Timeline Screen
+  timeline: {
+    title: '時間軸',
+    calendar: '日曆',
+    list: '列表',
+    noEntries: '今日沒有記錄',
+    mealTypes: {
+      breakfast: '早餐',
+      lunch: '午餐',
+      dinner: '晚餐',
+      snack: '小食',
+    },
+  },
+
+  // Calculators
+  calculators: {
+    insulin: {
+      title: '胰島素計算器',
+      disclaimer: '重要提示',
+      disclaimerText: '此計算器僅供參考。請務必諮詢你嘅醫生或糖尿病專科護士，並按照處方用藥。',
+      carbsInput: '碳水化合物 (克)',
+      bloodSugar: '目前血糖 (mg/dL)',
+      targetBloodSugar: '目標血糖 (mg/dL)',
+      carbRatio: '碳水比例 (1單位 / X克)',
+      correctionFactor: '校正因子 (1單位降 X mg/dL)',
+      calculate: '計算',
+      result: '建議劑量',
+      units: '單位',
+      carbCoverage: '碳水覆蓋',
+      correction: '校正',
+      total: '總計',
+      errors: {
+        invalidCarbs: '請輸入有效嘅碳水化合物克數',
+        invalidRatio: '請輸入有效嘅碳水比例',
+      },
+    },
+    creon: {
+      title: 'Creon 計算器',
+      disclaimer: '重要提示',
+      disclaimerText: '此計算器僅供參考。Creon 劑量因人而異，請按照你嘅醫生或營養師處方用藥。',
+      info: '關於 Creon',
+      infoText: 'Creon 含有胰臟酶，幫助消化脂肪。一般劑量為每克脂肪 2000-4000 脂肪酶單位。',
+      fatInput: '脂肪含量 (克)',
+      lipasePerGram: '每克脂肪嘅脂肪酶單位',
+      capsuleStrength: '膠囊強度',
+      calculate: '計算',
+      result: '建議劑量',
+      capsules: '粒膠囊',
+      totalLipase: '總脂肪酶單位',
+      errors: {
+        invalidFat: '請輸入有效嘅脂肪克數',
+        invalidLipase: '請輸入有效嘅脂肪酶劑量',
+      },
+    },
+  },
+
   // Auth - Login
   auth: {
     login: {
@@ -95,6 +201,7 @@ const zhTW = {
       loginFailed: '登入失敗',
       tryAgain: '請再試一次',
       fillEmailPassword: '請填寫電郵同密碼',
+      cancelled: '登入已取消',
     },
     register: {
       title: '建立帳戶',
@@ -332,7 +439,9 @@ const zhTW = {
       fiveADay: '蔬果',
       weight: '體重',
       bowels: '排便',
+      periodCycle: '生理週期',
     },
+    habitRecord: '習慣記錄',
     mood: {
       veryBad: '非常差',
       bad: '差',

@@ -5,7 +5,7 @@
  * name, height, weight, goal, and activity level.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -24,31 +25,11 @@ import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/typography';
 import { useUserStore, calculateAge } from '../stores/userStore';
 import { User, UserGoal, ActivityLevel, Gender } from '../types';
 import { Card } from '../components/ui';
-
-const GOALS: { value: UserGoal; label: string; icon: string }[] = [
-  { value: 'lose_weight', label: '減重', icon: 'trending-down' },
-  { value: 'maintain', label: '維持體重', icon: 'remove' },
-  { value: 'gain_weight', label: '增重', icon: 'trending-up' },
-  { value: 'build_muscle', label: '增肌', icon: 'barbell' },
-];
-
-const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; desc: string }[] = [
-  { value: 'sedentary', label: '久坐', desc: '很少運動' },
-  { value: 'light', label: '輕度活動', desc: '每週運動1-3天' },
-  { value: 'moderate', label: '中度活動', desc: '每週運動3-5天' },
-  { value: 'active', label: '活躍', desc: '每週運動6-7天' },
-  { value: 'very_active', label: '非常活躍', desc: '每天高強度運動' },
-];
-
-const GENDERS: { value: Gender; label: string }[] = [
-  { value: 'male', label: '男性' },
-  { value: 'female', label: '女性' },
-  { value: 'other', label: '其他' },
-  { value: 'prefer_not_to_say', label: '不願透露' },
-];
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function ProfileEditScreen() {
   const { user, updateProfile, calculateDailyTargets } = useUserStore();
+  const { t } = useTranslation();
 
   // Form state
   const [name, setName] = useState(user?.name ?? '');
@@ -62,10 +43,33 @@ export default function ProfileEditScreen() {
   const [gender, setGender] = useState<Gender>(user?.gender ?? 'prefer_not_to_say');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Get translated options
+  const GOALS = useMemo(() => [
+    { value: 'lose_weight' as UserGoal, label: t('profileEdit.goals.loseWeight'), icon: 'trending-down' },
+    { value: 'maintain' as UserGoal, label: t('profileEdit.goals.maintain'), icon: 'remove' },
+    { value: 'gain_weight' as UserGoal, label: t('profileEdit.goals.gainWeight'), icon: 'trending-up' },
+    { value: 'build_muscle' as UserGoal, label: t('profileEdit.goals.buildMuscle'), icon: 'barbell' },
+  ], [t]);
+
+  const ACTIVITY_LEVELS = useMemo(() => [
+    { value: 'sedentary' as ActivityLevel, label: t('profileEdit.activity.sedentary'), desc: t('profileEdit.activity.sedentaryDesc') },
+    { value: 'light' as ActivityLevel, label: t('profileEdit.activity.light'), desc: t('profileEdit.activity.lightDesc') },
+    { value: 'moderate' as ActivityLevel, label: t('profileEdit.activity.moderate'), desc: t('profileEdit.activity.moderateDesc') },
+    { value: 'active' as ActivityLevel, label: t('profileEdit.activity.active'), desc: t('profileEdit.activity.activeDesc') },
+    { value: 'very_active' as ActivityLevel, label: t('profileEdit.activity.veryActive'), desc: t('profileEdit.activity.veryActiveDesc') },
+  ], [t]);
+
+  const GENDERS = useMemo(() => [
+    { value: 'male' as Gender, label: t('profileEdit.genders.male') },
+    { value: 'female' as Gender, label: t('profileEdit.genders.female') },
+    { value: 'other' as Gender, label: t('profileEdit.genders.other') },
+    { value: 'prefer_not_to_say' as Gender, label: t('profileEdit.genders.preferNotToSay') },
+  ], [t]);
+
   const handleSave = useCallback(async () => {
     // Validation
     if (!name.trim()) {
-      Alert.alert('錯誤', '請輸入名稱');
+      Alert.alert(t('common.error'), t('profileEdit.errors.nameRequired'));
       return;
     }
 
@@ -73,12 +77,12 @@ export default function ProfileEditScreen() {
     const weight = parseFloat(weightKg);
 
     if (isNaN(height) || height < 100 || height > 250) {
-      Alert.alert('錯誤', '請輸入有效的身高 (100-250 cm)');
+      Alert.alert(t('common.error'), t('profileEdit.errors.invalidHeight'));
       return;
     }
 
     if (isNaN(weight) || weight < 30 || weight > 300) {
-      Alert.alert('錯誤', '請輸入有效的體重 (30-300 kg)');
+      Alert.alert(t('common.error'), t('profileEdit.errors.invalidWeight'));
       return;
     }
 
@@ -112,15 +116,15 @@ export default function ProfileEditScreen() {
       const success = await updateProfile(updates);
 
       if (success) {
-        Alert.alert('成功', '個人資料已更新', [
-          { text: '確定', onPress: () => router.back() },
+        Alert.alert(t('common.success'), t('profileEdit.success.updated'), [
+          { text: t('common.ok'), onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert('錯誤', '更新失敗，請稍後再試');
+        Alert.alert(t('common.error'), t('profileEdit.errors.updateFailed'));
       }
     } catch (error) {
       console.error('Profile update error:', error);
-      Alert.alert('錯誤', '更新失敗，請稍後再試');
+      Alert.alert(t('common.error'), t('profileEdit.errors.updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -135,13 +139,14 @@ export default function ProfileEditScreen() {
     user,
     updateProfile,
     calculateDailyTargets,
+    t,
   ]);
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          title: '編輯個人資料',
+          title: t('profileEdit.title'),
           headerStyle: { backgroundColor: COLORS.background },
           headerTintColor: COLORS.text,
           headerRight: () => (
@@ -151,7 +156,7 @@ export default function ProfileEditScreen() {
               style={styles.saveButton}
             >
               <Text style={[styles.saveText, isSaving && styles.savingText]}>
-                {isSaving ? '儲存中...' : '儲存'}
+                {isSaving ? t('profileEdit.saving') : t('common.save')}
               </Text>
             </TouchableOpacity>
           ),
@@ -170,26 +175,26 @@ export default function ProfileEditScreen() {
         >
           {/* Basic Info */}
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>基本資料</Text>
+            <Text style={styles.sectionTitle}>{t('profileEdit.basicInfo')}</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>名稱</Text>
+              <Text style={styles.label}>{t('profileEdit.name')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="輸入你的名稱"
+                placeholder={t('profileEdit.namePlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>電郵</Text>
+              <Text style={styles.label}>{t('profileEdit.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="輸入你的電郵"
+                placeholder={t('profileEdit.emailPlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -197,7 +202,7 @@ export default function ProfileEditScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>性別</Text>
+              <Text style={styles.label}>{t('profileEdit.gender')}</Text>
               <View style={styles.optionsRow}>
                 {GENDERS.map((g) => (
                   <TouchableOpacity
@@ -224,11 +229,11 @@ export default function ProfileEditScreen() {
 
           {/* Body Measurements */}
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>身體數據</Text>
+            <Text style={styles.sectionTitle}>{t('profileEdit.bodyData')}</Text>
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, styles.halfWidth]}>
-                <Text style={styles.label}>身高 (cm)</Text>
+                <Text style={styles.label}>{t('profileEdit.height')} ({t('units.cm')})</Text>
                 <TextInput
                   style={styles.input}
                   value={heightCm}
@@ -240,7 +245,7 @@ export default function ProfileEditScreen() {
               </View>
 
               <View style={[styles.inputGroup, styles.halfWidth]}>
-                <Text style={styles.label}>體重 (kg)</Text>
+                <Text style={styles.label}>{t('profileEdit.weight')} ({t('units.kg')})</Text>
                 <TextInput
                   style={styles.input}
                   value={weightKg}
@@ -255,7 +260,7 @@ export default function ProfileEditScreen() {
 
           {/* Goal Selection */}
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>健康目標</Text>
+            <Text style={styles.sectionTitle}>{t('profileEdit.healthGoal')}</Text>
             <View style={styles.goalsGrid}>
               {GOALS.map((g) => (
                 <TouchableOpacity
@@ -286,7 +291,7 @@ export default function ProfileEditScreen() {
 
           {/* Activity Level */}
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>活動水平</Text>
+            <Text style={styles.sectionTitle}>{t('profileEdit.activityLevel')}</Text>
             {ACTIVITY_LEVELS.map((level) => (
               <TouchableOpacity
                 key={level.value}
@@ -321,11 +326,15 @@ export default function ProfileEditScreen() {
           <View style={styles.bottomSpacer} />
         </ScrollView>
       </KeyboardAvoidingView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundSecondary,

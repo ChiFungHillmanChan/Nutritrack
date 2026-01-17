@@ -86,7 +86,7 @@ export default function RegisterScreen() {
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
       router.replace('/(auth)/onboarding');
-    } else if (result.error !== '登入已取消') {
+    } else if (result.error !== t('auth.login.cancelled')) {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
@@ -99,7 +99,7 @@ export default function RegisterScreen() {
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
       router.replace('/(auth)/onboarding');
-    } else if (result.error !== '登入已取消') {
+    } else if (result.error !== t('auth.login.cancelled')) {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };

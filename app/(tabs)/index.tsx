@@ -17,7 +17,6 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -35,14 +34,12 @@ import { useTranslation } from '../../hooks/useTranslation';
 import {
   CircularProgress,
   Card,
-  Button,
   NutrientProgressBars,
 } from '../../components/ui';
 import { DailyQuote } from '../../components/home';
 import { calculateEnergyBalance } from '../../lib/energy-calculator';
 import type { ExerciseLog } from '../../types';
 
-const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();
@@ -72,8 +69,8 @@ export default function HomeScreen() {
     }
   }, [user?.id, fetchTodayLogs, fetchTodayHabits]);
 
-  // Calculate energy balance
-  const energyBalance = useMemo(() => {
+  // Calculate energy balance (prepared for future use)
+  const _energyBalance = useMemo(() => {
     if (!user?.daily_targets) return null;
 
     const age = user.date_of_birth 

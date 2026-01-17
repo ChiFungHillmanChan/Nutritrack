@@ -6,7 +6,6 @@ import { useUserStore } from '../stores/userStore';
 import { onAuthStateChange } from '../services/auth';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import { initializeDatabase } from '../services/database';
-import type { User } from '../types';
 
 export {
   // Catch any errors thrown by the Layout component.
