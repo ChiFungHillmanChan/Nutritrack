@@ -121,6 +121,30 @@ function NutrientBar({
 /**
  * Preset nutrient bar configurations
  */
+interface NutrientProgressBarsProps {
+  carbs: number;
+  carbsMax: number;
+  protein: number;
+  proteinMax: number;
+  fiber: number;
+  fiberMax: number;
+  fat: number;
+  fatMax: number;
+  sugar?: number;
+  sugarMax?: number;
+  fluids?: number;
+  fluidsMax?: number;
+  style?: object;
+  labels?: {
+    carbs: string;
+    protein: string;
+    fiber: string;
+    fat: string;
+    sugar: string;
+    fluids: string;
+  };
+}
+
 export function NutrientProgressBars({
   carbs,
   carbsMax,
@@ -135,34 +159,33 @@ export function NutrientProgressBars({
   fluids,
   fluidsMax,
   style,
-}: {
-  carbs: number;
-  carbsMax: number;
-  protein: number;
-  proteinMax: number;
-  fiber: number;
-  fiberMax: number;
-  fat: number;
-  fatMax: number;
-  sugar?: number;
-  sugarMax?: number;
-  fluids?: number;
-  fluidsMax?: number;
-  style?: object;
-}) {
+  labels,
+}: NutrientProgressBarsProps) {
+  // Default labels (fallback to English)
+  const defaultLabels = {
+    carbs: 'Carbs',
+    protein: 'Protein',
+    fiber: 'Fibre',
+    fat: 'Fats',
+    sugar: 'Sugar',
+    fluids: 'Fluids',
+  };
+  
+  const l = labels ?? defaultLabels;
+  
   const data: NutrientData[] = [
-    { label: 'Carbs', value: carbs, max: carbsMax, color: COLORS.carbs },
-    { label: 'Protein', value: protein, max: proteinMax, color: COLORS.protein },
-    { label: 'Fibre', value: fiber, max: fiberMax, color: COLORS.fiber },
-    { label: 'Fats', value: fat, max: fatMax, color: COLORS.fat },
+    { label: l.carbs, value: carbs, max: carbsMax, color: COLORS.carbs },
+    { label: l.protein, value: protein, max: proteinMax, color: COLORS.protein },
+    { label: l.fiber, value: fiber, max: fiberMax, color: COLORS.fiber },
+    { label: l.fat, value: fat, max: fatMax, color: COLORS.fat },
   ];
 
   if (sugar !== undefined && sugarMax !== undefined) {
-    data.push({ label: 'Sugar', value: sugar, max: sugarMax, color: '#A855F7' });
+    data.push({ label: l.sugar, value: sugar, max: sugarMax, color: '#A855F7' });
   }
 
   if (fluids !== undefined && fluidsMax !== undefined) {
-    data.push({ label: 'Fluids', value: fluids, max: fluidsMax, color: COLORS.info });
+    data.push({ label: l.fluids, value: fluids, max: fluidsMax, color: COLORS.info });
   }
 
   return <HorizontalProgressBar data={data} style={style} />;

@@ -61,6 +61,25 @@ const zhTW = {
     settings: '設定',
   },
 
+  // Tab titles (for header)
+  tabs: {
+    home: 'Nutritrack',
+    record: '記錄食物',
+    habits: '習慣',
+    chat: 'AI 營養師',
+    profile: '我的檔案',
+  },
+
+  // Nutrient labels
+  nutrients: {
+    carbs: '碳水',
+    protein: '蛋白質',
+    fiber: '纖維',
+    fat: '脂肪',
+    sugar: '糖分',
+    fluids: '水分',
+  },
+
   // Auth - Login
   auth: {
     login: {
@@ -829,6 +848,150 @@ const zhTW = {
     unauthorized: '請登入以繼續',
     notFound: '找不到',
     serverError: '伺服器錯誤。請稍後再試。',
+  },
+
+  // Privacy Policy
+  privacyPolicy: {
+    title: '私隱政策',
+    lastUpdated: '最後更新: 2024年1月',
+    intro: 'Nutritrack（「我們」）致力於保護你的私隱。本私隱政策說明我們如何收集、使用和保護你的個人資料。',
+    section1Title: '1. 資料收集',
+    section1Content: `我們收集以下類型的資料：
+
+• 帳戶資料：電郵地址、姓名、密碼
+• 健康資料：身高、體重、年齡、性別
+• 飲食記錄：食物照片、營養攝取記錄
+• 習慣數據：水分攝取、睡眠、運動記錄
+• 設備資料：設備類型、作業系統版本
+
+所有健康數據都儲存在你的設備本地，除非你選擇啟用雲端同步功能。`,
+    section2Title: '2. 資料使用',
+    section2Content: `我們使用收集的資料：
+
+• 提供個人化的營養建議
+• 分析你的飲食習慣和趨勢
+• 改善應用程式功能和用戶體驗
+• 發送通知和提醒（如果你選擇接收）
+
+我們不會將你的個人健康數據出售給第三方。`,
+    section3Title: '3. 資料儲存',
+    section3Content: `你的數據安全是我們的首要考慮：
+
+• 本地儲存：所有健康數據預設儲存在你的設備上
+• 雲端同步：如啟用，數據會加密傳輸和儲存
+• 數據刪除：你可以隨時刪除你的帳戶和所有相關數據`,
+    section4Title: '4. AI 分析',
+    section4Content: `我們使用 AI 技術提供食物辨識和營養分析：
+
+• 食物照片會傳送至安全的 AI 服務進行分析
+• 分析完成後，照片不會被保留
+• AI 分析結果僅用於提供營養資訊`,
+    section5Title: '5. 你的權利',
+    section5Content: `你有權：
+
+• 存取你的個人資料
+• 更正不準確的資料
+• 刪除你的帳戶和所有數據
+• 匯出你的數據
+• 選擇退出非必要的數據收集`,
+    section6Title: '6. 聯繫我們',
+    section6Content: `如有任何關於私隱的問題，請聯繫我們：
+
+電郵：privacy@nutritrack.app
+
+我們會在合理時間內回覆你的查詢。`,
+  },
+
+  // Exercise Guide (detailed exercises)
+  exerciseGuide: {
+    categories: {
+      stretching: {
+        name: '伸展運動',
+        description: '放鬆肌肉，增加柔韌性',
+      },
+      cardio: {
+        name: '有氧運動',
+        description: '提升心肺功能',
+      },
+      strength: {
+        name: '力量訓練',
+        description: '增強肌肉和骨骼',
+      },
+    },
+    exercises: {
+      'neck-stretch': {
+        name: '頸部伸展',
+        duration: '2 分鐘',
+        description: '放鬆頸部肌肉，減少緊張感',
+        steps: [
+          '坐直或站立，放鬆肩膀',
+          '慢慢將頭向右傾斜，耳朵靠近肩膀',
+          '保持 15-30 秒',
+          '回到中間位置，換左邊重複',
+          '前後傾斜頭部各 15 秒',
+        ],
+      },
+      'shoulder-roll': {
+        name: '肩膀滾動',
+        duration: '1 分鐘',
+        description: '釋放肩膀壓力',
+        steps: [
+          '站立或坐直',
+          '聳起肩膀至耳朵',
+          '向後滾動肩膀',
+          '重複 10 次',
+          '換方向向前滾動 10 次',
+        ],
+      },
+      'walking': {
+        name: '室內步行',
+        duration: '10 分鐘',
+        description: '不出門也能運動',
+        steps: [
+          '在室內來回步行',
+          '保持中等步速',
+          '擺動手臂增加運動量',
+          '可以在廣告時間進行',
+          '目標每日累計 30 分鐘',
+        ],
+      },
+      'marching': {
+        name: '原地踏步',
+        duration: '5 分鐘',
+        description: '簡單有效的熱身運動',
+        steps: [
+          '站立，雙腳與肩同寬',
+          '交替抬起膝蓋',
+          '膝蓋盡量抬至腰部高度',
+          '同時擺動手臂',
+          '保持穩定呼吸',
+        ],
+      },
+      'wall-pushup': {
+        name: '牆壁俯臥撐',
+        duration: '3 分鐘',
+        description: '適合初學者的上身訓練',
+        steps: [
+          '面對牆壁站立，距離約一臂長',
+          '雙手放在牆上，與肩同寬',
+          '彎曲手肘，身體向牆壁靠近',
+          '推回起始位置',
+          '重複 10-15 次',
+        ],
+      },
+      'chair-squat': {
+        name: '椅子深蹲',
+        duration: '3 分鐘',
+        description: '強化下肢肌肉',
+        steps: [
+          '站在椅子前面',
+          '雙腳與肩同寬',
+          '慢慢坐下，臀部輕觸椅子',
+          '立即站起來',
+          '重複 10-15 次',
+        ],
+      },
+    },
   },
 };
 

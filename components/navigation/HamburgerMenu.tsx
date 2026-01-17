@@ -15,6 +15,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -203,52 +204,54 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
         exiting={SlideOutRight.duration(200)}
         style={styles.menuContainer}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('menu.title').toUpperCase()}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{t('menu.title').toUpperCase()}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
 
-        {/* Menu Items */}
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {filteredItems.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              entering={FadeIn.delay(index * 50).duration(200)}
-            >
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleItemPress(item)}
-                activeOpacity={0.7}
+          {/* Menu Items */}
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {filteredItems.map((item, index) => (
+              <Animated.View
+                key={item.id}
+                entering={FadeIn.delay(index * 50).duration(200)}
               >
-                <View style={styles.menuItemIcon}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemIcon}>
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </View>
+                  <View style={styles.menuItemText}>
+                    <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
+                    {language !== 'en' && (
+                      <Text style={styles.menuItemLabelEn}>{getEnglishLabel(item.labelKey)}</Text>
+                    )}
+                  </View>
                   <Ionicons
-                    name={item.icon}
-                    size={20}
-                    color={COLORS.primary}
+                    name="chevron-forward"
+                    size={18}
+                    color={COLORS.textTertiary}
                   />
-                </View>
-                <View style={styles.menuItemText}>
-                  <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
-                  {language !== 'en' && (
-                    <Text style={styles.menuItemLabelEn}>{getEnglishLabel(item.labelKey)}</Text>
-                  )}
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={COLORS.textTertiary}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </ScrollView>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
       </Animated.View>
     </Modal>
   );
@@ -288,12 +291,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
     ...SHADOWS.xl,
   },
+  safeArea: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING['3xl'],
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,

@@ -61,6 +61,25 @@ const en = {
     settings: 'Settings',
   },
 
+  // Tab titles (for header)
+  tabs: {
+    home: 'Nutritrack',
+    record: 'Record Food',
+    habits: 'Habits',
+    chat: 'AI Nutritionist',
+    profile: 'My Profile',
+  },
+
+  // Nutrient labels
+  nutrients: {
+    carbs: 'Carbs',
+    protein: 'Protein',
+    fiber: 'Fibre',
+    fat: 'Fats',
+    sugar: 'Sugar',
+    fluids: 'Fluids',
+  },
+
   // Auth - Login
   auth: {
     login: {
@@ -829,6 +848,150 @@ const en = {
     unauthorized: 'Please login to continue',
     notFound: 'Not found',
     serverError: 'Server error. Please try again later.',
+  },
+
+  // Privacy Policy
+  privacyPolicy: {
+    title: 'Privacy Policy',
+    lastUpdated: 'Last Updated: January 2024',
+    intro: 'Nutritrack ("we") is committed to protecting your privacy. This privacy policy explains how we collect, use, and protect your personal data.',
+    section1Title: '1. Data Collection',
+    section1Content: `We collect the following types of data:
+
+• Account data: Email address, name, password
+• Health data: Height, weight, age, gender
+• Diet records: Food photos, nutrition intake records
+• Habit data: Water intake, sleep, exercise records
+• Device data: Device type, operating system version
+
+All health data is stored locally on your device unless you choose to enable cloud sync.`,
+    section2Title: '2. Data Usage',
+    section2Content: `We use collected data to:
+
+• Provide personalized nutrition advice
+• Analyze your eating habits and trends
+• Improve app features and user experience
+• Send notifications and reminders (if you choose to receive them)
+
+We do not sell your personal health data to third parties.`,
+    section3Title: '3. Data Storage',
+    section3Content: `Your data security is our top priority:
+
+• Local storage: All health data is stored on your device by default
+• Cloud sync: If enabled, data is encrypted during transmission and storage
+• Data deletion: You can delete your account and all related data at any time`,
+    section4Title: '4. AI Analysis',
+    section4Content: `We use AI technology to provide food recognition and nutrition analysis:
+
+• Food photos are sent to secure AI services for analysis
+• Photos are not retained after analysis is complete
+• AI analysis results are only used to provide nutrition information`,
+    section5Title: '5. Your Rights',
+    section5Content: `You have the right to:
+
+• Access your personal data
+• Correct inaccurate data
+• Delete your account and all data
+• Export your data
+• Opt out of non-essential data collection`,
+    section6Title: '6. Contact Us',
+    section6Content: `If you have any privacy-related questions, please contact us:
+
+Email: privacy@nutritrack.app
+
+We will respond to your inquiry within a reasonable time.`,
+  },
+
+  // Exercise Guide (detailed exercises)
+  exerciseGuide: {
+    categories: {
+      stretching: {
+        name: 'Stretching',
+        description: 'Relax muscles and improve flexibility',
+      },
+      cardio: {
+        name: 'Cardio',
+        description: 'Improve heart health',
+      },
+      strength: {
+        name: 'Strength',
+        description: 'Build muscle and bone strength',
+      },
+    },
+    exercises: {
+      'neck-stretch': {
+        name: 'Neck Stretch',
+        duration: '2 minutes',
+        description: 'Relax neck muscles and reduce tension',
+        steps: [
+          'Sit or stand straight, relax shoulders',
+          'Slowly tilt head to the right, ear toward shoulder',
+          'Hold for 15-30 seconds',
+          'Return to center, repeat on left side',
+          'Tilt head forward and back for 15 seconds each',
+        ],
+      },
+      'shoulder-roll': {
+        name: 'Shoulder Roll',
+        duration: '1 minute',
+        description: 'Release shoulder tension',
+        steps: [
+          'Stand or sit straight',
+          'Shrug shoulders up to ears',
+          'Roll shoulders backward',
+          'Repeat 10 times',
+          'Change direction and roll forward 10 times',
+        ],
+      },
+      'walking': {
+        name: 'Indoor Walking',
+        duration: '10 minutes',
+        description: 'Exercise without leaving home',
+        steps: [
+          'Walk back and forth indoors',
+          'Maintain a moderate pace',
+          'Swing arms to increase exercise',
+          'Can be done during TV commercials',
+          'Aim for 30 minutes total daily',
+        ],
+      },
+      'marching': {
+        name: 'Marching in Place',
+        duration: '5 minutes',
+        description: 'Simple and effective warm-up exercise',
+        steps: [
+          'Stand with feet shoulder-width apart',
+          'Alternate lifting knees',
+          'Lift knees as high as waist level',
+          'Swing arms simultaneously',
+          'Maintain steady breathing',
+        ],
+      },
+      'wall-pushup': {
+        name: 'Wall Push-up',
+        duration: '3 minutes',
+        description: 'Upper body training for beginners',
+        steps: [
+          'Stand facing wall, about arm\'s length away',
+          'Place hands on wall, shoulder-width apart',
+          'Bend elbows, lean body toward wall',
+          'Push back to starting position',
+          'Repeat 10-15 times',
+        ],
+      },
+      'chair-squat': {
+        name: 'Chair Squat',
+        duration: '3 minutes',
+        description: 'Strengthen lower body muscles',
+        steps: [
+          'Stand in front of a chair',
+          'Feet shoulder-width apart',
+          'Slowly sit down, lightly touch chair',
+          'Stand up immediately',
+          'Repeat 10-15 times',
+        ],
+      },
+    },
   },
 };
 

@@ -196,6 +196,14 @@ export default function HomeScreen() {
                 sugarMax={50}
                 fluids={todayHydration}
                 fluidsMax={targets?.water ?? 2000}
+                labels={{
+                  carbs: t('nutrients.carbs'),
+                  protein: t('nutrients.protein'),
+                  fiber: t('nutrients.fiber'),
+                  fat: t('nutrients.fat'),
+                  sugar: t('nutrients.sugar'),
+                  fluids: t('nutrients.fluids'),
+                }}
               />
             </View>
           </View>

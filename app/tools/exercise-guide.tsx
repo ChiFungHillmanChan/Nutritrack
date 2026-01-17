@@ -23,7 +23,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { EXERCISE_GUIDE_CATEGORIES, type Exercise, type ExerciseGuideCategory } from '../../constants/exercises';
 
 export default function ExerciseGuideScreen() {
-  const { t } = useTranslation();
+  const { t, getRawTranslation } = useTranslation();
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -44,11 +44,28 @@ export default function ExerciseGuideScreen() {
   };
 
   const getCategoryName = (categoryId: string) => {
-    return t(`tools.exerciseGuide.categories.${categoryId}.name`);
+    return t(`exerciseGuide.categories.${categoryId}.name`);
   };
 
   const getCategoryDescription = (categoryId: string) => {
-    return t(`tools.exerciseGuide.categories.${categoryId}.description`);
+    return t(`exerciseGuide.categories.${categoryId}.description`);
+  };
+
+  const getExerciseName = (exerciseId: string) => {
+    return t(`exerciseGuide.exercises.${exerciseId}.name`);
+  };
+
+  const getExerciseDuration = (exerciseId: string) => {
+    return t(`exerciseGuide.exercises.${exerciseId}.duration`);
+  };
+
+  const getExerciseDescription = (exerciseId: string) => {
+    return t(`exerciseGuide.exercises.${exerciseId}.description`);
+  };
+
+  const getExerciseSteps = (exerciseId: string): string[] => {
+    const steps = getRawTranslation(`exerciseGuide.exercises.${exerciseId}.steps`);
+    return Array.isArray(steps) ? steps as string[] : [];
   };
 
   return (
@@ -84,54 +101,57 @@ export default function ExerciseGuideScreen() {
               </View>
             </View>
 
-            {category.exercises.map((exercise: Exercise) => (
-              <TouchableOpacity
-                key={exercise.id}
-                activeOpacity={0.8}
-                onPress={() => setExpandedExercise(
-                  expandedExercise === exercise.id ? null : exercise.id
-                )}
-              >
-                <Card style={styles.exerciseCard}>
-                  <View style={styles.exerciseHeader}>
-                    <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
-                      <Ionicons name={exercise.icon} size={24} color={category.color} />
-                    </View>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{exercise.name}</Text>
-                      <View style={styles.exerciseMeta}>
-                        <Text style={styles.exerciseDuration}>{exercise.duration}</Text>
-                        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) + '20' }]}>
-                          <Text style={[styles.difficultyText, { color: getDifficultyColor(exercise.difficulty) }]}>
-                            {getDifficultyLabel(exercise.difficulty)}
-                          </Text>
+            {category.exercises.map((exercise: Exercise) => {
+              const translatedSteps = getExerciseSteps(exercise.id);
+              return (
+                <TouchableOpacity
+                  key={exercise.id}
+                  activeOpacity={0.8}
+                  onPress={() => setExpandedExercise(
+                    expandedExercise === exercise.id ? null : exercise.id
+                  )}
+                >
+                  <Card style={styles.exerciseCard}>
+                    <View style={styles.exerciseHeader}>
+                      <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
+                        <Ionicons name={exercise.icon} size={24} color={category.color} />
+                      </View>
+                      <View style={styles.exerciseInfo}>
+                        <Text style={styles.exerciseName}>{getExerciseName(exercise.id)}</Text>
+                        <View style={styles.exerciseMeta}>
+                          <Text style={styles.exerciseDuration}>{getExerciseDuration(exercise.id)}</Text>
+                          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) + '20' }]}>
+                            <Text style={[styles.difficultyText, { color: getDifficultyColor(exercise.difficulty) }]}>
+                              {getDifficultyLabel(exercise.difficulty)}
+                            </Text>
+                          </View>
                         </View>
                       </View>
+                      <Ionicons
+                        name={expandedExercise === exercise.id ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={COLORS.textTertiary}
+                      />
                     </View>
-                    <Ionicons
-                      name={expandedExercise === exercise.id ? 'chevron-up' : 'chevron-down'}
-                      size={20}
-                      color={COLORS.textTertiary}
-                    />
-                  </View>
 
-                  {expandedExercise === exercise.id && (
-                    <View style={styles.expandedContent}>
-                      <Text style={styles.exerciseDesc}>{exercise.description}</Text>
-                      <Text style={styles.stepsTitle}>{t('tools.exerciseGuide.steps')}：</Text>
-                      {exercise.steps.map((step: string, index: number) => (
-                        <View key={index} style={styles.stepItem}>
-                          <View style={[styles.stepNumber, { backgroundColor: category.color }]}>
-                            <Text style={styles.stepNumberText}>{index + 1}</Text>
+                    {expandedExercise === exercise.id && (
+                      <View style={styles.expandedContent}>
+                        <Text style={styles.exerciseDesc}>{getExerciseDescription(exercise.id)}</Text>
+                        <Text style={styles.stepsTitle}>{t('tools.exerciseGuide.steps')}：</Text>
+                        {translatedSteps.map((step: string, index: number) => (
+                          <View key={index} style={styles.stepItem}>
+                            <View style={[styles.stepNumber, { backgroundColor: category.color }]}>
+                              <Text style={styles.stepNumberText}>{index + 1}</Text>
+                            </View>
+                            <Text style={styles.stepText}>{step}</Text>
                           </View>
-                          <Text style={styles.stepText}>{step}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </Card>
-              </TouchableOpacity>
-            ))}
+                        ))}
+                      </View>
+                    )}
+                  </Card>
+                </TouchableOpacity>
+              );
+            })}
           </Animated.View>
         ))}
 

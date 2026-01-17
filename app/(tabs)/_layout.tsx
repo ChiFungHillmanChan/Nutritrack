@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { SPACING } from '../../constants/typography';
 import { HamburgerMenu } from '../../components/navigation';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const ICON_SIZE = 20;
 const CONTAINER_SIZE = 40;
@@ -72,6 +73,7 @@ function MenuHeaderButton({ onPress }: { onPress: () => void }) {
 
 export default function TabLayout() {
   const [menuVisible, setMenuVisible] = useState(false);
+  const { t } = useTranslation();
 
   const openMenu = useCallback(() => setMenuVisible(true), []);
   const closeMenu = useCallback(() => setMenuVisible(false), []);
@@ -95,12 +97,12 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: '首頁',
+            title: t('nav.home'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="home" color={color} focused={focused} />
             ),
-            headerTitle: 'Nutritrack',
+            headerTitle: t('tabs.home'),
             headerTitleStyle: styles.headerTitleMain,
             headerLeft: () => <SettingsHeaderButton />,
           }}
@@ -108,18 +110,18 @@ export default function TabLayout() {
         <Tabs.Screen
           name="camera"
           options={{
-            title: '記錄',
+            title: t('nav.camera'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="camera" color={color} focused={focused} />
             ),
-            headerTitle: '記錄食物',
+            headerTitle: t('tabs.record'),
           }}
         />
         <Tabs.Screen
           name="habits"
           options={{
-            title: '習慣',
+            title: t('nav.habits'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="checkmark-circle" color={color} focused={focused} />
@@ -130,23 +132,23 @@ export default function TabLayout() {
         <Tabs.Screen
           name="chat"
           options={{
-            title: '問問',
+            title: t('nav.chat'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="chatbubbles" color={color} focused={focused} />
             ),
-            headerTitle: 'AI 營養師',
+            headerTitle: t('tabs.chat'),
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
-            title: '我的檔案',
+            title: t('nav.profile'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="person" color={color} focused={focused} />
             ),
-            headerTitle: 'My Profile',
+            headerTitle: t('tabs.profile'),
           }}
         />
       </Tabs>
