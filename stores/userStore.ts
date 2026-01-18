@@ -10,6 +10,10 @@ import { create } from 'zustand';
 import { settingsRepository, userRepository } from '../services/database';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import {
+  calculateBMR,
+  getActivityMultiplier,
+} from '../lib/energy-calculator';
+import {
   ActivityLevel,
   DailyTargets,
   Gender,
@@ -56,49 +60,6 @@ interface TargetCalculationParams {
   goal: UserGoal;
   healthGoals?: HealthGoal[];
   conditions: MedicalCondition[];
-}
-
-/**
- * Calculate BMR using Mifflin-St Jeor Equation
- */
-function calculateBMR(
-  weight: number,
-  height: number,
-  age: number = 30,
-  gender: Gender = 'prefer_not_to_say'
-): number {
-  // Mifflin-St Jeor Equation
-  const baseBMR = 10 * weight + 6.25 * height - 5 * age;
-  
-  switch (gender) {
-    case 'male':
-      return baseBMR + 5;
-    case 'female':
-      return baseBMR - 161;
-    default:
-      // Use average for other/prefer_not_to_say
-      return baseBMR - 78;
-  }
-}
-
-/**
- * Get activity multiplier for TDEE calculation
- */
-function getActivityMultiplier(activityLevel: ActivityLevel = 'moderate'): number {
-  switch (activityLevel) {
-    case 'sedentary':
-      return 1.2;
-    case 'light':
-      return 1.375;
-    case 'moderate':
-      return 1.55;
-    case 'active':
-      return 1.725;
-    case 'very_active':
-      return 1.9;
-    default:
-      return 1.55;
-  }
 }
 
 /**
@@ -485,4 +446,6 @@ export const useUserStore = create<UserState>((set, get) => ({
 }));
 
 // Export helper functions for use in components
-export { calculateAge, calculateBMR, getActivityMultiplier };
+// Export calculateAge from this file, re-export BMR/activity functions from energy-calculator
+export { calculateAge };
+export { calculateBMR, getActivityMultiplier } from '../lib/energy-calculator';
