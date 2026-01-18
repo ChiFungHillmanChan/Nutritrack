@@ -50,13 +50,20 @@ export function getHabitLogById(id: string): HabitLog | null {
 }
 
 /**
- * Get all habit logs for a user
+ * Get all habit logs for a user with optional pagination
+ * @param userId - User ID
+ * @param limit - Maximum number of records to return (default: 50)
+ * @param offset - Number of records to skip (default: 0)
  */
-export function getHabitLogsByUserId(userId: string): HabitLog[] {
+export function getHabitLogsByUserId(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): HabitLog[] {
   const db = getDatabase();
   const rows = db.getAllSync<HabitLogRow>(
-    'SELECT * FROM habit_logs WHERE user_id = ? ORDER BY logged_at DESC',
-    [userId]
+    'SELECT * FROM habit_logs WHERE user_id = ? ORDER BY logged_at DESC LIMIT ? OFFSET ?',
+    [userId, limit, offset]
   );
   return rows.map(rowToHabitLog);
 }
@@ -90,13 +97,22 @@ export function getTodayHabitLogs(userId: string): HabitLog[] {
 }
 
 /**
- * Get habit logs by type for a user
+ * Get habit logs by type for a user with optional pagination
+ * @param userId - User ID
+ * @param habitType - Type of habit
+ * @param limit - Maximum number of records to return (default: 50)
+ * @param offset - Number of records to skip (default: 0)
  */
-export function getHabitLogsByType(userId: string, habitType: HabitType): HabitLog[] {
+export function getHabitLogsByType(
+  userId: string,
+  habitType: HabitType,
+  limit: number = 50,
+  offset: number = 0
+): HabitLog[] {
   const db = getDatabase();
   const rows = db.getAllSync<HabitLogRow>(
-    'SELECT * FROM habit_logs WHERE user_id = ? AND habit_type = ? ORDER BY logged_at DESC',
-    [userId, habitType]
+    'SELECT * FROM habit_logs WHERE user_id = ? AND habit_type = ? ORDER BY logged_at DESC LIMIT ? OFFSET ?',
+    [userId, habitType, limit, offset]
   );
   return rows.map(rowToHabitLog);
 }

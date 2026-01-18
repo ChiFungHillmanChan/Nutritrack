@@ -57,13 +57,20 @@ export function getExerciseLogById(id: string): ExerciseLog | null {
 }
 
 /**
- * Get all exercise logs for a user
+ * Get all exercise logs for a user with optional pagination
+ * @param userId - User ID
+ * @param limit - Maximum number of records to return (default: 50)
+ * @param offset - Number of records to skip (default: 0)
  */
-export function getExerciseLogsByUserId(userId: string): ExerciseLog[] {
+export function getExerciseLogsByUserId(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): ExerciseLog[] {
   const db = getDatabase();
   const rows = db.getAllSync<ExerciseLogRow>(
-    'SELECT * FROM exercise_logs WHERE user_id = ? ORDER BY logged_at DESC',
-    [userId]
+    'SELECT * FROM exercise_logs WHERE user_id = ? ORDER BY logged_at DESC LIMIT ? OFFSET ?',
+    [userId, limit, offset]
   );
   return rows.map(rowToExerciseLog);
 }
@@ -117,13 +124,22 @@ export function getExerciseLogsByDateRange(
 }
 
 /**
- * Get exercise logs by type
+ * Get exercise logs by type with optional pagination
+ * @param userId - User ID
+ * @param exerciseType - Type of exercise
+ * @param limit - Maximum number of records to return (default: 50)
+ * @param offset - Number of records to skip (default: 0)
  */
-export function getExerciseLogsByType(userId: string, exerciseType: ExerciseType): ExerciseLog[] {
+export function getExerciseLogsByType(
+  userId: string,
+  exerciseType: ExerciseType,
+  limit: number = 50,
+  offset: number = 0
+): ExerciseLog[] {
   const db = getDatabase();
   const rows = db.getAllSync<ExerciseLogRow>(
-    'SELECT * FROM exercise_logs WHERE user_id = ? AND exercise_type = ? ORDER BY logged_at DESC',
-    [userId, exerciseType]
+    'SELECT * FROM exercise_logs WHERE user_id = ? AND exercise_type = ? ORDER BY logged_at DESC LIMIT ? OFFSET ?',
+    [userId, exerciseType, limit, offset]
   );
   return rows.map(rowToExerciseLog);
 }

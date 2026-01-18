@@ -60,13 +60,20 @@ export function getFoodLogById(id: string): FoodLog | null {
 }
 
 /**
- * Get all food logs for a user
+ * Get all food logs for a user with optional pagination
+ * @param userId - User ID
+ * @param limit - Maximum number of records to return (default: 50)
+ * @param offset - Number of records to skip (default: 0)
  */
-export function getFoodLogsByUserId(userId: string): FoodLog[] {
+export function getFoodLogsByUserId(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): FoodLog[] {
   const db = getDatabase();
   const rows = db.getAllSync<FoodLogRow>(
-    'SELECT * FROM food_logs WHERE user_id = ? ORDER BY logged_at DESC',
-    [userId]
+    'SELECT * FROM food_logs WHERE user_id = ? ORDER BY logged_at DESC LIMIT ? OFFSET ?',
+    [userId, limit, offset]
   );
   return rows.map(rowToFoodLog);
 }
