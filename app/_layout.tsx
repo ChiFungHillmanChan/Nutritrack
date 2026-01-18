@@ -6,6 +6,9 @@ import { onAuthStateChange } from '../services/auth';
 import { initializeDatabase } from '../services/database';
 import { getSupabaseClient, isDemoMode, clearInvalidSession, isInvalidRefreshTokenError } from '../services/supabase';
 import { useUserStore } from '../stores/userStore';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[App]');
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,7 +42,7 @@ export default function RootLayout() {
       initialize();
 
     } catch (error) {
-      console.error('[App] Initialization error:', error);
+      logger.error('Initialization error:', error);
     } finally {
       setLoading(false);
       setIsReady(true);
@@ -93,7 +96,7 @@ export default function RootLayout() {
           await supabase.auth.getSession();
         } catch (error) {
           if (isInvalidRefreshTokenError(error)) {
-            console.log('[Auth] Invalid refresh token detected, clearing session...');
+            logger.warn('Invalid refresh token detected, clearing session...');
             await clearInvalidSession();
           }
         }
@@ -110,7 +113,7 @@ export default function RootLayout() {
         setUser(null);
       } else if (event === 'TOKEN_REFRESHED' && !session) {
         // Token refresh failed - clear invalid session
-        console.log('[Auth] Token refresh failed, clearing session...');
+        logger.warn('Token refresh failed, clearing session...');
         await clearInvalidSession();
         setUser(null);
       } else if (event === 'SIGNED_IN' && session) {
@@ -129,7 +132,7 @@ export default function RootLayout() {
             }
           } catch (error) {
             if (isInvalidRefreshTokenError(error)) {
-              console.log('[Auth] Error fetching profile with invalid token, clearing session...');
+              logger.warn('Error fetching profile with invalid token, clearing session...');
               await clearInvalidSession();
               setUser(null);
             }
