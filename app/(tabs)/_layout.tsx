@@ -52,6 +52,9 @@ function SettingsHeaderButton() {
       style={styles.headerButton}
       onPress={() => router.push('/(tabs)/settings')}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      accessibilityLabel="Settings"
+      accessibilityRole="button"
+      accessibilityHint="Opens settings page"
     >
       <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
     </TouchableOpacity>
@@ -65,6 +68,9 @@ function MenuHeaderButton({ onPress }: { onPress: () => void }) {
       style={styles.headerButton}
       onPress={onPress}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      accessibilityLabel="Menu"
+      accessibilityRole="button"
+      accessibilityHint="Opens navigation menu"
     >
       <Ionicons name="menu" size={24} color={COLORS.text} />
     </TouchableOpacity>
@@ -99,6 +105,7 @@ export default function TabLayout() {
           options={{
             title: t('nav.home'),
             tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.home'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="home" color={color} focused={focused} />
             ),
@@ -112,6 +119,7 @@ export default function TabLayout() {
           options={{
             title: t('nav.camera'),
             tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.camera'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="camera" color={color} focused={focused} />
             ),
@@ -123,6 +131,7 @@ export default function TabLayout() {
           options={{
             title: t('nav.habits'),
             tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.habits'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="checkmark-circle" color={color} focused={focused} />
             ),
@@ -134,6 +143,7 @@ export default function TabLayout() {
           options={{
             title: t('nav.chat'),
             tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.chat'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="chatbubbles" color={color} focused={focused} />
             ),
@@ -145,6 +155,7 @@ export default function TabLayout() {
           options={{
             title: t('nav.profile'),
             tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.profile'),
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="person" color={color} focused={focused} />
             ),
