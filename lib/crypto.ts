@@ -23,6 +23,7 @@ const cryptoLogger = logger.withPrefix('[Crypto]');
 
 const ENCRYPTION_KEY_ALIAS = 'nutritrack_db_encryption_key';
 const IV_LENGTH = 12; // 96 bits for GCM-compatible IV
+const HMAC_LENGTH = 16; // 128 bits truncated HMAC
 
 /** Convert a Uint8Array to a hex string. */
 function uint8ArrayToHex(bytes: Uint8Array): string {
@@ -69,6 +70,19 @@ function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Both strings must be the same length for a valid comparison.
+ */
+function timingSafeEqual(stringA: string, stringB: string): boolean {
+  if (stringA.length !== stringB.length) return false;
+  let result = 0;
+  for (let i = 0; i < stringA.length; i++) {
+    result |= stringA.charCodeAt(i) ^ stringB.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 /** Concatenate multiple Uint8Arrays into one. */
@@ -155,15 +169,16 @@ export async function encryptData(plaintext: string): Promise<string> {
     }
 
     // Create HMAC for authentication (encrypt-then-MAC)
+    // Include IV in HMAC to ensure IV integrity
     const hmac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      key + uint8ArrayToHex(encrypted)
+      key + ivHex + uint8ArrayToHex(encrypted)
     );
 
-    // Take first 16 bytes (128 bits) of HMAC
-    const hmacBytes = hexToUint8Array(hmac.slice(0, 32));
+    // Take first HMAC_LENGTH bytes (128 bits) of HMAC
+    const hmacBytes = hexToUint8Array(hmac.slice(0, HMAC_LENGTH * 2));
 
-    // Combine: IV (12) + encrypted + HMAC (16 bytes)
+    // Combine: IV (12) + encrypted + HMAC (HMAC_LENGTH bytes)
     const combined = concatUint8Arrays(iv, encrypted, hmacBytes);
 
     return uint8ArrayToBase64(combined);
@@ -186,8 +201,8 @@ export async function decryptData(ciphertext: string): Promise<string> {
     const key = await getEncryptionKey();
     const combined = base64ToUint8Array(ciphertext);
 
-    // Validate minimum length: IV (12) + at least 1 byte + HMAC (16)
-    const minimumLength = IV_LENGTH + 1 + 16;
+    // Validate minimum length: IV (12) + at least 1 byte + HMAC (HMAC_LENGTH)
+    const minimumLength = IV_LENGTH + 1 + HMAC_LENGTH;
     if (combined.length < minimumLength) {
       cryptoLogger.warn('Invalid ciphertext: too short');
       return '';
@@ -195,16 +210,17 @@ export async function decryptData(ciphertext: string): Promise<string> {
 
     // Extract components
     const iv = combined.slice(0, IV_LENGTH);
-    const encrypted = combined.slice(IV_LENGTH, combined.length - 16);
-    const storedHmac = uint8ArrayToHex(combined.slice(combined.length - 16));
+    const encrypted = combined.slice(IV_LENGTH, combined.length - HMAC_LENGTH);
+    const storedHmac = uint8ArrayToHex(combined.slice(combined.length - HMAC_LENGTH));
 
-    // Verify HMAC first (prevents timing attacks on invalid data)
+    // Verify HMAC first using constant-time comparison (prevents timing attacks)
+    // Include IV in HMAC computation to ensure IV integrity
     const computedHmac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      key + uint8ArrayToHex(encrypted)
+      key + uint8ArrayToHex(iv) + uint8ArrayToHex(encrypted)
     );
 
-    if (computedHmac.slice(0, 32) !== storedHmac) {
+    if (!timingSafeEqual(computedHmac.slice(0, HMAC_LENGTH * 2), storedHmac)) {
       cryptoLogger.warn('HMAC verification failed - data may be tampered');
       return '';
     }
@@ -266,8 +282,8 @@ export function isEncrypted(data: string): boolean {
 
   try {
     const decoded = base64ToUint8Array(data);
-    // Minimum valid length: IV (12) + 1 byte data + HMAC (16)
-    return decoded.length >= 29;
+    // Minimum valid length: IV (IV_LENGTH) + 1 byte data + HMAC (HMAC_LENGTH)
+    return decoded.length >= IV_LENGTH + 1 + HMAC_LENGTH;
   } catch {
     return false;
   }
