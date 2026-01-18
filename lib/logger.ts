@@ -57,19 +57,21 @@ class Logger {
 
   /**
    * General log output (development only)
+   * Uses console.warn as it's allowed by ESLint config
    */
   log(...args: unknown[]): void {
     if (this.shouldLog('log')) {
-      console.log(...this.formatArgs(args));
+      console.warn('[LOG]', ...this.formatArgs(args));
     }
   }
 
   /**
    * Informational messages (development only)
+   * Uses console.warn as it's allowed by ESLint config
    */
   info(...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      console.info(...this.formatArgs(args));
+      console.warn('[INFO]', ...this.formatArgs(args));
     }
   }
 
@@ -78,7 +80,7 @@ class Logger {
    */
   warn(...args: unknown[]): void {
     if (this.shouldLog('warn')) {
-      console.warn(...this.formatArgs(args));
+      console.warn('[WARN]', ...this.formatArgs(args));
     }
   }
 
@@ -87,7 +89,7 @@ class Logger {
    */
   error(...args: unknown[]): void {
     if (this.shouldLog('error')) {
-      console.error(...this.formatArgs(args));
+      console.error('[ERROR]', ...this.formatArgs(args));
     }
 
     // In production, errors could be sent to Sentry
@@ -99,10 +101,11 @@ class Logger {
 
   /**
    * Debug messages (development only, lowest priority)
+   * Uses console.warn as it's allowed by ESLint config
    */
   debug(...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      console.debug(...this.formatArgs(args));
+      console.warn('[DEBUG]', ...this.formatArgs(args));
     }
   }
 
