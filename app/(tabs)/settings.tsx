@@ -1,6 +1,6 @@
 /**
  * Profile Screen - Redesigned
- * 
+ *
  * User profile page with:
  * - Profile header with avatar and sync time
  * - Quick actions row (5 icons)
@@ -10,34 +10,32 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
+import { COLORS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING } from '../../constants/typography';
 import { useUserStore } from '../../stores/userStore';
 import { signOut } from '../../services/auth';
 import { Card } from '../../components/ui';
-import { QuickActions, GoalsCard } from '../../components/profile';
-import { LanguageSwitcher } from '../../components/settings';
+import { GoalsCard } from '../../components/profile';
 import { settingsRepository } from '../../services/database';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  ProfileHeader,
+  TimelineCard,
+  SupportInfoSection,
+  DataManagementSection,
+  SettingRow,
+  type DataStats,
+} from './settings/components';
 
 export default function ProfileScreen() {
   const { user, signOut: storeSignOut } = useUserStore();
   const { t } = useTranslation();
-  
+
   const [lastSyncTime, setLastSyncTime] = useState<string>('--');
-  const [dataStats, setDataStats] = useState({
+  const [dataStats, setDataStats] = useState<DataStats>({
     foodLogsCount: 0,
     chatMessagesCount: 0,
     habitLogsCount: 0,
@@ -49,7 +47,7 @@ export default function ProfileScreen() {
     if (user?.id) {
       const stats = settingsRepository.getDatabaseStats(user.id);
       setDataStats(stats);
-      
+
       // Set last sync time to now (for demo purposes)
       const now = new Date();
       setLastSyncTime(
@@ -84,6 +82,20 @@ export default function ProfileScreen() {
     router.push('/timeline' as never);
   }, []);
 
+  // Handle clear data
+  const handleClearData = useCallback(() => {
+    if (user?.id) {
+      settingsRepository.clearAllUserData(user.id);
+      setDataStats({
+        foodLogsCount: 0,
+        chatMessagesCount: 0,
+        habitLogsCount: 0,
+        exerciseLogsCount: 0,
+      });
+      Alert.alert(t('settings.cleared'), t('settings.clearedMessage'));
+    }
+  }, [user?.id, t]);
+
   const totalRecords =
     dataStats.foodLogsCount +
     dataStats.chatMessagesCount +
@@ -98,165 +110,31 @@ export default function ProfileScreen() {
     >
       {/* Profile Header */}
       <Animated.View entering={FadeIn.delay(100)}>
-        <Card style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            {/* Avatar */}
-            <TouchableOpacity
-              onPress={handleEditProfile}
-              accessibilityLabel={t('accessibility.editProfile')}
-              accessibilityRole="button"
-              accessibilityHint={t('accessibility.tapToEditProfile')}
-            >
-              <LinearGradient
-                colors={GRADIENTS.primary}
-                style={styles.avatar}
-              >
-                <Text style={styles.avatarText}>
-                  {user?.name?.charAt(0).toUpperCase() ?? 'U'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Name and Sync Time */}
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name ?? t('home.userDefault')}</Text>
-              <Text style={styles.syncTime}>
-                {t('settings.lastSync')}: {lastSyncTime}
-              </Text>
-            </View>
-
-            {/* Edit Button */}
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={handleEditProfile}
-              accessibilityLabel={t('accessibility.syncData')}
-              accessibilityRole="button"
-            >
-              <Ionicons name="sync" size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Quick Actions */}
-          <QuickActions />
-        </Card>
+        <ProfileHeader
+          userName={user?.name}
+          lastSyncTime={lastSyncTime}
+          onEditProfile={handleEditProfile}
+        />
       </Animated.View>
 
       {/* My Goals */}
       <Animated.View entering={FadeInDown.delay(200).springify()}>
-        <GoalsCard
-          goals={user?.health_goals || []}
-          style={styles.goalsCard}
-        />
+        <GoalsCard goals={user?.health_goals || []} style={styles.goalsCard} />
       </Animated.View>
 
       {/* Timeline Entry Card */}
       <Animated.View entering={FadeInDown.delay(300).springify()}>
-        <TouchableOpacity
-          onPress={handleTimelinePress}
-          activeOpacity={0.8}
-          accessibilityLabel={t('settings.timeline.title')}
-          accessibilityRole="button"
-          accessibilityHint={t('accessibility.viewTimeline')}
-        >
-          <Card style={styles.timelineCard}>
-            <View style={styles.timelineContent}>
-              <View style={styles.timelineIcon}>
-                <Ionicons name="document-text" size={32} color={COLORS.primary} />
-              </View>
-              <View style={styles.timelineInfo}>
-                <Text style={styles.timelineTitle}>{t('settings.timeline.title')}</Text>
-                <Text style={styles.timelineSubtitle}>
-                  {t('settings.timeline.subtitle')}
-                </Text>
-                <Text style={styles.timelineCount}>
-                  {t('settings.timeline.totalRecords', { count: totalRecords })}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color={COLORS.textTertiary} />
-            </View>
-          </Card>
-        </TouchableOpacity>
+        <TimelineCard totalRecords={totalRecords} onPress={handleTimelinePress} />
       </Animated.View>
 
       {/* Support & Info */}
       <Animated.View entering={FadeInDown.delay(400).springify()}>
-        <Card style={styles.card}>
-          <Text style={styles.groupTitle}>{t('settings.supportInfo')}</Text>
-
-          {/* Language Switcher */}
-          <LanguageSwitcher />
-
-          <SettingRow
-            icon="document-text"
-            iconBg={COLORS.fiberBg}
-            iconColor={COLORS.fiber}
-            label={t('settings.privacyPolicy')}
-            onPress={() => router.push('/privacy-policy' as never)}
-          />
-
-          <SettingRow
-            icon="information-circle"
-            iconBg={COLORS.sodiumBg}
-            iconColor={COLORS.sodium}
-            label={t('settings.about')}
-            onPress={() => router.push('/about' as never)}
-          />
-
-          <SettingRow
-            icon="help-circle"
-            iconBg={COLORS.infoLight}
-            iconColor={COLORS.info}
-            label={t('settings.faq')}
-            onPress={() => Alert.alert(t('settings.faq'), t('settings.faqComingSoon'))}
-          />
-        </Card>
+        <SupportInfoSection />
       </Animated.View>
 
       {/* Data Management */}
       <Animated.View entering={FadeInDown.delay(500).springify()}>
-        <Card style={styles.card}>
-          <Text style={styles.groupTitle}>{t('settings.dataManagement')}</Text>
-
-          <View style={styles.statsRow}>
-            <StatItem label={t('settings.foodLogs')} count={dataStats.foodLogsCount} />
-            <StatItem label={t('settings.chatLogs')} count={dataStats.chatMessagesCount} />
-            <StatItem label={t('settings.habitLogs')} count={dataStats.habitLogsCount} />
-          </View>
-
-          <SettingRow
-            icon="trash"
-            iconBg={COLORS.errorLight}
-            iconColor={COLORS.error}
-            label={t('settings.clearAllData')}
-            value={`${totalRecords} ${t('common.items')}`}
-            onPress={() => {
-              Alert.alert(
-                t('settings.clearConfirm.title'),
-                t('settings.clearConfirm.message'),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  {
-                    text: t('settings.clearConfirm.clear'),
-                    style: 'destructive',
-                    onPress: () => {
-                      if (user?.id) {
-                        settingsRepository.clearAllUserData(user.id);
-                        setDataStats({
-                          foodLogsCount: 0,
-                          chatMessagesCount: 0,
-                          habitLogsCount: 0,
-                          exerciseLogsCount: 0,
-                        });
-                        Alert.alert(t('settings.cleared'), t('settings.clearedMessage'));
-                      }
-                    },
-                  },
-                ]
-              );
-            }}
-            danger
-          />
-        </Card>
+        <DataManagementSection dataStats={dataStats} onClearData={handleClearData} />
       </Animated.View>
 
       {/* Sign Out */}
@@ -264,12 +142,12 @@ export default function ProfileScreen() {
         <Card style={styles.signOutCard}>
           <SettingRow
             icon="log-out"
-            iconBg={COLORS.errorLight}
+            iconBackgroundColor={COLORS.errorLight}
             iconColor={COLORS.error}
             label={t('auth.logout.button')}
             onPress={handleSignOut}
             showChevron={false}
-            danger
+            isDanger
           />
         </Card>
       </Animated.View>
@@ -284,57 +162,6 @@ export default function ProfileScreen() {
   );
 }
 
-// Helper Components
-function SettingRow({
-  icon,
-  iconBg,
-  iconColor,
-  label,
-  value,
-  onPress,
-  showChevron = true,
-  danger = false,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  iconBg: string;
-  iconColor: string;
-  label: string;
-  value?: string;
-  onPress?: () => void;
-  showChevron?: boolean;
-  danger?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.settingRow}
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityLabel={value ? `${label}: ${value}` : label}
-      accessibilityRole="button"
-    >
-      <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={20} color={iconColor} />
-      </View>
-      <Text style={[styles.settingLabel, danger && styles.settingLabelDanger]}>
-        {label}
-      </Text>
-      {value && <Text style={styles.settingValue}>{value}</Text>}
-      {showChevron && (
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
-      )}
-    </TouchableOpacity>
-  );
-}
-
-function StatItem({ label, count }: { label: string; count: number }) {
-  return (
-    <View style={styles.statItem}>
-      <Text style={styles.statCount}>{count}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -343,169 +170,19 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.lg,
   },
-
-  // Profile Card
-  profileCard: {
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.md,
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.textInverse,
-  },
-  profileInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  profileName: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  syncTime: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textTertiary,
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Goals Card
   goalsCard: {
     marginBottom: SPACING.lg,
-  },
-
-  // Timeline Card
-  timelineCard: {
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-    backgroundColor: COLORS.primaryMuted,
-  },
-  timelineContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timelineIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  timelineInfo: {
-    flex: 1,
-  },
-  timelineTitle: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.primaryDark,
-    marginBottom: 2,
-  },
-  timelineSubtitle: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.primary,
-    fontStyle: 'italic',
-  },
-  timelineCount: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-
-  // Cards
-  card: {
-    marginBottom: SPACING.lg,
-    padding: SPACING.lg,
   },
   signOutCard: {
     marginBottom: SPACING.md,
     padding: SPACING.lg,
   },
-  groupTitle: {
-    ...TYPOGRAPHY.overline,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  },
-
-  // Setting Row
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-  },
-  settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  settingLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    flex: 1,
-  },
-  settingLabelDanger: {
-    color: COLORS.error,
-  },
-  settingValue: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginRight: SPACING.sm,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: RADIUS.md,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statCount: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.primary,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-
-  // Version
   versionText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: SPACING.sm,
   },
-
-  // Bottom spacer
   bottomSpacer: {
     height: SPACING['3xl'],
   },
