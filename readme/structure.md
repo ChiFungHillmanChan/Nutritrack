@@ -107,7 +107,24 @@ This document provides an overview of the project's components, utilities, and d
 |--------|------|---------|
 | Login | `login.tsx` | Email/password and social login |
 | Register | `register.tsx` | Account creation with password validation |
-| Onboarding | `onboarding.tsx` | 7-step user profile setup (basics, metrics, goals, conditions, medications, dietary, summary) |
+| Onboarding | `onboarding/index.tsx` | 7-step user profile setup orchestration |
+
+### Onboarding Components (`/components/onboarding`)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `BasicsStep` | `steps/BasicsStep.tsx` | Name, gender, date of birth input |
+| `MetricsStep` | `steps/MetricsStep.tsx` | Height, weight, activity level |
+| `GoalsStep` | `steps/GoalsStep.tsx` | Primary goal and health goals selection |
+| `ConditionsStep` | `steps/ConditionsStep.tsx` | Medical conditions selection |
+| `MedicationsStep` | `steps/MedicationsStep.tsx` | Medications and supplements management |
+| `DietaryStep` | `steps/DietaryStep.tsx` | Dietary preferences and allergies |
+| `SummaryStep` | `steps/SummaryStep.tsx` | Review and confirmation before completion |
+| `useOnboardingState` | `hooks/useOnboardingState.ts` | State management hook for onboarding flow |
+| `options.ts` | `options.ts` | Translated option generators for all step selections |
+| `styles.ts` | `styles.ts` | Shared StyleSheet definitions |
+| `types.ts` | `types.ts` | TypeScript interfaces for onboarding |
+| `index.ts` | `index.ts` | Barrel export for all onboarding modules |
 
 ### Main App (`/app/(tabs)`)
 
@@ -199,10 +216,10 @@ Local SQLite database for offline-first data persistence. Production-ready for i
 | Repository | File | Purpose |
 |------------|------|---------|
 | `userRepository` | `userRepository.ts` | User profile CRUD, demo user management |
-| `foodRepository` | `foodRepository.ts` | Food logs CRUD, nutrition calculations |
+| `foodRepository` | `foodRepository.ts` | Food logs CRUD, nutrition calculations, pagination support |
 | `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message, updateWelcomeMessage for language changes |
-| `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations |
-| `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries |
+| `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations, pagination support |
+| `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries, pagination support |
 | `settingsRepository` | `settingsRepository.ts` | App settings persistence, login state tracking, data management, clear user data |
 
 ### Database Tables
@@ -234,24 +251,27 @@ const todayLogs = foodRepository.getTodayFoodLogs(userId);
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `energy-calculator.ts` | `energy-calculator.ts` | BMR, TDEE, calorie calculations |
+| `energy-calculator.ts` | `energy-calculator.ts` | BMR, TDEE, calorie calculations, exercise MET values, macro percentages |
 | `nutrition-calculator.ts` | `nutrition-calculator.ts` | Daily target calculations |
 | `ai-models.ts` | `ai-models.ts` | AI model configuration |
 | `ai-model-status.ts` | `ai-model-status.ts` | AI model availability check |
 | `ai-response-validator.ts` | `ai-response-validator.ts` | Zod schemas for validating AI responses from Gemini API |
+| `logger.ts` | `logger.ts` | Centralized logging with log levels, dev-only output, prefixed loggers |
 
 ## Types (`/types`)
 
-| Type Category | Purpose |
-|---------------|---------|
-| User Types | `User`, `Gender`, `ActivityLevel`, `HealthGoal`, `MedicalCondition`, `Medication`, `Supplement`, `DietaryPreference` |
-| Food Types | `FoodLog`, `NutritionData`, `MealType` |
-| Exercise Types | `ExerciseLog`, `ExerciseType`, `DailyActivity` |
-| Habit Types | `HabitLog`, `HabitType`, `MoodLevel`, `BristolStoolType`, `SleepQuality`, `PeriodFlowLevel` |
-| Wellness Types | `MeditationSession`, `Affirmation`, `AmbientSoundType`, `BreathingExerciseType` |
-| Calculator Types | `InsulinCalculation`, `CreonCalculation` |
-| Energy Types | `EnergyBalance` |
-| Notification Types | `NotificationSettings`, `MedicationReminder`, `HabitReminder` |
+Types are organized into domain-specific files for better maintainability:
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Re-exports all types from domain files |
+| `user.ts` | `User`, `Gender`, `ActivityLevel`, `HealthGoal`, `MedicalCondition`, `Medication`, `Supplement`, `DietaryPreference`, `DailyTargets` |
+| `nutrition.ts` | `FoodLog`, `NutritionData`, `MealType` |
+| `activity.ts` | `ExerciseLog`, `ExerciseType`, `DailyActivity` |
+| `wellness.ts` | `MeditationSession`, `Affirmation`, `AmbientSoundType`, `BreathingExerciseType` |
+| `calculator.ts` | `InsulinCalculation`, `CreonCalculation`, `EnergyBalance` |
+| `notification.ts` | `NotificationSettings`, `MedicationReminder`, `HabitReminder` |
+| `summary.ts` | `DailySummary`, `WeeklySummary`, `NutritionSummary` |
 
 ## Supabase
 
@@ -259,8 +279,9 @@ const todayLogs = foodRepository.getTodayFoodLogs(userId);
 
 | Function | Purpose |
 |----------|---------|
-| `chat/index.ts` | AI chat using Gemini 2.5 Pro for nutrition conversations |
-| `analyze-food/index.ts` | Food image analysis using Gemini 2.5 Flash vision API |
+| `chat/index.ts` | AI chat using Gemini 2.5 Pro for nutrition conversations (JWT auth required) |
+| `analyze-food/index.ts` | Food image analysis using Gemini 2.5 Flash vision API (JWT auth required) |
+| `_shared/auth.ts` | Shared JWT verification module for Edge Functions |
 
 ### Database Tables
 

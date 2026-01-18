@@ -3,7 +3,7 @@
  * These functions return localized option arrays for forms
  */
 
-import { COLORS } from '../../../constants/colors';
+import { COLORS } from '../../constants/colors';
 import type {
   TranslationFunction,
   GenderOption,

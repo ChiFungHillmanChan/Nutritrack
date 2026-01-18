@@ -6,8 +6,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../../constants/colors';
-import { Card } from '../../../../components/ui';
+import { COLORS } from '../../../constants/colors';
+import { Card } from '../../ui';
 import { styles } from '../styles';
 import type { MedicalCondition, ConditionOption, TranslationFunction } from '../types';
 

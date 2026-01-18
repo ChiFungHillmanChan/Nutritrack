@@ -6,9 +6,9 @@ import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, GRADIENTS } from '../../../../constants/colors';
-import { calculateAge } from '../../../../stores/userStore';
-import { Card } from '../../../../components/ui';
+import { COLORS, GRADIENTS } from '../../../constants/colors';
+import { calculateAge } from '../../../stores/userStore';
+import { Card } from '../../ui';
 import { styles } from '../styles';
 import type {
   Gender,

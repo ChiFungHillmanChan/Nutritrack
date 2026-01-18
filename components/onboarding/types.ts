@@ -13,7 +13,7 @@ import type {
   Medication,
   Supplement,
   DailyTargets,
-} from '../../../types';
+} from '../../types';
 
 // Re-export domain types for convenience
 export type {

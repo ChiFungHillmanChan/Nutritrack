@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import 'react-native-reanimated';
 import { onAuthStateChange } from '../services/auth';
 import { initializeDatabase } from '../services/database';
-import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { getSupabaseClient, isDemoMode, clearInvalidSession, isInvalidRefreshTokenError } from '../services/supabase';
 import { useUserStore } from '../stores/userStore';
 
 export {
@@ -84,24 +84,55 @@ export default function RootLayout() {
       return;
     }
 
+    // Check for and clear any invalid sessions on startup
+    const checkSession = async () => {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          // This may throw if the refresh token is invalid
+          await supabase.auth.getSession();
+        } catch (error) {
+          if (isInvalidRefreshTokenError(error)) {
+            console.log('[Auth] Invalid refresh token detected, clearing session...');
+            await clearInvalidSession();
+          }
+        }
+      }
+    };
+    
+    checkSession();
+
     // Listen to auth state changes
     const {
       data: { subscription },
     } = onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
+      } else if (event === 'TOKEN_REFRESHED' && !session) {
+        // Token refresh failed - clear invalid session
+        console.log('[Auth] Token refresh failed, clearing session...');
+        await clearInvalidSession();
+        setUser(null);
       } else if (event === 'SIGNED_IN' && session) {
         // Fetch user profile
         const supabase = getSupabaseClient();
         if (supabase) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', (session as { user: { id: string } }).user.id)
-            .single();
+          try {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', (session as { user: { id: string } }).user.id)
+              .single();
 
-          if (profile) {
-            setUser(profile);
+            if (profile) {
+              setUser(profile);
+            }
+          } catch (error) {
+            if (isInvalidRefreshTokenError(error)) {
+              console.log('[Auth] Error fetching profile with invalid token, clearing session...');
+              await clearInvalidSession();
+              setUser(null);
+            }
           }
         }
       }

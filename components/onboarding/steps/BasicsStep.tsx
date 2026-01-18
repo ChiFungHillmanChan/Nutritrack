@@ -7,9 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { COLORS, GRADIENTS } from '../../../../constants/colors';
-import { calculateAge } from '../../../../stores/userStore';
-import { Card } from '../../../../components/ui';
+import { COLORS, GRADIENTS } from '../../../constants/colors';
+import { calculateAge } from '../../../stores/userStore';
+import { Card } from '../../ui';
 import { styles } from '../styles';
 import type { Gender, GenderOption, TranslationFunction } from '../types';
 
@@ -126,6 +126,8 @@ export function BasicsStep({
               }}
               maximumDate={new Date()}
               minimumDate={new Date(1920, 0, 1)}
+              textColor={COLORS.text}
+              themeVariant="light"
             />
           )}
         </View>

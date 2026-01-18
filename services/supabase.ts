@@ -200,3 +200,46 @@ export const supabase = {
     return getSupabaseClient();
   },
 };
+
+/**
+ * Clear invalid session data from storage
+ * Call this when encountering invalid refresh token errors
+ */
+export async function clearInvalidSession(): Promise<void> {
+  // Clear auth-related items from storage
+  const keysToClean = [
+    'sb-auth-token',
+    'supabase.auth.token',
+  ];
+
+  for (const key of keysToClean) {
+    await secureStorageAdapter.removeItem(key);
+  }
+
+  // Sign out from Supabase if client exists
+  const client = getSupabaseClient();
+  if (client) {
+    // Sign out to clear any in-memory state
+    await client.auth.signOut({ scope: 'local' }).catch(() => {
+      // Ignore errors during sign out - session might already be invalid
+    });
+  }
+}
+
+/**
+ * Check if an error is related to invalid refresh token
+ */
+export function isInvalidRefreshTokenError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  
+  const errorObj = error as { message?: string; name?: string; code?: string };
+  const errorMessage = errorObj.message?.toLowerCase() ?? '';
+  const errorName = errorObj.name ?? '';
+  
+  return (
+    errorName === 'AuthApiError' &&
+    (errorMessage.includes('refresh token') ||
+     errorMessage.includes('invalid token') ||
+     errorMessage.includes('token not found'))
+  );
+}

@@ -49,9 +49,13 @@ export function useTranslation() {
   }, []);
 
   // Translation function
+  // Note: language is used to force re-creation when language changes,
+  // ensuring components re-render with updated translations
   const t = useCallback((key: string, options?: Record<string, unknown>): string => {
+    // Reference language to satisfy exhaustive-deps and ensure re-render on change
+    void language;
     return translate(key, options);
-  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language]);
 
   // Set language function
   const setLanguage = useCallback(async (newLanguage: SupportedLanguage) => {
@@ -61,9 +65,12 @@ export function useTranslation() {
   }, []);
 
   // Get raw translation (for arrays, objects)
+  // Note: language is used to force re-creation when language changes
   const getRawTranslation = useCallback((key: string): unknown => {
+    // Reference language to satisfy exhaustive-deps and ensure re-render on change
+    void language;
     return getRawI18nTranslation(key);
-  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language]);
 
   return {
     t,

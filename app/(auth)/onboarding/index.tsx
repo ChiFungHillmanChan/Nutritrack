@@ -15,18 +15,16 @@ import { COLORS, GRADIENTS } from '../../../constants/colors';
 import { useUserStore, calculateAge } from '../../../stores/userStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 
-// Local imports
-import { styles } from './styles';
-import { useOnboardingState } from './hooks/useOnboardingState';
+// Import from components/onboarding (no longer in app/ directory)
 import {
+  styles,
+  useOnboardingState,
   getGenderOptions,
   getActivityLevels,
   getPrimaryGoals,
   getHealthGoals,
   getConditions,
   getDietaryPrefs,
-} from './options';
-import {
   BasicsStep,
   MetricsStep,
   GoalsStep,
@@ -34,10 +32,9 @@ import {
   MedicationsStep,
   DietaryStep,
   SummaryStep,
-} from './components';
-import type { Step } from './types';
-
-const STEPS: Step[] = ['basics', 'metrics', 'goals', 'conditions', 'medications', 'dietary', 'summary'];
+  STEPS,
+} from '../../../components/onboarding';
+import type { Step } from '../../../components/onboarding';
 
 export default function OnboardingScreen() {
   const { t, language } = useTranslation();
@@ -146,6 +143,9 @@ export default function OnboardingScreen() {
     const currentIndex = STEPS.indexOf(step);
     if (currentIndex > 0) {
       setStep(STEPS[currentIndex - 1]);
+    } else {
+      // On basics step, go back to login
+      router.back();
     }
   };
 
@@ -276,14 +276,10 @@ export default function OnboardingScreen() {
 
       {/* Navigation */}
       <View style={styles.navigation}>
-        {step !== 'basics' ? (
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={20} color={COLORS.text} />
-            <Text style={styles.backButtonText}>{t('common.back')}</Text>
-          </TouchableOpacity>
-        ) : (
-          <View />
-        )}
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={20} color={COLORS.text} />
+          <Text style={styles.backButtonText}>{t('common.back')}</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.nextButton, state.isLoading && styles.buttonDisabled]}
           onPress={handleNext}

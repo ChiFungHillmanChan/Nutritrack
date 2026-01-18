@@ -3,8 +3,8 @@
  */
 
 import { StyleSheet } from 'react-native';
-import { COLORS, SHADOWS } from '../../../constants/colors';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../../../constants/typography';
+import { COLORS, SHADOWS } from '../../constants/colors';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 
 export const styles = StyleSheet.create({
   container: {
