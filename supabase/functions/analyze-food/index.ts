@@ -9,6 +9,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { verifyAuth, unauthorizedResponse } from '../_shared/auth.ts';
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rate-limiter.ts';
 
 // AI Model Constants - following the rule of centralized model names
 const AI_MODELS = {
@@ -246,6 +247,12 @@ serve(async (req: Request) => {
     return unauthorizedResponse(corsHeaders);
   }
 
+  // Check rate limit
+  const rateLimit = checkRateLimit(authResult.userId, 'food-analysis', RATE_LIMITS.FOOD_ANALYSIS);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(corsHeaders, rateLimit.resetInSeconds);
+  }
+
   try {
     const { image_base64, meal_type }: FoodAnalysisRequest = await req.json();
 
@@ -279,7 +286,12 @@ serve(async (req: Request) => {
       JSON.stringify(result),
       {
         status: result.success ? 200 : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': rateLimit.resetInSeconds.toString(),
+        },
       }
     );
   } catch (error) {
