@@ -5,6 +5,9 @@
  */
 
 import { getDatabase, parseJSON, stringifyJSON } from '../database';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[SettingsRepository]');
 
 // App settings structure
 export interface AppSettings {
@@ -45,17 +48,23 @@ export function getSetting<T>(key: string, defaultValue: T): T {
 /**
  * Set a setting value
  */
-export function setSetting<T>(key: string, value: T): void {
-  const db = getDatabase();
-  const jsonValue = stringifyJSON(value);
-  const timestamp = new Date().toISOString();
-  
-  db.runSync(
-    `INSERT INTO app_settings (key, value, updated_at) 
-     VALUES (?, ?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`,
-    [key, jsonValue, timestamp, jsonValue, timestamp]
-  );
+export function setSetting<T>(key: string, value: T): boolean {
+  try {
+    const db = getDatabase();
+    const jsonValue = stringifyJSON(value);
+    const timestamp = new Date().toISOString();
+    
+    db.runSync(
+      `INSERT INTO app_settings (key, value, updated_at) 
+       VALUES (?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`,
+      [key, jsonValue, timestamp, jsonValue, timestamp]
+    );
+    return true;
+  } catch (error) {
+    logger.error('Failed to set setting:', error);
+    return false;
+  }
 }
 
 /**
@@ -134,7 +143,7 @@ export function clearAllUserData(userId: string): boolean {
     
     return true;
   } catch (error) {
-    console.error('[SettingsRepository] Clear user data error:', error);
+    logger.error('Clear user data error:', error);
     return false;
   }
 }

@@ -9,11 +9,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { verifyAuth, unauthorizedResponse } from '../_shared/auth.ts';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rate-limiter.ts';
-
-// AI Model Constants - use GEMINI_2_5_PRO for chat (better conversation ability)
-const AI_MODELS = {
-  GEMINI_2_5_PRO: 'gemini-2.5-pro',
-} as const;
+import { AI_MODELS, getRecommendedModel } from '../_shared/ai-models.ts';
 
 /**
  * CORS headers for Edge Function responses.
@@ -211,8 +207,9 @@ ${context ? formatContext(context) : ''}`;
   });
 
   try {
+    const model = getRecommendedModel('chat');
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.GEMINI_2_5_PRO}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {

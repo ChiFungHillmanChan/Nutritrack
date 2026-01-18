@@ -7,7 +7,7 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../../../../constants/colors';
-import { TYPOGRAPHY, SPACING } from '../../../../constants/typography';
+import { TYPOGRAPHY } from '../../../../constants/typography';
 
 export interface StatItemProps {
   label: string;

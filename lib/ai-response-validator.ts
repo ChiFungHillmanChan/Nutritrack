@@ -6,6 +6,9 @@
  */
 
 import { z } from 'zod';
+import { createLogger } from './logger';
+
+const logger = createLogger('[AIResponseValidator]');
 
 /**
  * Schema for chat response messages
@@ -74,7 +77,7 @@ export function validateChatResponse(data: unknown): ChatResponse | null {
   if (result.success) {
     return result.data;
   }
-  console.error('Invalid chat response:', result.error.issues);
+  logger.error('Invalid chat response:', result.error.issues);
   return null;
 }
 
@@ -86,7 +89,7 @@ export function validateFoodAnalysisResponse(data: unknown): FoodAnalysisRespons
   if (result.success) {
     return result.data;
   }
-  console.error('Invalid food analysis response:', result.error.issues);
+  logger.error('Invalid food analysis response:', result.error.issues);
   return null;
 }
 
@@ -99,7 +102,7 @@ export function validateNutritionData(data: unknown): NutritionData | null {
   if (result.success) {
     return result.data;
   }
-  console.error('Invalid nutrition data:', result.error.issues);
+  logger.error('Invalid nutrition data:', result.error.issues);
   return null;
 }
 

@@ -12,6 +12,9 @@ import {
   parseJSON,
   stringifyJSON,
 } from '../database';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[ExerciseRepository]');
 
 interface ExerciseLogRow {
   id: string;
@@ -147,106 +150,126 @@ export function getExerciseLogsByType(
 /**
  * Create a new exercise log
  */
-export function createExerciseLog(data: Omit<ExerciseLog, 'id'>): ExerciseLog {
-  const db = getDatabase();
-  const id = generateId();
+export function createExerciseLog(data: Omit<ExerciseLog, 'id'>): ExerciseLog | null {
+  try {
+    const db = getDatabase();
+    const id = generateId();
 
-  db.runSync(
-    `INSERT INTO exercise_logs (
-      id, user_id, exercise_type, duration_minutes, calories_burned,
-      distance_km, steps, avg_heart_rate, source, logged_at, metadata, synced_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      data.user_id,
-      data.exercise_type,
-      data.duration_minutes,
-      data.calories_burned,
-      data.distance_km ?? null,
-      data.steps ?? null,
-      data.avg_heart_rate ?? null,
-      data.source,
-      data.logged_at,
-      data.metadata ? stringifyJSON(data.metadata) : null,
-      null,
-    ]
-  );
+    db.runSync(
+      `INSERT INTO exercise_logs (
+        id, user_id, exercise_type, duration_minutes, calories_burned,
+        distance_km, steps, avg_heart_rate, source, logged_at, metadata, synced_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.user_id,
+        data.exercise_type,
+        data.duration_minutes,
+        data.calories_burned,
+        data.distance_km ?? null,
+        data.steps ?? null,
+        data.avg_heart_rate ?? null,
+        data.source,
+        data.logged_at,
+        data.metadata ? stringifyJSON(data.metadata) : null,
+        null,
+      ]
+    );
 
-  return getExerciseLogById(id)!;
+    return getExerciseLogById(id);
+  } catch (error) {
+    logger.error('Failed to create exercise log:', error);
+    return null;
+  }
 }
 
 /**
  * Update an exercise log
  */
 export function updateExerciseLog(id: string, updates: Partial<ExerciseLog>): ExerciseLog | null {
-  const db = getDatabase();
-  const existing = getExerciseLogById(id);
-  if (!existing) return null;
+  try {
+    const db = getDatabase();
+    const existing = getExerciseLogById(id);
+    if (!existing) return null;
 
-  const fields: string[] = [];
-  const values: (string | number | null)[] = [];
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
 
-  if (updates.exercise_type !== undefined) {
-    fields.push('exercise_type = ?');
-    values.push(updates.exercise_type);
-  }
-  if (updates.duration_minutes !== undefined) {
-    fields.push('duration_minutes = ?');
-    values.push(updates.duration_minutes);
-  }
-  if (updates.calories_burned !== undefined) {
-    fields.push('calories_burned = ?');
-    values.push(updates.calories_burned);
-  }
-  if (updates.distance_km !== undefined) {
-    fields.push('distance_km = ?');
-    values.push(updates.distance_km);
-  }
-  if (updates.steps !== undefined) {
-    fields.push('steps = ?');
-    values.push(updates.steps);
-  }
-  if (updates.avg_heart_rate !== undefined) {
-    fields.push('avg_heart_rate = ?');
-    values.push(updates.avg_heart_rate);
-  }
-  if (updates.source !== undefined) {
-    fields.push('source = ?');
-    values.push(updates.source);
-  }
-  if (updates.metadata !== undefined) {
-    fields.push('metadata = ?');
-    values.push(updates.metadata ? stringifyJSON(updates.metadata) : null);
-  }
+    if (updates.exercise_type !== undefined) {
+      fields.push('exercise_type = ?');
+      values.push(updates.exercise_type);
+    }
+    if (updates.duration_minutes !== undefined) {
+      fields.push('duration_minutes = ?');
+      values.push(updates.duration_minutes);
+    }
+    if (updates.calories_burned !== undefined) {
+      fields.push('calories_burned = ?');
+      values.push(updates.calories_burned);
+    }
+    if (updates.distance_km !== undefined) {
+      fields.push('distance_km = ?');
+      values.push(updates.distance_km);
+    }
+    if (updates.steps !== undefined) {
+      fields.push('steps = ?');
+      values.push(updates.steps);
+    }
+    if (updates.avg_heart_rate !== undefined) {
+      fields.push('avg_heart_rate = ?');
+      values.push(updates.avg_heart_rate);
+    }
+    if (updates.source !== undefined) {
+      fields.push('source = ?');
+      values.push(updates.source);
+    }
+    if (updates.metadata !== undefined) {
+      fields.push('metadata = ?');
+      values.push(updates.metadata ? stringifyJSON(updates.metadata) : null);
+    }
 
-  // Mark as unsynced
-  fields.push('synced_at = ?');
-  values.push(null);
+    // Mark as unsynced
+    fields.push('synced_at = ?');
+    values.push(null);
 
-  if (fields.length === 0) return existing;
+    if (fields.length === 0) return existing;
 
-  values.push(id);
-  db.runSync(`UPDATE exercise_logs SET ${fields.join(', ')} WHERE id = ?`, values);
+    values.push(id);
+    db.runSync(`UPDATE exercise_logs SET ${fields.join(', ')} WHERE id = ?`, values);
 
-  return getExerciseLogById(id);
+    return getExerciseLogById(id);
+  } catch (error) {
+    logger.error('Failed to update exercise log:', error);
+    return null;
+  }
 }
 
 /**
  * Delete an exercise log
  */
 export function deleteExerciseLog(id: string): boolean {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM exercise_logs WHERE id = ?', [id]);
-  return result.changes > 0;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM exercise_logs WHERE id = ?', [id]);
+    return result.changes > 0;
+  } catch (error) {
+    logger.error('Failed to delete exercise log:', error);
+    return false;
+  }
 }
 
 /**
  * Delete all exercise logs for a user
  */
 export function deleteAllExerciseLogs(userId: string): number {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM exercise_logs WHERE user_id = ?', [userId]);
-  return result.changes;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM exercise_logs WHERE user_id = ?', [userId]);
+    return result.changes;
+  } catch (error) {
+    logger.error('Failed to delete all exercise logs:', error);
+    return 0;
+  }
 }
 
 /**
@@ -329,13 +352,17 @@ export function getUnsyncedExerciseLogs(userId: string): ExerciseLog[] {
  */
 export function markExerciseLogsSynced(ids: string[]): void {
   if (ids.length === 0) return;
-  const db = getDatabase();
-  const timestamp = getCurrentTimestamp();
-  const placeholders = ids.map(() => '?').join(',');
-  db.runSync(
-    `UPDATE exercise_logs SET synced_at = ? WHERE id IN (${placeholders})`,
-    [timestamp, ...ids]
-  );
+  try {
+    const db = getDatabase();
+    const timestamp = getCurrentTimestamp();
+    const placeholders = ids.map(() => '?').join(',');
+    db.runSync(
+      `UPDATE exercise_logs SET synced_at = ? WHERE id IN (${placeholders})`,
+      [timestamp, ...ids]
+    );
+  } catch (error) {
+    logger.error('Failed to mark exercise logs synced:', error);
+  }
 }
 
 /**
@@ -357,7 +384,9 @@ export function createDemoExerciseLogs(userId: string): ExerciseLog[] {
     },
   ];
 
-  return demoLogs.map((log) => createExerciseLog(log));
+  return demoLogs
+    .map((log) => createExerciseLog(log))
+    .filter((log): log is ExerciseLog => log !== null);
 }
 
 /**

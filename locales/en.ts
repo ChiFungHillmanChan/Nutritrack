@@ -1035,6 +1035,29 @@ We will respond to your inquiry within a reasonable time.`,
   },
 
   // Exercise Guide (detailed exercises)
+  // Charts and nutrition display labels
+  charts: {
+    energy: {
+      intake: 'Intake',
+      burned: 'Burned',
+      remaining: 'Remaining',
+      unit: 'kcal',
+    },
+    macros: {
+      protein: 'Protein',
+      carbs: 'Carbs',
+      fat: 'Fat',
+    },
+  },
+  nutrition: {
+    calories: 'Calories',
+    protein: 'Protein',
+    carbs: 'Carbs',
+    fat: 'Fat',
+    fiber: 'Fiber',
+    sodium: 'Sodium',
+  },
+
   exerciseGuide: {
     categories: {
       stretching: {

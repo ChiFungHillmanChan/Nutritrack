@@ -17,6 +17,9 @@
  */
 
 import { Platform } from 'react-native';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[HealthIntegration]');
 
 /**
  * Feature flag for health integration.
@@ -117,14 +120,14 @@ export async function requestHealthPermissions(
   if (Platform.OS === 'ios') {
     // iOS: Would use react-native-health
     // AppleHealthKit.initHealthKit(permissions, callback)
-    console.warn('Apple Health integration requires react-native-health package');
+    logger.warn('Apple Health integration requires react-native-health package');
     return { granted: false, error: 'Apple Health not configured' };
   }
 
   if (Platform.OS === 'android') {
     // Android: Would use react-native-google-fit
     // GoogleFit.checkIsAuthorized()
-    console.warn('Google Fit integration requires react-native-google-fit package');
+    logger.warn('Google Fit integration requires react-native-google-fit package');
     return { granted: false, error: 'Google Fit not configured' };
   }
 

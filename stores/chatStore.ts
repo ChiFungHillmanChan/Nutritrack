@@ -7,6 +7,9 @@
 
 import { create } from 'zustand';
 import { ChatMessage, chatRepository } from '../services/database';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[ChatStore]');
 
 interface ChatState {
   // State
@@ -45,7 +48,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         currentUserId: userId,
       });
     } catch (error) {
-      console.error('[ChatStore] Initialize error:', error);
+      logger.error(' Initialize error:', error);
       set({ messages: [], currentUserId: userId });
     }
   },
@@ -54,7 +57,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   addMessage: (message) => {
     const { currentUserId } = get();
     if (!currentUserId) {
-      console.error('[ChatStore] No user ID set');
+      logger.error(' No user ID set');
       return;
     }
 
@@ -66,11 +69,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         content: message.content,
       });
 
-      set((state) => ({
-        messages: [...state.messages, newMessage],
-      }));
+      if (newMessage) {
+        set((state) => ({
+          messages: [...state.messages, newMessage],
+        }));
+      }
     } catch (error) {
-      console.error('[ChatStore] Add message error:', error);
+      logger.error(' Add message error:', error);
     }
   },
 
@@ -87,10 +92,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const newWelcomeMessage = chatRepository.createWelcomeMessage(currentUserId, welcomeMessage);
       
       set({
-        messages: [newWelcomeMessage],
+        messages: newWelcomeMessage ? [newWelcomeMessage] : [],
       });
     } catch (error) {
-      console.error('[ChatStore] Clear chat error:', error);
+      logger.error(' Clear chat error:', error);
     }
   },
 
@@ -127,7 +132,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (error) {
-      console.error('[ChatStore] Update welcome message error:', error);
+      logger.error(' Update welcome message error:', error);
     }
   },
 }));

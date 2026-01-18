@@ -6,6 +6,9 @@
 
 import { HabitLog, HabitType } from '../../../types';
 import { getDatabase, generateId, getCurrentTimestamp } from '../database';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[HabitRepository]');
 
 interface HabitLogRow {
   id: string;
@@ -162,84 +165,104 @@ export function getTodayHydration(userId: string): number {
 /**
  * Create a new habit log
  */
-export function createHabitLog(data: Omit<HabitLog, 'id'>): HabitLog {
-  const db = getDatabase();
-  const id = generateId();
+export function createHabitLog(data: Omit<HabitLog, 'id'>): HabitLog | null {
+  try {
+    const db = getDatabase();
+    const id = generateId();
 
-  db.runSync(
-    `INSERT INTO habit_logs (id, user_id, habit_type, value, unit, notes, logged_at, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      data.user_id,
-      data.habit_type,
-      String(data.value),
-      data.unit ?? null,
-      data.notes ?? null,
-      data.logged_at,
-      null,
-    ]
-  );
+    db.runSync(
+      `INSERT INTO habit_logs (id, user_id, habit_type, value, unit, notes, logged_at, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.user_id,
+        data.habit_type,
+        String(data.value),
+        data.unit ?? null,
+        data.notes ?? null,
+        data.logged_at,
+        null,
+      ]
+    );
 
-  return getHabitLogById(id)!;
+    return getHabitLogById(id);
+  } catch (error) {
+    logger.error('Failed to create habit log:', error);
+    return null;
+  }
 }
 
 /**
  * Update a habit log
  */
 export function updateHabitLog(id: string, updates: Partial<HabitLog>): HabitLog | null {
-  const db = getDatabase();
-  const existing = getHabitLogById(id);
-  if (!existing) return null;
+  try {
+    const db = getDatabase();
+    const existing = getHabitLogById(id);
+    if (!existing) return null;
 
-  const fields: string[] = [];
-  const values: (string | number | null)[] = [];
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
 
-  if (updates.habit_type !== undefined) {
-    fields.push('habit_type = ?');
-    values.push(updates.habit_type);
+    if (updates.habit_type !== undefined) {
+      fields.push('habit_type = ?');
+      values.push(updates.habit_type);
+    }
+    if (updates.value !== undefined) {
+      fields.push('value = ?');
+      values.push(String(updates.value));
+    }
+    if (updates.unit !== undefined) {
+      fields.push('unit = ?');
+      values.push(updates.unit);
+    }
+    if (updates.notes !== undefined) {
+      fields.push('notes = ?');
+      values.push(updates.notes);
+    }
+
+    // Mark as unsynced
+    fields.push('synced_at = ?');
+    values.push(null);
+
+    if (fields.length === 0) return existing;
+
+    values.push(id);
+    db.runSync(`UPDATE habit_logs SET ${fields.join(', ')} WHERE id = ?`, values);
+
+    return getHabitLogById(id);
+  } catch (error) {
+    logger.error('Failed to update habit log:', error);
+    return null;
   }
-  if (updates.value !== undefined) {
-    fields.push('value = ?');
-    values.push(String(updates.value));
-  }
-  if (updates.unit !== undefined) {
-    fields.push('unit = ?');
-    values.push(updates.unit);
-  }
-  if (updates.notes !== undefined) {
-    fields.push('notes = ?');
-    values.push(updates.notes);
-  }
-
-  // Mark as unsynced
-  fields.push('synced_at = ?');
-  values.push(null);
-
-  if (fields.length === 0) return existing;
-
-  values.push(id);
-  db.runSync(`UPDATE habit_logs SET ${fields.join(', ')} WHERE id = ?`, values);
-
-  return getHabitLogById(id);
 }
 
 /**
  * Delete a habit log
  */
 export function deleteHabitLog(id: string): boolean {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM habit_logs WHERE id = ?', [id]);
-  return result.changes > 0;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM habit_logs WHERE id = ?', [id]);
+    return result.changes > 0;
+  } catch (error) {
+    logger.error('Failed to delete habit log:', error);
+    return false;
+  }
 }
 
 /**
  * Delete all habit logs for a user
  */
 export function deleteAllHabitLogs(userId: string): number {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM habit_logs WHERE user_id = ?', [userId]);
-  return result.changes;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM habit_logs WHERE user_id = ?', [userId]);
+    return result.changes;
+  } catch (error) {
+    logger.error('Failed to delete all habit logs:', error);
+    return 0;
+  }
 }
 
 /**
@@ -285,13 +308,17 @@ export function getUnsyncedHabitLogs(userId: string): HabitLog[] {
  */
 export function markHabitLogsSynced(ids: string[]): void {
   if (ids.length === 0) return;
-  const db = getDatabase();
-  const timestamp = getCurrentTimestamp();
-  const placeholders = ids.map(() => '?').join(',');
-  db.runSync(
-    `UPDATE habit_logs SET synced_at = ? WHERE id IN (${placeholders})`,
-    [timestamp, ...ids]
-  );
+  try {
+    const db = getDatabase();
+    const timestamp = getCurrentTimestamp();
+    const placeholders = ids.map(() => '?').join(',');
+    db.runSync(
+      `UPDATE habit_logs SET synced_at = ? WHERE id IN (${placeholders})`,
+      [timestamp, ...ids]
+    );
+  } catch (error) {
+    logger.error('Failed to mark habit logs synced:', error);
+  }
 }
 
 /**
@@ -323,7 +350,9 @@ export function createDemoHabitLogs(userId: string): HabitLog[] {
     },
   ];
 
-  return demoLogs.map((log) => createHabitLog(log));
+  return demoLogs
+    .map((log) => createHabitLog(log))
+    .filter((log): log is HabitLog => log !== null);
 }
 
 /**

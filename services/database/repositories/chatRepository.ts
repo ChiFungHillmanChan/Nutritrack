@@ -5,6 +5,9 @@
  */
 
 import { generateId, getCurrentTimestamp, getDatabase } from '../database';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[ChatRepository]');
 
 export interface ChatMessage {
   id: string;
@@ -76,18 +79,23 @@ export function getRecentChatMessages(userId: string, limit: number = 50): ChatM
  */
 export function createChatMessage(
   data: Omit<ChatMessage, 'id' | 'timestamp'>
-): ChatMessage {
-  const db = getDatabase();
-  const id = generateId();
-  const timestamp = getCurrentTimestamp();
+): ChatMessage | null {
+  try {
+    const db = getDatabase();
+    const id = generateId();
+    const timestamp = getCurrentTimestamp();
 
-  db.runSync(
-    `INSERT INTO chat_messages (id, user_id, role, content, timestamp, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, data.user_id, data.role, data.content, timestamp, null]
-  );
+    db.runSync(
+      `INSERT INTO chat_messages (id, user_id, role, content, timestamp, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, data.user_id, data.role, data.content, timestamp, null]
+    );
 
-  return getChatMessageById(id)!;
+    return getChatMessageById(id);
+  } catch (error) {
+    logger.error('Failed to create chat message:', error);
+    return null;
+  }
 }
 
 /**
@@ -96,25 +104,37 @@ export function createChatMessage(
 export function createChatMessages(
   messages: Array<Omit<ChatMessage, 'id' | 'timestamp'>>
 ): ChatMessage[] {
-  return messages.map((msg) => createChatMessage(msg));
+  return messages
+    .map((msg) => createChatMessage(msg))
+    .filter((msg): msg is ChatMessage => msg !== null);
 }
 
 /**
  * Delete a chat message
  */
 export function deleteChatMessage(id: string): boolean {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM chat_messages WHERE id = ?', [id]);
-  return result.changes > 0;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM chat_messages WHERE id = ?', [id]);
+    return result.changes > 0;
+  } catch (error) {
+    logger.error('Failed to delete chat message:', error);
+    return false;
+  }
 }
 
 /**
  * Delete all chat messages for a user
  */
 export function deleteAllChatMessages(userId: string): number {
-  const db = getDatabase();
-  const result = db.runSync('DELETE FROM chat_messages WHERE user_id = ?', [userId]);
-  return result.changes;
+  try {
+    const db = getDatabase();
+    const result = db.runSync('DELETE FROM chat_messages WHERE user_id = ?', [userId]);
+    return result.changes;
+  } catch (error) {
+    logger.error('Failed to delete all chat messages:', error);
+    return 0;
+  }
 }
 
 /**
@@ -155,13 +175,17 @@ export function getUnsyncedChatMessages(userId: string): ChatMessage[] {
  */
 export function markChatMessagesSynced(ids: string[]): void {
   if (ids.length === 0) return;
-  const db = getDatabase();
-  const timestamp = getCurrentTimestamp();
-  const placeholders = ids.map(() => '?').join(',');
-  db.runSync(
-    `UPDATE chat_messages SET synced_at = ? WHERE id IN (${placeholders})`,
-    [timestamp, ...ids]
-  );
+  try {
+    const db = getDatabase();
+    const timestamp = getCurrentTimestamp();
+    const placeholders = ids.map(() => '?').join(',');
+    db.runSync(
+      `UPDATE chat_messages SET synced_at = ? WHERE id IN (${placeholders})`,
+      [timestamp, ...ids]
+    );
+  } catch (error) {
+    logger.error('Failed to mark chat messages synced:', error);
+  }
 }
 
 /**
@@ -181,7 +205,7 @@ export function getChatMessageCount(userId: string): number {
  * @param userId - The user ID
  * @param welcomeText - The translated welcome message text
  */
-export function createWelcomeMessage(userId: string, welcomeText: string): ChatMessage {
+export function createWelcomeMessage(userId: string, welcomeText: string): ChatMessage | null {
   return createChatMessage({
     user_id: userId,
     role: 'assistant',
@@ -208,19 +232,24 @@ export function ensureWelcomeMessage(userId: string, welcomeText: string): void 
  * @param newWelcomeText - The new translated welcome message text
  */
 export function updateWelcomeMessage(userId: string, newWelcomeText: string): boolean {
-  const db = getDatabase();
-  // Get the first message (should be the welcome message)
-  const firstMessage = db.getFirstSync<ChatMessageRow>(
-    'SELECT * FROM chat_messages WHERE user_id = ? ORDER BY timestamp ASC LIMIT 1',
-    [userId]
-  );
-  
-  if (firstMessage && firstMessage.role === 'assistant') {
-    db.runSync(
-      'UPDATE chat_messages SET content = ? WHERE id = ?',
-      [newWelcomeText, firstMessage.id]
+  try {
+    const db = getDatabase();
+    // Get the first message (should be the welcome message)
+    const firstMessage = db.getFirstSync<ChatMessageRow>(
+      'SELECT * FROM chat_messages WHERE user_id = ? ORDER BY timestamp ASC LIMIT 1',
+      [userId]
     );
-    return true;
+    
+    if (firstMessage && firstMessage.role === 'assistant') {
+      db.runSync(
+        'UPDATE chat_messages SET content = ? WHERE id = ?',
+        [newWelcomeText, firstMessage.id]
+      );
+      return true;
+    }
+    return false;
+  } catch (error) {
+    logger.error('Failed to update welcome message:', error);
+    return false;
   }
-  return false;
 }

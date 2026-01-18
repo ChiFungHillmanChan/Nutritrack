@@ -11,6 +11,7 @@ import { COLORS, SHADOWS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { MiniCircularProgress } from './CircularProgress';
 import { ProgressBar } from './ProgressBar';
+import { useTranslation } from '../../hooks/useTranslation';
 
 type NutritionType = 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber' | 'sodium';
 
@@ -25,49 +26,58 @@ interface NutritionBadgeProps {
   style?: ViewStyle;
 }
 
-const NUTRITION_CONFIG: Record<NutritionType, {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  bgColor: string;
-}> = {
-  calories: {
-    label: '卡路里',
-    icon: 'flame',
-    color: COLORS.calories,
-    bgColor: COLORS.caloriesBg,
-  },
-  protein: {
-    label: '蛋白質',
-    icon: 'fish',
-    color: COLORS.protein,
-    bgColor: COLORS.proteinBg,
-  },
-  carbs: {
-    label: '碳水',
-    icon: 'nutrition',
-    color: COLORS.carbs,
-    bgColor: COLORS.carbsBg,
-  },
-  fat: {
-    label: '脂肪',
-    icon: 'water',
-    color: COLORS.fat,
-    bgColor: COLORS.fatBg,
-  },
-  fiber: {
-    label: '纖維',
-    icon: 'leaf',
-    color: COLORS.fiber,
-    bgColor: COLORS.fiberBg,
-  },
-  sodium: {
-    label: '鈉',
-    icon: 'cube',
-    color: COLORS.sodium,
-    bgColor: COLORS.sodiumBg,
-  },
-};
+/**
+ * Get nutrition config with translations
+ */
+function useNutritionConfig() {
+  const { t } = useTranslation();
+  
+  const config: Record<NutritionType, {
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+    bgColor: string;
+  }> = {
+    calories: {
+      label: t('nutrition.calories'),
+      icon: 'flame',
+      color: COLORS.calories,
+      bgColor: COLORS.caloriesBg,
+    },
+    protein: {
+      label: t('nutrition.protein'),
+      icon: 'fish',
+      color: COLORS.protein,
+      bgColor: COLORS.proteinBg,
+    },
+    carbs: {
+      label: t('nutrition.carbs'),
+      icon: 'nutrition',
+      color: COLORS.carbs,
+      bgColor: COLORS.carbsBg,
+    },
+    fat: {
+      label: t('nutrition.fat'),
+      icon: 'water',
+      color: COLORS.fat,
+      bgColor: COLORS.fatBg,
+    },
+    fiber: {
+      label: t('nutrition.fiber'),
+      icon: 'leaf',
+      color: COLORS.fiber,
+      bgColor: COLORS.fiberBg,
+    },
+    sodium: {
+      label: t('nutrition.sodium'),
+      icon: 'cube',
+      color: COLORS.sodium,
+      bgColor: COLORS.sodiumBg,
+    },
+  };
+  
+  return config;
+}
 
 export function NutritionBadge({
   type,
@@ -79,7 +89,8 @@ export function NutritionBadge({
   animated = true,
   style,
 }: NutritionBadgeProps) {
-  const config = NUTRITION_CONFIG[type];
+  const nutritionConfig = useNutritionConfig();
+  const config = nutritionConfig[type];
   const percentage = Math.min((value / max) * 100, 100);
 
   const AnimatedContainer = animated ? Animated.View : View;

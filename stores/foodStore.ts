@@ -10,6 +10,9 @@ import { create } from 'zustand';
 import { FoodLog, NutritionData } from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import { foodRepository } from '../services/database';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[FoodStore]');
 
 interface FoodState {
   // State
@@ -82,7 +85,7 @@ export const useFoodStore = create<FoodState>((set, get) => ({
         }
       }
     } catch (error) {
-      console.error('[FoodStore] Fetch error:', error);
+      logger.error(' Fetch error:', error);
       set({ isLoading: false, error: 'Failed to fetch food logs' });
     }
   },
@@ -99,7 +102,7 @@ export const useFoodStore = create<FoodState>((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
-      console.error('[FoodStore] Fetch all error:', error);
+      logger.error(' Fetch all error:', error);
       set({ isLoading: false, error: 'Failed to fetch all food logs' });
     }
   },
@@ -111,6 +114,11 @@ export const useFoodStore = create<FoodState>((set, get) => ({
     try {
       // Save to SQLite
       const newLog = foodRepository.createFoodLog(log);
+
+      if (!newLog) {
+        set({ isLoading: false, error: 'Failed to create food log' });
+        return false;
+      }
 
       const { todayLogs, calculateTotalNutrition } = get();
       const updatedLogs = [...todayLogs, newLog];
@@ -131,7 +139,7 @@ export const useFoodStore = create<FoodState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[FoodStore] Add error:', error);
+      logger.error(' Add error:', error);
       set({ isLoading: false, error: 'Failed to add food log' });
       return false;
     }
@@ -164,7 +172,7 @@ export const useFoodStore = create<FoodState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[FoodStore] Delete error:', error);
+      logger.error(' Delete error:', error);
       set({ isLoading: false, error: 'Failed to delete food log' });
       return false;
     }
@@ -203,7 +211,7 @@ export const useFoodStore = create<FoodState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[FoodStore] Update error:', error);
+      logger.error(' Update error:', error);
       set({ isLoading: false, error: 'Failed to update food log' });
       return false;
     }

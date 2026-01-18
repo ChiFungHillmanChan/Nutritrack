@@ -26,6 +26,9 @@ import { useUserStore, calculateAge } from '../stores/userStore';
 import { User, UserGoal, ActivityLevel, Gender } from '../types';
 import { Card } from '../components/ui';
 import { useTranslation } from '../hooks/useTranslation';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[ProfileEdit]');
 
 export default function ProfileEditScreen() {
   const { user, updateProfile, calculateDailyTargets } = useUserStore();
@@ -123,7 +126,7 @@ export default function ProfileEditScreen() {
         Alert.alert(t('common.error'), t('profileEdit.errors.updateFailed'));
       }
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       Alert.alert(t('common.error'), t('profileEdit.errors.updateFailed'));
     } finally {
       setIsSaving(false);

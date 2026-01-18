@@ -6,6 +6,9 @@
  */
 
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { createLogger } from '../../lib/logger';
+
+const logger = createLogger('[Database]');
 
 export const CURRENT_DB_VERSION = 2;
 
@@ -238,7 +241,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
       // Update version
       setVersion(db, migration.version);
     } catch (error) {
-      console.error(`[Database] Migration v${migration.version} failed:`, error);
+      logger.error(`Migration v${migration.version} failed:`, error);
       throw error;
     }
   }

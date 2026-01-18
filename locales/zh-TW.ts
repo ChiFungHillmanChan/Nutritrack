@@ -1034,6 +1034,29 @@ const zhTW = {
 我們會在合理時間內回覆你的查詢。`,
   },
 
+  // Charts and nutrition display labels
+  charts: {
+    energy: {
+      intake: '攝取',
+      burned: '消耗',
+      remaining: '剩餘',
+      unit: 'kcal',
+    },
+    macros: {
+      protein: '蛋白質',
+      carbs: '碳水',
+      fat: '脂肪',
+    },
+  },
+  nutrition: {
+    calories: '卡路里',
+    protein: '蛋白質',
+    carbs: '碳水',
+    fat: '脂肪',
+    fiber: '纖維',
+    sodium: '鈉',
+  },
+
   // Exercise Guide (detailed exercises)
   exerciseGuide: {
     categories: {

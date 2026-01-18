@@ -12,6 +12,9 @@ import {
   parseJSON,
   stringifyJSON,
 } from '../database';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[FoodRepository]');
 
 interface FoodLogRow {
   id: string;
@@ -130,78 +133,88 @@ export function getFoodLogsByDateRange(
 /**
  * Create a new food log
  */
-export function createFoodLog(data: Omit<FoodLog, 'id'>): FoodLog {
-  const db = getDatabase();
-  const id = generateId();
+export function createFoodLog(data: Omit<FoodLog, 'id'>): FoodLog | null {
+  try {
+    const db = getDatabase();
+    const id = generateId();
 
-  db.runSync(
-    `INSERT INTO food_logs (
-      id, user_id, meal_type, food_name, portion_size,
-      nutrition_data, image_url, logged_at, ai_confidence, synced_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      data.user_id,
-      data.meal_type,
-      data.food_name,
-      data.portion_size,
-      stringifyJSON(data.nutrition_data),
-      data.image_url ?? null,
-      data.logged_at,
-      data.ai_confidence ?? null,
-      null,
-    ]
-  );
+    db.runSync(
+      `INSERT INTO food_logs (
+        id, user_id, meal_type, food_name, portion_size,
+        nutrition_data, image_url, logged_at, ai_confidence, synced_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.user_id,
+        data.meal_type,
+        data.food_name,
+        data.portion_size,
+        stringifyJSON(data.nutrition_data),
+        data.image_url ?? null,
+        data.logged_at,
+        data.ai_confidence ?? null,
+        null,
+      ]
+    );
 
-  return getFoodLogById(id)!;
+    return getFoodLogById(id);
+  } catch (error) {
+    logger.error('Failed to create food log:', error);
+    return null;
+  }
 }
 
 /**
  * Update a food log
  */
 export function updateFoodLog(id: string, updates: Partial<FoodLog>): FoodLog | null {
-  const db = getDatabase();
-  const existing = getFoodLogById(id);
-  if (!existing) return null;
+  try {
+    const db = getDatabase();
+    const existing = getFoodLogById(id);
+    if (!existing) return null;
 
-  const fields: string[] = [];
-  const values: (string | number | null)[] = [];
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
 
-  if (updates.meal_type !== undefined) {
-    fields.push('meal_type = ?');
-    values.push(updates.meal_type);
-  }
-  if (updates.food_name !== undefined) {
-    fields.push('food_name = ?');
-    values.push(updates.food_name);
-  }
-  if (updates.portion_size !== undefined) {
-    fields.push('portion_size = ?');
-    values.push(updates.portion_size);
-  }
-  if (updates.nutrition_data !== undefined) {
-    fields.push('nutrition_data = ?');
-    values.push(stringifyJSON(updates.nutrition_data));
-  }
-  if (updates.image_url !== undefined) {
-    fields.push('image_url = ?');
-    values.push(updates.image_url);
-  }
-  if (updates.ai_confidence !== undefined) {
-    fields.push('ai_confidence = ?');
-    values.push(updates.ai_confidence);
-  }
+    if (updates.meal_type !== undefined) {
+      fields.push('meal_type = ?');
+      values.push(updates.meal_type);
+    }
+    if (updates.food_name !== undefined) {
+      fields.push('food_name = ?');
+      values.push(updates.food_name);
+    }
+    if (updates.portion_size !== undefined) {
+      fields.push('portion_size = ?');
+      values.push(updates.portion_size);
+    }
+    if (updates.nutrition_data !== undefined) {
+      fields.push('nutrition_data = ?');
+      values.push(stringifyJSON(updates.nutrition_data));
+    }
+    if (updates.image_url !== undefined) {
+      fields.push('image_url = ?');
+      values.push(updates.image_url);
+    }
+    if (updates.ai_confidence !== undefined) {
+      fields.push('ai_confidence = ?');
+      values.push(updates.ai_confidence);
+    }
 
-  // Mark as unsynced when updated
-  fields.push('synced_at = ?');
-  values.push(null);
+    // Mark as unsynced when updated
+    fields.push('synced_at = ?');
+    values.push(null);
 
-  if (fields.length === 0) return existing;
+    if (fields.length === 0) return existing;
 
-  values.push(id);
-  db.runSync(`UPDATE food_logs SET ${fields.join(', ')} WHERE id = ?`, values);
+    values.push(id);
+    db.runSync(`UPDATE food_logs SET ${fields.join(', ')} WHERE id = ?`, values);
 
-  return getFoodLogById(id);
+    return getFoodLogById(id);
+  } catch (error) {
+    logger.error('Failed to update food log:', { id, error });
+    return null;
+  }
 }
 
 /**
@@ -306,5 +319,7 @@ export function createDemoFoodLogs(userId: string): FoodLog[] {
     },
   ];
 
-  return demoLogs.map((log) => createFoodLog(log));
+  return demoLogs
+    .map((log) => createFoodLog(log))
+    .filter((log): log is FoodLog => log !== null);
 }

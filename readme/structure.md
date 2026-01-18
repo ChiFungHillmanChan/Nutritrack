@@ -253,10 +253,11 @@ const todayLogs = foodRepository.getTodayFoodLogs(userId);
 |--------|------|---------|
 | `energy-calculator.ts` | `energy-calculator.ts` | BMR, TDEE, calorie calculations, exercise MET values, macro percentages |
 | `nutrition-calculator.ts` | `nutrition-calculator.ts` | Daily target calculations |
-| `ai-models.ts` | `ai-models.ts` | AI model configuration |
+| `ai-models.ts` | `ai-models.ts` | Centralized AI model constants and getRecommendedModel() helper |
 | `ai-model-status.ts` | `ai-model-status.ts` | AI model availability check |
 | `ai-response-validator.ts` | `ai-response-validator.ts` | Zod schemas for validating AI responses from Gemini API |
 | `logger.ts` | `logger.ts` | Centralized logging with log levels, dev-only output, prefixed loggers |
+| `crypto.ts` | `crypto.ts` | Field-level encryption for SQLite (XOR stream cipher + HMAC authentication) |
 
 ## Types (`/types`)
 
@@ -282,6 +283,8 @@ Types are organized into domain-specific files for better maintainability:
 | `chat/index.ts` | AI chat using Gemini 2.5 Pro for nutrition conversations (JWT auth required) |
 | `analyze-food/index.ts` | Food image analysis using Gemini 2.5 Flash vision API (JWT auth required) |
 | `_shared/auth.ts` | Shared JWT verification module for Edge Functions |
+| `_shared/rate-limiter.ts` | Server-side rate limiting with sliding window algorithm |
+| `_shared/ai-models.ts` | Centralized AI model constants for Edge Functions (Deno-compatible) |
 
 ### Database Tables
 

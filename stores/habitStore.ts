@@ -16,6 +16,9 @@ import {
 } from '../types';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import { habitRepository } from '../services/database';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('[HabitStore]');
 
 interface HabitStreak {
   habitType: HabitType;
@@ -138,7 +141,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
         }
       }
     } catch (error) {
-      console.error('[HabitStore] Fetch error:', error);
+      logger.error(' Fetch error:', error);
       set({ isLoading: false, error: 'Failed to fetch habit logs' });
     }
   },
@@ -155,7 +158,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
-      console.error('[HabitStore] Fetch today habits error:', error);
+      logger.error(' Fetch today habits error:', error);
       set({ isLoading: false, error: 'Failed to fetch today habits' });
     }
   },
@@ -171,7 +174,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
         isLoading: false,
       });
     } catch (error) {
-      console.error('[HabitStore] Fetch all error:', error);
+      logger.error(' Fetch all error:', error);
       set({ isLoading: false, error: 'Failed to fetch all habit logs' });
     }
   },
@@ -183,6 +186,11 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     try {
       // Save to SQLite
       const newLog = habitRepository.createHabitLog(log);
+
+      if (!newLog) {
+        set({ isLoading: false, error: 'Failed to create habit log' });
+        return false;
+      }
 
       const { todayLogs } = get();
       set({
@@ -203,7 +211,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[HabitStore] Log error:', error);
+      logger.error(' Log error:', error);
       set({ isLoading: false, error: 'Failed to log habit' });
       return false;
     }
@@ -233,7 +241,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('[HabitStore] Delete error:', error);
+      logger.error(' Delete error:', error);
       set({ isLoading: false, error: 'Failed to delete habit log' });
       return false;
     }

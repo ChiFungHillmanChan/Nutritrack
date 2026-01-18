@@ -11,6 +11,7 @@ import Constants from 'expo-constants';
 import { getSupabaseClient, isDemoMode } from './supabase';
 import { NutritionData } from '../types';
 import { logger } from '../lib/logger';
+import { getRecommendedModel } from '../lib/ai-models';
 
 // API Configuration
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
@@ -19,10 +20,10 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 // Check if this is a production build
 const isProduction = !__DEV__ && Constants.expoConfig?.extra?.eas?.projectId;
 
-// Models
+// Models - use centralized AI model constants
 const MODELS = {
-  CHAT: 'gemini-2.0-flash', // Fast model for chat
-  VISION: 'gemini-2.0-flash', // Vision-capable model for food analysis
+  CHAT: getRecommendedModel('chat'),    // Use recommended model for chat
+  VISION: getRecommendedModel('food_analysis'), // Use recommended model for vision/food analysis
 };
 
 // Types
