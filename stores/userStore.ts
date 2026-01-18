@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import { settingsRepository, userRepository } from '../services/database';
+import { getDatabase } from '../services/database/database';
 import { getSupabaseClient, isDemoMode } from '../services/supabase';
 import {
   calculateBMR,
@@ -391,7 +392,24 @@ export const useUserStore = create<UserState>((set, get) => ({
   signOut: async () => {
     // Clear login state from settings
     settingsRepository.setLoginState(false, null);
-    
+
+    // Clear demo user data from SQLite if in demo mode
+    if (isDemoMode()) {
+      try {
+        const db = getDatabase();
+        // Clear all demo user data
+        db.runSync('DELETE FROM food_logs WHERE user_id = ?', ['demo-user-001']);
+        db.runSync('DELETE FROM weight_logs WHERE user_id = ?', ['demo-user-001']);
+        db.runSync('DELETE FROM chat_messages WHERE user_id = ?', ['demo-user-001']);
+        db.runSync('DELETE FROM habit_logs WHERE user_id = ?', ['demo-user-001']);
+        db.runSync('DELETE FROM exercise_logs WHERE user_id = ?', ['demo-user-001']);
+        // Note: Keep demo user profile for re-login
+        logger.info('Demo user data cleared');
+      } catch (error) {
+        logger.error('Failed to clear demo data:', error);
+      }
+    }
+
     const supabase = getSupabaseClient();
     if (supabase) {
       await supabase.auth.signOut();

@@ -7,12 +7,17 @@
  * - Demo mode: Returns mock responses when no API key is configured
  */
 
+import Constants from 'expo-constants';
 import { getSupabaseClient, isDemoMode } from './supabase';
 import { NutritionData } from '../types';
+import { logger } from '../lib/logger';
 
 // API Configuration
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+// Check if this is a production build
+const isProduction = !__DEV__ && Constants.expoConfig?.extra?.eas?.projectId;
 
 // Models
 const MODELS = {
@@ -157,9 +162,14 @@ const DEMO_FOOD_ANALYSIS = {
 };
 
 /**
- * Check if we can use direct Gemini API (local development)
+ * Check if we can use direct Gemini API (local development ONLY)
+ * In production builds, always use Edge Functions to hide API key.
  */
 function hasDirectGeminiAccess(): boolean {
+  // Never use direct API in production - force Edge Functions
+  if (isProduction) {
+    return false;
+  }
   return !!GEMINI_API_KEY;
 }
 
@@ -296,7 +306,7 @@ ${context ? formatContext(context) : ''}`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
+      logger.error('Gemini API error:', errorText);
       return {
         success: false,
         error: `API 錯誤: ${response.status}`,
@@ -318,7 +328,7 @@ ${context ? formatContext(context) : ''}`;
       message: textContent,
     };
   } catch (error) {
-    console.error('Gemini chat error:', error);
+    logger.error('Gemini chat error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -396,7 +406,7 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini Vision API error:', errorText);
+      logger.error('Gemini Vision API error:', errorText);
       return {
         success: false,
         error: `API 錯誤: ${response.status}`,
@@ -416,7 +426,7 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
     // Parse JSON from response
     const jsonMatch = textContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('Invalid JSON response:', textContent);
+      logger.error('Invalid JSON response:', textContent);
       return {
         success: false,
         error: '無法解析 AI 回應',
@@ -435,7 +445,7 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
       },
     };
   } catch (error) {
-    console.error('Gemini vision error:', error);
+    logger.error('Gemini vision error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -458,6 +468,9 @@ export async function sendChatMessage(
 ): Promise<ChatResponse> {
   // Option 1: Direct Gemini API (local development with API key)
   if (hasDirectGeminiAccess()) {
+    if (__DEV__) {
+      logger.warn('[AI] Using direct Gemini API - DO NOT use in production builds!');
+    }
     return callGeminiChat(message, history, context);
   }
 
@@ -471,7 +484,7 @@ export async function sendChatMessage(
         });
 
         if (error) {
-          console.error('Chat function error:', error);
+          logger.error('Chat function error:', error);
           return {
             success: false,
             error: error.message ?? 'Failed to get AI response',
@@ -480,7 +493,7 @@ export async function sendChatMessage(
 
         return data as ChatResponse;
       } catch (error) {
-        console.error('Chat service error:', error);
+        logger.error('Chat service error:', error);
       }
     }
   }
@@ -510,6 +523,9 @@ export async function analyzeFood(
 ): Promise<FoodAnalysisResponse> {
   // Option 1: Direct Gemini API (local development with API key)
   if (hasDirectGeminiAccess()) {
+    if (__DEV__) {
+      logger.warn('[AI] Using direct Gemini API - DO NOT use in production builds!');
+    }
     return callGeminiVision(imageBase64, mealType);
   }
 
@@ -523,7 +539,7 @@ export async function analyzeFood(
         });
 
         if (error) {
-          console.error('Analyze food function error:', error);
+          logger.error('Analyze food function error:', error);
           return {
             success: false,
             error: error.message ?? 'Failed to analyze food',
@@ -532,7 +548,7 @@ export async function analyzeFood(
 
         return data as FoodAnalysisResponse;
       } catch (error) {
-        console.error('Analyze food service error:', error);
+        logger.error('Analyze food service error:', error);
       }
     }
   }
