@@ -23,6 +23,9 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signUpWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useTranslation } from '../../hooks/useTranslation';
+import { createLogger } from '../../lib/logger';
+
+const logger = createLogger('[Register]');
 
 const { height } = Dimensions.get('window');
 
@@ -91,17 +94,17 @@ export default function RegisterScreen() {
   };
 
   const handleGoogleSignUp = async () => {
-    console.log('[Register] Google signup button pressed');
+    logger.debug('Google signup button pressed');
     setIsLoading(true);
     const startTime = Date.now();
     const result = await signInWithGoogle();
-    console.log('[Register] Google signup completed:', Date.now() - startTime, 'ms');
-    console.log('[Register] Google result:', { success: result.success, hasError: !!result.error });
+    logger.debug('Google signup completed:', Date.now() - startTime, 'ms');
+    logger.debug('Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
-      console.log('[Register] Navigating to onboarding...');
+      logger.info('Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
@@ -109,17 +112,17 @@ export default function RegisterScreen() {
   };
 
   const handleAppleSignUp = async () => {
-    console.log('[Register] Apple signup button pressed');
+    logger.debug('Apple signup button pressed');
     setIsLoading(true);
     const startTime = Date.now();
     const result = await signInWithApple();
-    console.log('[Register] Apple signup completed:', Date.now() - startTime, 'ms');
-    console.log('[Register] Apple result:', { success: result.success, hasError: !!result.error });
+    logger.debug('Apple signup completed:', Date.now() - startTime, 'ms');
+    logger.debug('Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
-      console.log('[Register] Navigating to onboarding...');
+      logger.info('Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));

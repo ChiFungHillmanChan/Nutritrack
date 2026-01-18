@@ -25,6 +25,9 @@ import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useUserStore } from '../../stores/userStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { createLogger } from '../../lib/logger';
+
+const logger = createLogger('[Login]');
 
 const { height } = Dimensions.get('window');
 
@@ -60,16 +63,16 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    console.log('[Login] Google login button pressed');
+    logger.debug('Google login button pressed');
     setIsLoading(true);
     const startTime = Date.now();
     const result = await signInWithGoogle();
-    console.log('[Login] Google login completed:', Date.now() - startTime, 'ms');
-    console.log('[Login] Google result:', { success: result.success, hasError: !!result.error });
+    logger.debug('Google login completed:', Date.now() - startTime, 'ms');
+    logger.debug('Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
-      console.log('[Login] Navigating to tabs...');
+      logger.info('Navigating to tabs...');
       router.replace('/(tabs)');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
@@ -77,16 +80,16 @@ export default function LoginScreen() {
   };
 
   const handleAppleLogin = async () => {
-    console.log('[Login] Apple login button pressed');
+    logger.debug('Apple login button pressed');
     setIsLoading(true);
     const startTime = Date.now();
     const result = await signInWithApple();
-    console.log('[Login] Apple login completed:', Date.now() - startTime, 'ms');
-    console.log('[Login] Apple result:', { success: result.success, hasError: !!result.error });
+    logger.debug('Apple login completed:', Date.now() - startTime, 'ms');
+    logger.debug('Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
-      console.log('[Login] Navigating to tabs...');
+      logger.info('Navigating to tabs...');
       router.replace('/(tabs)');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
