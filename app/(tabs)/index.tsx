@@ -209,6 +209,9 @@ export default function HomeScreen() {
           style={styles.recordButton}
           onPress={() => router.push('/(tabs)/camera')}
           activeOpacity={0.8}
+          accessibilityLabel={t('home.recordIntake')}
+          accessibilityRole="button"
+          accessibilityHint={t('accessibility.navigateToCamera')}
         >
           <LinearGradient
             colors={GRADIENTS.primary}
@@ -235,6 +238,9 @@ export default function HomeScreen() {
           style={styles.quickActionCard}
           onPress={() => router.push('/(tabs)/chat')}
           activeOpacity={0.8}
+          accessibilityLabel={t('home.askAI')}
+          accessibilityRole="button"
+          accessibilityHint={t('accessibility.navigateToChat')}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: COLORS.proteinBg }]}>
             <Ionicons name="chatbubbles" size={24} color={COLORS.protein} />
@@ -247,6 +253,9 @@ export default function HomeScreen() {
           style={styles.quickActionCard}
           onPress={() => router.push('/(tabs)/habits')}
           activeOpacity={0.8}
+          accessibilityLabel={t('home.habits')}
+          accessibilityRole="button"
+          accessibilityHint={t('accessibility.navigateToHabits')}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: COLORS.fiberBg }]}>
             <Ionicons name="checkmark-circle" size={24} color={COLORS.fiber} />
@@ -259,6 +268,9 @@ export default function HomeScreen() {
           style={styles.quickActionCard}
           onPress={() => router.push('/wellness/meditation' as never)}
           activeOpacity={0.8}
+          accessibilityLabel={t('home.meditation')}
+          accessibilityRole="button"
+          accessibilityHint={t('accessibility.navigateToMeditation')}
         >
           <View style={[styles.quickActionIcon, { backgroundColor: COLORS.caloriesBg }]}>
             <Ionicons name="leaf" size={24} color={COLORS.calories} />

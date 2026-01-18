@@ -329,7 +329,11 @@ export default function HabitsScreen() {
               <Text style={styles.modalTitle}>
                 {t('habits.record')} {selectedHabit ? t(selectedHabit.labelKey) : ''}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                accessibilityLabel={t('common.close')}
+                accessibilityRole="button"
+              >
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -341,6 +345,9 @@ export default function HabitsScreen() {
                     key={mood}
                     style={styles.moodButton}
                     onPress={() => handleMoodSelect(mood)}
+                    accessibilityLabel={MOOD_EMOJIS[mood].label}
+                    accessibilityRole="button"
+                    accessibilityHint={t('accessibility.selectMoodLevel')}
                   >
                     <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood].emoji}</Text>
                     <Text style={styles.moodLabel}>{MOOD_EMOJIS[mood].label}</Text>
@@ -354,6 +361,8 @@ export default function HabitsScreen() {
                     key={type}
                     style={styles.bristolItem}
                     onPress={() => handleBowelSelect(type)}
+                    accessibilityLabel={`${BRISTOL_TYPES[type].label}: ${BRISTOL_TYPES[type].desc}`}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.bristolLabel}>{BRISTOL_TYPES[type].label}</Text>
                     <Text style={styles.bristolDesc}>{BRISTOL_TYPES[type].desc}</Text>
@@ -371,12 +380,19 @@ export default function HabitsScreen() {
                     onChangeText={setInputValue}
                     keyboardType="numeric"
                     autoFocus
+                    accessibilityLabel={t('habits.inputPlaceholder', { habit: selectedHabit ? t(selectedHabit.labelKey) : '' })}
+                    accessibilityHint={t('accessibility.enterNumericValue')}
                   />
                   {selectedHabit?.unitKey && (
                     <Text style={styles.inputUnit}>{t(selectedHabit.unitKey)}</Text>
                   )}
                 </View>
-                <TouchableOpacity style={styles.submitButton} onPress={handleLogHabit}>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleLogHabit}
+                  accessibilityLabel={t('habits.record')}
+                  accessibilityRole="button"
+                >
                   <LinearGradient
                     colors={GRADIENTS.primary}
                     style={styles.submitGradient}
@@ -412,7 +428,13 @@ function HabitCard({
   onQuickAdd?: (value: number) => void;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      accessibilityLabel={`${label}: ${value} ${unit ?? ''}`}
+      accessibilityRole="button"
+      accessibilityHint={`Tap to log ${label}`}
+    >
       <Card style={styles.habitCard}>
         <View style={styles.habitCardContent}>
           <View style={styles.habitCardHeader}>
@@ -450,6 +472,8 @@ function HabitCard({
                   key={v}
                   style={[styles.quickAddButton, { borderColor: habit.color }]}
                   onPress={() => onQuickAdd(v)}
+                  accessibilityLabel={`Add ${v} ${unit ?? ''}`}
+                  accessibilityRole="button"
                 >
                   <Text style={[styles.quickAddText, { color: habit.color }]}>
                     +{v}

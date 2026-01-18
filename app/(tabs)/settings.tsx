@@ -101,7 +101,12 @@ export default function ProfileScreen() {
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
             {/* Avatar */}
-            <TouchableOpacity onPress={handleEditProfile}>
+            <TouchableOpacity
+              onPress={handleEditProfile}
+              accessibilityLabel={t('accessibility.editProfile')}
+              accessibilityRole="button"
+              accessibilityHint={t('accessibility.tapToEditProfile')}
+            >
               <LinearGradient
                 colors={GRADIENTS.primary}
                 style={styles.avatar}
@@ -124,6 +129,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.editButton}
               onPress={handleEditProfile}
+              accessibilityLabel={t('accessibility.syncData')}
+              accessibilityRole="button"
             >
               <Ionicons name="sync" size={20} color={COLORS.primary} />
             </TouchableOpacity>
@@ -144,7 +151,13 @@ export default function ProfileScreen() {
 
       {/* Timeline Entry Card */}
       <Animated.View entering={FadeInDown.delay(300).springify()}>
-        <TouchableOpacity onPress={handleTimelinePress} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={handleTimelinePress}
+          activeOpacity={0.8}
+          accessibilityLabel={t('settings.timeline.title')}
+          accessibilityRole="button"
+          accessibilityHint={t('accessibility.viewTimeline')}
+        >
           <Card style={styles.timelineCard}>
             <View style={styles.timelineContent}>
               <View style={styles.timelineIcon}>
@@ -296,6 +309,8 @@ function SettingRow({
       style={styles.settingRow}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityLabel={value ? `${label}: ${value}` : label}
+      accessibilityRole="button"
     >
       <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={20} color={iconColor} />

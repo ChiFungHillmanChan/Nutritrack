@@ -189,6 +189,9 @@ export default function CameraScreen() {
                 style={styles.captureButton}
                 onPress={handleTakePhoto}
                 activeOpacity={0.8}
+                accessibilityLabel={t('camera.takePhoto')}
+                accessibilityRole="button"
+                accessibilityHint={t('accessibility.openCameraToTakePhoto')}
               >
                 <LinearGradient
                   colors={GRADIENTS.primary}
@@ -203,6 +206,9 @@ export default function CameraScreen() {
                 style={[styles.captureButton, styles.secondaryButton]}
                 onPress={handlePickImage}
                 activeOpacity={0.8}
+                accessibilityLabel={t('camera.choosePhoto')}
+                accessibilityRole="button"
+                accessibilityHint={t('accessibility.openGalleryToChoosePhoto')}
               >
                 <View style={styles.secondaryButtonInner}>
                   <Ionicons name="images" size={24} color={COLORS.primary} />
@@ -220,7 +226,12 @@ export default function CameraScreen() {
               colors={['transparent', 'rgba(0,0,0,0.3)']}
               style={styles.imageOverlay}
             />
-            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={handleReset}
+              accessibilityLabel={t('accessibility.clearSelectedImage')}
+              accessibilityRole="button"
+            >
               <Ionicons name="close" size={20} color={COLORS.textInverse} />
             </TouchableOpacity>
             {analysisResult && (
@@ -254,6 +265,9 @@ export default function CameraScreen() {
                     ]}
                     onPress={() => setSelectedMealType(meal.type)}
                     activeOpacity={0.7}
+                    accessibilityLabel={t(meal.labelKey)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selectedMealType === meal.type }}
                   >
                     <View
                       style={[
@@ -292,6 +306,10 @@ export default function CameraScreen() {
             onPress={handleAnalyze}
             disabled={isAnalyzing}
             activeOpacity={0.9}
+            accessibilityLabel={isAnalyzing ? t('camera.analyzing') : t('camera.analyzeButton')}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isAnalyzing }}
+            accessibilityHint={t('accessibility.analyzeImageWithAI')}
           >
             <LinearGradient
               colors={isAnalyzing ? [COLORS.textMuted, COLORS.textTertiary] : GRADIENTS.primary}

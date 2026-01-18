@@ -263,6 +263,9 @@ export default function ChatScreen() {
                   style={styles.suggestionChip}
                   onPress={() => setInputText(question)}
                   activeOpacity={0.7}
+                  accessibilityLabel={question}
+                  accessibilityRole="button"
+                  accessibilityHint={t('accessibility.tapToAskQuestion')}
                 >
                   <Ionicons
                     name="chatbubble-ellipses-outline"
@@ -288,6 +291,8 @@ export default function ChatScreen() {
             onChangeText={setInputText}
             multiline
             maxLength={500}
+            accessibilityLabel={t('chat.inputPlaceholder')}
+            accessibilityHint={t('accessibility.typeMessageToAI')}
           />
           <TouchableOpacity
             style={[
@@ -297,6 +302,9 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!inputText.trim() || isLoading}
             activeOpacity={0.8}
+            accessibilityLabel={t('accessibility.sendMessage')}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !inputText.trim() || isLoading }}
           >
             {inputText.trim() && !isLoading ? (
               <LinearGradient colors={GRADIENTS.primary} style={styles.sendButtonGradient}>

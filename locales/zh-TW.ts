@@ -950,6 +950,27 @@ const zhTW = {
     sentMessage: '我們已收到你的訊息，將盡快回覆。',
   },
 
+  // Accessibility
+  accessibility: {
+    navigateToCamera: '前往相機記錄飲食攝取',
+    navigateToChat: '前往 AI 聊天獲取營養建議',
+    navigateToHabits: '前往習慣追蹤',
+    navigateToMeditation: '前往冥想練習',
+    openCameraToTakePhoto: '開啟相機拍攝食物照片',
+    openGalleryToChoosePhoto: '開啟相簿選擇照片',
+    clearSelectedImage: '清除已選擇的圖片',
+    analyzeImageWithAI: '使用 AI 分析食物圖片',
+    tapToAskQuestion: '點擊使用此建議問題',
+    typeMessageToAI: '輸入訊息給 AI 營養師',
+    sendMessage: '發送訊息',
+    selectMoodLevel: '選擇你的心情等級',
+    enterNumericValue: '輸入數值',
+    editProfile: '編輯個人資料',
+    tapToEditProfile: '點擊編輯你的個人資料',
+    syncData: '同步數據',
+    viewTimeline: '查看所有記錄的時間線',
+  },
+
   // Errors
   errors: {
     generic: '發生錯誤',

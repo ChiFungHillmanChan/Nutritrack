@@ -950,6 +950,27 @@ const en = {
     sentMessage: 'We have received your message and will reply soon.',
   },
 
+  // Accessibility
+  accessibility: {
+    navigateToCamera: 'Navigate to camera to record food intake',
+    navigateToChat: 'Navigate to AI chat for nutrition advice',
+    navigateToHabits: 'Navigate to habit tracking',
+    navigateToMeditation: 'Navigate to meditation exercises',
+    openCameraToTakePhoto: 'Open camera to take a photo of your food',
+    openGalleryToChoosePhoto: 'Open gallery to choose a photo',
+    clearSelectedImage: 'Clear selected image',
+    analyzeImageWithAI: 'Analyze the food image with AI',
+    tapToAskQuestion: 'Tap to use this suggested question',
+    typeMessageToAI: 'Type your message to the AI nutritionist',
+    sendMessage: 'Send message',
+    selectMoodLevel: 'Select your mood level',
+    enterNumericValue: 'Enter a numeric value',
+    editProfile: 'Edit profile',
+    tapToEditProfile: 'Tap to edit your profile',
+    syncData: 'Sync data',
+    viewTimeline: 'View your timeline of all entries',
+  },
+
   // Errors
   errors: {
     generic: 'Something went wrong',
