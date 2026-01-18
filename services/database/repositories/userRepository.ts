@@ -2,9 +2,10 @@
  * User Repository
  *
  * CRUD operations for user profiles in SQLite.
+ * Sensitive health data is encrypted at rest using lib/crypto.
  */
 
-import { User, DailyTargets } from '../../../types';
+import { User, DailyTargets, MedicalCondition, Medication, Supplement } from '../../../types';
 import {
   getDatabase,
   generateId,
@@ -12,6 +13,7 @@ import {
   parseJSON,
   stringifyJSON,
 } from '../database';
+import { encryptJSON, decryptJSON, isEncrypted } from '../../../lib/crypto';
 
 interface UserRow {
   id: string;
@@ -38,9 +40,31 @@ interface UserRow {
 }
 
 /**
- * Convert database row to User object
+ * Decrypt sensitive field with backwards compatibility for unencrypted data.
+ * If the data appears to be encrypted, decrypt it. Otherwise, parse as JSON.
  */
-function rowToUser(row: UserRow): User {
+async function decryptSensitiveField<T>(data: string, defaultValue: T): Promise<T> {
+  if (!data) return defaultValue;
+
+  if (isEncrypted(data)) {
+    return decryptJSON<T>(data, defaultValue);
+  }
+
+  // Backwards compatibility: parse as plain JSON for unencrypted data
+  return parseJSON<T>(data, defaultValue);
+}
+
+/**
+ * Convert database row to User object
+ * Decrypts sensitive health data fields
+ */
+async function rowToUser(row: UserRow): Promise<User> {
+  // Decrypt sensitive fields (with backwards compatibility for unencrypted data)
+  const medicalConditions = await decryptSensitiveField<MedicalCondition[]>(row.medical_conditions, []);
+  const medications = await decryptSensitiveField<Medication[]>(row.medications, []);
+  const supplements = await decryptSensitiveField<Supplement[]>(row.supplements, []);
+  const allergies = await decryptSensitiveField<string[]>(row.allergies, []);
+
   return {
     id: row.id,
     email: row.email,
@@ -52,10 +76,10 @@ function rowToUser(row: UserRow): User {
     activity_level: row.activity_level as User['activity_level'],
     goal: row.goal as User['goal'],
     health_goals: parseJSON(row.health_goals, []),
-    medical_conditions: parseJSON(row.medical_conditions, []),
-    medications: parseJSON(row.medications, []),
-    supplements: parseJSON(row.supplements, []),
-    allergies: parseJSON(row.allergies, []),
+    medical_conditions: medicalConditions,
+    medications: medications,
+    supplements: supplements,
+    allergies: allergies,
     dietary_preferences: parseJSON(row.dietary_preferences, []),
     daily_targets: parseJSON<DailyTargets>(row.daily_targets, {
       calories: { min: 1800, max: 2200 },
@@ -78,41 +102,42 @@ function rowToUser(row: UserRow): User {
 /**
  * Get user by ID
  */
-export function getUserById(id: string): User | null {
+export async function getUserById(id: string): Promise<User | null> {
   const db = getDatabase();
   const row = db.getFirstSync<UserRow>('SELECT * FROM users WHERE id = ?', [id]);
-  return row ? rowToUser(row) : null;
+  return row ? await rowToUser(row) : null;
 }
 
 /**
  * Get user by email
  */
-export function getUserByEmail(email: string): User | null {
+export async function getUserByEmail(email: string): Promise<User | null> {
   const db = getDatabase();
   const row = db.getFirstSync<UserRow>('SELECT * FROM users WHERE email = ?', [email]);
-  return row ? rowToUser(row) : null;
+  return row ? await rowToUser(row) : null;
 }
 
 /**
  * Get the demo user (creates if doesn't exist)
  */
-export function getDemoUser(): User {
+export async function getDemoUser(): Promise<User> {
   const db = getDatabase();
   let row = db.getFirstSync<UserRow>('SELECT * FROM users WHERE is_demo_user = 1');
 
   if (!row) {
     // Create demo user
-    const demoUser = createDemoUser();
+    const demoUser = await createDemoUser();
     row = db.getFirstSync<UserRow>('SELECT * FROM users WHERE id = ?', [demoUser.id]);
   }
 
-  return rowToUser(row!);
+  return await rowToUser(row!);
 }
 
 /**
  * Create a new demo user (requires onboarding completion)
+ * Encrypts sensitive health data fields
  */
-function createDemoUser(): User {
+async function createDemoUser(): Promise<User> {
   const db = getDatabase();
   const timestamp = getCurrentTimestamp();
   const id = 'demo-user-001';
@@ -127,6 +152,12 @@ function createDemoUser(): User {
     sodium: { min: 1500, max: 2300 },
     water: 2000,
   };
+
+  // Encrypt sensitive health data fields (empty arrays for demo user)
+  const encryptedMedicalConditions = await encryptJSON<string[]>([]);
+  const encryptedMedications = await encryptJSON<string[]>([]);
+  const encryptedSupplements = await encryptJSON<string[]>([]);
+  const encryptedAllergies = await encryptJSON<string[]>([]);
 
   db.runSync(
     `INSERT INTO users (
@@ -146,10 +177,10 @@ function createDemoUser(): User {
       'moderate', // Default activity level
       'maintain', // Default goal
       stringifyJSON([]),
-      stringifyJSON([]),
-      stringifyJSON([]),
-      stringifyJSON([]),
-      stringifyJSON([]),
+      encryptedMedicalConditions,
+      encryptedMedications,
+      encryptedSupplements,
+      encryptedAllergies,
       stringifyJSON([]),
       stringifyJSON(dailyTargets),
       0, // onboarding_completed = false
@@ -159,16 +190,24 @@ function createDemoUser(): User {
     ]
   );
 
-  return getUserById(id)!;
+  const createdUser = await getUserById(id);
+  return createdUser!;
 }
 
 /**
  * Create a new user
+ * Encrypts sensitive health data fields
  */
-export function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>): User {
+export async function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> {
   const db = getDatabase();
   const id = generateId();
   const timestamp = getCurrentTimestamp();
+
+  // Encrypt sensitive health data fields
+  const encryptedMedicalConditions = await encryptJSON(data.medical_conditions ?? []);
+  const encryptedMedications = await encryptJSON(data.medications ?? []);
+  const encryptedSupplements = await encryptJSON(data.supplements ?? []);
+  const encryptedAllergies = await encryptJSON(data.allergies ?? []);
 
   db.runSync(
     `INSERT INTO users (
@@ -188,10 +227,10 @@ export function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>)
       data.activity_level ?? 'moderate',
       data.goal,
       stringifyJSON(data.health_goals),
-      stringifyJSON(data.medical_conditions),
-      stringifyJSON(data.medications),
-      stringifyJSON(data.supplements),
-      stringifyJSON(data.allergies),
+      encryptedMedicalConditions,
+      encryptedMedications,
+      encryptedSupplements,
+      encryptedAllergies,
       stringifyJSON(data.dietary_preferences),
       stringifyJSON(data.daily_targets),
       data.notification_settings ? stringifyJSON(data.notification_settings) : null,
@@ -202,15 +241,17 @@ export function createUser(data: Omit<User, 'id' | 'created_at' | 'updated_at'>)
     ]
   );
 
-  return getUserById(id)!;
+  const createdUser = await getUserById(id);
+  return createdUser!;
 }
 
 /**
  * Update user profile
+ * Encrypts sensitive health data fields when updating
  */
-export function updateUser(id: string, updates: Partial<User>): User | null {
+export async function updateUser(id: string, updates: Partial<User>): Promise<User | null> {
   const db = getDatabase();
-  const existing = getUserById(id);
+  const existing = await getUserById(id);
   if (!existing) return null;
 
   const timestamp = getCurrentTimestamp();
@@ -255,21 +296,22 @@ export function updateUser(id: string, updates: Partial<User>): User | null {
     fields.push('health_goals = ?');
     values.push(stringifyJSON(updates.health_goals));
   }
+  // Encrypt sensitive health data fields
   if (updates.medical_conditions !== undefined) {
     fields.push('medical_conditions = ?');
-    values.push(stringifyJSON(updates.medical_conditions));
+    values.push(await encryptJSON(updates.medical_conditions));
   }
   if (updates.medications !== undefined) {
     fields.push('medications = ?');
-    values.push(stringifyJSON(updates.medications));
+    values.push(await encryptJSON(updates.medications));
   }
   if (updates.supplements !== undefined) {
     fields.push('supplements = ?');
-    values.push(stringifyJSON(updates.supplements));
+    values.push(await encryptJSON(updates.supplements));
   }
   if (updates.allergies !== undefined) {
     fields.push('allergies = ?');
-    values.push(stringifyJSON(updates.allergies));
+    values.push(await encryptJSON(updates.allergies));
   }
   if (updates.dietary_preferences !== undefined) {
     fields.push('dietary_preferences = ?');
@@ -292,7 +334,7 @@ export function updateUser(id: string, updates: Partial<User>): User | null {
 
   db.runSync(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
 
-  return getUserById(id);
+  return await getUserById(id);
 }
 
 /**
@@ -316,7 +358,7 @@ export function hasAnyUser(): boolean {
 /**
  * Get the current logged-in user (the most recently updated non-demo user, or demo user)
  */
-export function getCurrentUser(): User | null {
+export async function getCurrentUser(): Promise<User | null> {
   const db = getDatabase();
   // First try to get a non-demo user
   let row = db.getFirstSync<UserRow>(
@@ -328,5 +370,5 @@ export function getCurrentUser(): User | null {
     row = db.getFirstSync<UserRow>('SELECT * FROM users WHERE is_demo_user = 1');
   }
 
-  return row ? rowToUser(row) : null;
+  return row ? await rowToUser(row) : null;
 }

@@ -13,6 +13,7 @@ import {
   calculateBMR,
   getActivityMultiplier,
 } from '../lib/energy-calculator';
+import { logger } from '../lib/logger';
 import {
   ActivityLevel,
   DailyTargets,
@@ -38,13 +39,13 @@ interface UserState {
   setError: (error: string | null) => void;
 
   // Initialization
-  initialize: () => void;
+  initialize: () => Promise<void>;
 
   // Auth actions
   signIn: (userEmail: string, userPassword: string) => Promise<boolean>;
   signUp: (userEmail: string, userPassword: string) => Promise<boolean>;
   signOut: () => Promise<void>;
-  enterDemoMode: () => void;
+  enterDemoMode: () => Promise<void>;
 
   // Profile actions
   updateProfile: (profileUpdates: Partial<User>) => Promise<boolean>;
@@ -202,16 +203,16 @@ export const useUserStore = create<UserState>((set, get) => ({
   setError: (error) => set({ error }),
 
   // Initialize from SQLite database
-  initialize: () => {
+  initialize: async () => {
     try {
       // Check if user is logged in from settings
       const isLoggedIn = settingsRepository.isUserLoggedIn();
       const currentUserId = settingsRepository.getCurrentUserId();
-      
+
       if (isLoggedIn && currentUserId) {
-        // Get the user from SQLite
-        const existingUser = userRepository.getUserById(currentUserId);
-        
+        // Get the user from SQLite (async due to decryption)
+        const existingUser = await userRepository.getUserById(currentUserId);
+
         if (existingUser) {
           set({
             user: existingUser,
@@ -228,20 +229,20 @@ export const useUserStore = create<UserState>((set, get) => ({
         set({ isInitialized: true });
       }
     } catch (error) {
-      console.error('[UserStore] Initialize error:', error);
+      logger.error('[UserStore] Initialize error:', error);
       set({ isInitialized: true });
     }
   },
 
   // Enter demo mode with user from SQLite
-  enterDemoMode: () => {
+  enterDemoMode: async () => {
     try {
-      // Get or create demo user in SQLite
-      const demoUser = userRepository.getDemoUser();
-      
+      // Get or create demo user in SQLite (async due to encryption)
+      const demoUser = await userRepository.getDemoUser();
+
       // Save login state to settings
       settingsRepository.setLoginState(true, demoUser.id);
-      
+
       set({
         user: demoUser,
         isAuthenticated: true,
@@ -250,7 +251,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         error: null,
       });
     } catch (error) {
-      console.error('[UserStore] Enter demo mode error:', error);
+      logger.error('[UserStore] Enter demo mode error:', error);
       set({ error: 'Failed to enter demo mode' });
     }
   },
@@ -260,18 +261,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Demo mode (no Supabase) - use local SQLite
     if (isDemoMode()) {
       try {
-        // Check if user exists in SQLite
-        let user = userRepository.getUserByEmail(email);
-        
+        // Check if user exists in SQLite (async due to decryption)
+        let user = await userRepository.getUserByEmail(email);
+
         if (!user) {
           // Create user in SQLite for demo mode
-          const demoUser = userRepository.getDemoUser();
-          user = userRepository.updateUser(demoUser.id, { email });
+          const demoUser = await userRepository.getDemoUser();
+          user = await userRepository.updateUser(demoUser.id, { email });
         }
-        
+
         // Save login state to settings
         settingsRepository.setLoginState(true, user!.id);
-        
+
         set({
           user: user!,
           isAuthenticated: true,
@@ -280,7 +281,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         });
         return true;
       } catch (error) {
-        console.error('[UserStore] Sign in error:', error);
+        logger.error('[UserStore] Sign in error:', error);
         set({ error: 'Sign in failed' });
         return false;
       }
@@ -313,12 +314,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         .single();
 
       if (profile) {
-        // Also save to local SQLite for offline access
-        const localUser = userRepository.getUserById(data.user.id);
+        // Also save to local SQLite for offline access (async due to encryption)
+        const localUser = await userRepository.getUserById(data.user.id);
         if (!localUser) {
-          userRepository.createUser(profile);
+          await userRepository.createUser(profile);
         } else {
-          userRepository.updateUser(data.user.id, profile);
+          await userRepository.updateUser(data.user.id, profile);
         }
 
         set({
@@ -339,12 +340,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Demo mode - create user in SQLite
     if (isDemoMode()) {
       try {
-        const demoUser = userRepository.getDemoUser();
-        const user = userRepository.updateUser(demoUser.id, { email });
-        
+        const demoUser = await userRepository.getDemoUser();
+        const user = await userRepository.updateUser(demoUser.id, { email });
+
         // Save login state to settings
         settingsRepository.setLoginState(true, user!.id);
-        
+
         set({
           user: user!,
           isAuthenticated: true,
@@ -353,7 +354,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         });
         return true;
       } catch (error) {
-        console.error('[UserStore] Sign up error:', error);
+        logger.error('[UserStore] Sign up error:', error);
         set({ error: 'Sign up failed' });
         return false;
       }
@@ -403,14 +404,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { user, isDemoMode: isDemo } = get();
     if (!user) return false;
 
-    // Update in SQLite (always, for offline access)
+    // Update in SQLite (always, for offline access, async due to encryption)
     try {
-      const updatedUser = userRepository.updateUser(user.id, updates);
+      const updatedUser = await userRepository.updateUser(user.id, updates);
       if (updatedUser) {
         set({ user: updatedUser });
       }
     } catch (error) {
-      console.error('[UserStore] SQLite update error:', error);
+      logger.error('[UserStore] SQLite update error:', error);
     }
 
     // If in demo mode, we're done
