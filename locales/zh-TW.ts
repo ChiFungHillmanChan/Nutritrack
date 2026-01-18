@@ -224,6 +224,8 @@ const zhTW = {
       passwordNeedsUppercase: '密碼要包含最少一個大楷字母',
       passwordNeedsNumber: '密碼要包含最少一個數字',
       passwordNotStrong: '密碼唔夠強',
+      emailAlreadyExists: '呢個電郵已經註冊咗。請直接登入，或者用另一個電郵。',
+      emailAlreadyExistsTitle: '電郵已被註冊',
       terms: '建立帳戶即表示你同意我哋嘅',
       termsOfService: '服務條款',
       and: '及',

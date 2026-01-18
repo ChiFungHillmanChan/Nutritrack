@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, GRADIENTS } from '../../../constants/colors';
 import { useUserStore, calculateAge } from '../../../stores/userStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { signOut } from '../../../services/auth';
 
 // Import from components/onboarding (no longer in app/ directory)
 import {
@@ -139,13 +140,15 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     const currentIndex = STEPS.indexOf(step);
     if (currentIndex > 0) {
       setStep(STEPS[currentIndex - 1]);
     } else {
-      // On basics step, go back to login
-      router.back();
+      // On basics step, sign out and go back to login
+      // This clears the session so user can login with a different method
+      await signOut();
+      router.replace('/(auth)/login');
     }
   };
 

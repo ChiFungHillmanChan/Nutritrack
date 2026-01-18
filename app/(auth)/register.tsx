@@ -74,32 +74,54 @@ export default function RegisterScreen() {
         { text: t('common.ok'), onPress: () => router.replace('/(auth)/onboarding') },
       ]);
     } else {
-      Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
+      // Handle specific error for email already exists
+      if (result.error === 'EMAIL_ALREADY_EXISTS') {
+        Alert.alert(
+          t('auth.register.emailAlreadyExistsTitle'),
+          t('auth.register.emailAlreadyExists'),
+          [
+            { text: t('auth.register.loginNow'), onPress: () => router.replace('/(auth)/login') },
+            { text: t('common.ok'), style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
+      }
     }
   };
 
   const handleGoogleSignUp = async () => {
+    console.log('[Register] Google signup button pressed');
     setIsLoading(true);
+    const startTime = Date.now();
     const result = await signInWithGoogle();
+    console.log('[Register] Google signup completed:', Date.now() - startTime, 'ms');
+    console.log('[Register] Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
+      console.log('[Register] Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
-    } else if (result.error !== t('auth.login.cancelled')) {
+    } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
   const handleAppleSignUp = async () => {
+    console.log('[Register] Apple signup button pressed');
     setIsLoading(true);
+    const startTime = Date.now();
     const result = await signInWithApple();
+    console.log('[Register] Apple signup completed:', Date.now() - startTime, 'ms');
+    console.log('[Register] Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
       // Social sign-in auto-creates the account, go to onboarding
+      console.log('[Register] Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
-    } else if (result.error !== t('auth.login.cancelled')) {
+    } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.register.registerFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };

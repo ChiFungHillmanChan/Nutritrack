@@ -224,6 +224,8 @@ const en = {
       passwordNeedsUppercase: 'Password must contain at least one uppercase letter',
       passwordNeedsNumber: 'Password must contain at least one number',
       passwordNotStrong: 'Password is not strong enough',
+      emailAlreadyExists: 'This email is already registered. Please login instead, or use a different email.',
+      emailAlreadyExistsTitle: 'Email Already Registered',
       terms: 'By creating an account, you agree to our',
       termsOfService: 'Terms of Service',
       and: 'and',

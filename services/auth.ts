@@ -72,6 +72,11 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 /**
  * Sign up with email and password
+ * 
+ * Handles email already exists scenario:
+ * - If email is already registered (via email/password or social login),
+ *   Supabase returns "User already registered" error
+ * - We detect this and return a user-friendly error message
  */
 export async function signUpWithEmail(email: string, password: string): Promise<AuthResult> {
   // Demo mode - always succeed
@@ -90,7 +95,31 @@ export async function signUpWithEmail(email: string, password: string): Promise<
   });
 
   if (error) {
+    // Check for email already exists error
+    // Supabase returns this when the email is already registered
+    // This includes emails registered via Google/Apple OAuth
+    const errorMessage = error.message.toLowerCase();
+    if (
+      errorMessage.includes('user already registered') ||
+      errorMessage.includes('email already') ||
+      errorMessage.includes('already exists') ||
+      errorMessage.includes('already been registered')
+    ) {
+      return { 
+        success: false, 
+        error: 'EMAIL_ALREADY_EXISTS' // Use a constant for client-side translation
+      };
+    }
     return { success: false, error: error.message };
+  }
+
+  // Supabase may return a user but with identities as empty array if email exists
+  // This happens when "Confirm email" is disabled and user tries to sign up with existing email
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    return { 
+      success: false, 
+      error: 'EMAIL_ALREADY_EXISTS'
+    };
   }
 
   return {
@@ -106,33 +135,47 @@ export async function signUpWithEmail(email: string, password: string): Promise<
  * Falls back to web OAuth on web platform.
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
+  const startTime = Date.now();
+  console.log('[Auth] signInWithGoogle called');
+  
   // Demo mode - not supported
   if (isDemoMode()) {
+    console.log('[Auth] Demo mode - Google login not supported');
     return { success: false, error: '示範模式唔支援 Google 登入，請用電郵登入' };
   }
 
   const supabase = getSupabaseClient();
   if (!supabase) {
+    console.error('[Auth] Supabase not configured');
     return { success: false, error: 'Supabase not configured' };
   }
 
   // Use native Google Sign-In on mobile platforms
+  console.log('[Auth] Platform:', Platform.OS, 'isGoogleSignInAvailable:', isGoogleSignInAvailable());
   if (Platform.OS !== 'web' && isGoogleSignInAvailable()) {
+    console.log('[Auth] Using native Google Sign-In...');
+    const nativeStartTime = Date.now();
     const result = await nativeGoogleSignIn();
+    console.log('[Auth] Native Google Sign-In completed:', Date.now() - nativeStartTime, 'ms');
+    console.log('[Auth] Native result:', { success: result.success, hasError: !!result.error, hasUser: !!result.user });
     
     if (result.error === 'cancelled') {
+      console.log('[Auth] User cancelled Google login');
       return { success: false, error: '登入已取消' };
     }
     
     if (!result.success) {
+      console.error('[Auth] Native Google login failed:', result.error);
       return { success: false, error: result.error ?? 'Google 登入失敗' };
     }
     
     // Session is already stored by Supabase auth
+    console.log('[Auth] Google login SUCCESS! Total time:', Date.now() - startTime, 'ms');
     return { success: true, userId: result.user?.id };
   }
 
   // Fall back to web OAuth
+  console.log('[Auth] Using web OAuth fallback...');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -142,22 +185,28 @@ export async function signInWithGoogle(): Promise<AuthResult> {
   });
 
   if (error) {
+    console.error('[Auth] Web OAuth error:', error);
     return { success: false, error: error.message };
   }
 
   // On native platforms, open the browser
   if (Platform.OS !== 'web' && data.url) {
+    console.log('[Auth] Opening browser for OAuth...');
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+    console.log('[Auth] Browser result:', result.type);
 
     if (result.type === 'success' && result.url) {
       // Supabase handles session storage automatically
       // Just return success - no need to manually store tokens
+      console.log('[Auth] Web OAuth SUCCESS! Total time:', Date.now() - startTime, 'ms');
       return { success: true };
     }
 
+    console.log('[Auth] Web OAuth cancelled or failed');
     return { success: false, error: '登入已取消' };
   }
 
+  console.log('[Auth] Web OAuth completed (web platform)');
   return { success: true };
 }
 

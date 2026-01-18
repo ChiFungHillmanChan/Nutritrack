@@ -60,25 +60,35 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    console.log('[Login] Google login button pressed');
     setIsLoading(true);
+    const startTime = Date.now();
     const result = await signInWithGoogle();
+    console.log('[Login] Google login completed:', Date.now() - startTime, 'ms');
+    console.log('[Login] Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
+      console.log('[Login] Navigating to tabs...');
       router.replace('/(tabs)');
-    } else {
+    } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };
 
   const handleAppleLogin = async () => {
+    console.log('[Login] Apple login button pressed');
     setIsLoading(true);
+    const startTime = Date.now();
     const result = await signInWithApple();
+    console.log('[Login] Apple login completed:', Date.now() - startTime, 'ms');
+    console.log('[Login] Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
     if (result.success) {
+      console.log('[Login] Navigating to tabs...');
       router.replace('/(tabs)');
-    } else {
+    } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
   };

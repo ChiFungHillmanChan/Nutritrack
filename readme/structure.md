@@ -190,8 +190,8 @@ This document provides an overview of the project's components, utilities, and d
 | Service | File | Purpose |
 |---------|------|---------|
 | `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
-| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) with native social auth support |
-| `social-auth.ts` | `social-auth.ts` | Native Apple Sign-In and Google Sign-In using expo-apple-authentication and expo-auth-session |
+| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) with native social auth support. Returns `EMAIL_ALREADY_EXISTS` error code for duplicate email registration. Includes detailed console logging for debugging. |
+| `social-auth.ts` | `social-auth.ts` | Native Apple Sign-In and Google Sign-In using expo-apple-authentication and expo-auth-session. Includes detailed console logging for debugging slow login issues. |
 | `i18n.ts` | `i18n.ts` | Internationalization service (i18n-js) with language detection and persistence |
 | `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
 | `rate-limiter.ts` | `rate-limiter.ts` | Client-side rate limiting service to prevent API abuse |
