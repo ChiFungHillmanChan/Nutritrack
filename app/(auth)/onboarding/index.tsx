@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, GRADIENTS } from '../../../constants/colors';
 import { useUserStore, calculateAge } from '../../../stores/userStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { signOut } from '../../../services/auth';
 
 // Import from components/onboarding (no longer in app/ directory)
 import {
@@ -41,7 +40,7 @@ export default function OnboardingScreen() {
   const { t, language } = useTranslation();
   const [step, setStep] = useState<Step>('basics');
   const state = useOnboardingState();
-  const { updateProfile, calculateDailyTargets } = useUserStore();
+  const { updateProfile, calculateDailyTargets, signOut } = useUserStore();
 
   // Get translated options
   const genderOptions = getGenderOptions(t);
