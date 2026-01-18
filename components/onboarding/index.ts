@@ -7,6 +7,7 @@ export * from './steps';
 
 // Hooks
 export { useOnboardingState } from './hooks/useOnboardingState';
+export type { OnboardingInitialValues } from './hooks/useOnboardingState';
 
 // Options (translation helpers)
 export {

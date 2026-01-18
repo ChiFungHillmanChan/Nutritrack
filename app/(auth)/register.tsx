@@ -14,10 +14,12 @@ import { Link, router } from 'expo-router';
 import { COLORS, SHADOWS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signUpWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
+import { useUserStore } from '../../stores/userStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createLogger } from '../../lib/logger';
-import { RegisterHeader, RegisterForm, SocialSignUpButtons } from './register/components';
-import { validatePassword, getPasswordChecks } from './register/utils/validatePassword';
+import { RegisterHeader, RegisterForm, SocialSignUpButtons } from '../../components/register';
+import { validatePassword, getPasswordChecks } from '../../components/register/validatePassword';
+import type { User } from '../../types';
 
 const logger = createLogger('[Register]');
 
@@ -50,7 +52,24 @@ export default function RegisterScreen() {
     const result = await signUpWithEmail(email, password);
     setIsLoading(false);
 
-    if (result.success) {
+    if (result.success && result.userId) {
+      // Auto-login: Set user in store after successful registration
+      const { setUser } = useUserStore.getState();
+      
+      const newUser: Partial<User> = {
+        id: result.userId,
+        email: email,
+        onboarding_completed: false,
+      };
+      
+      setUser(newUser as User);
+      
+      // Show success message and navigate to onboarding
+      Alert.alert(t('auth.register.registerSuccess'), t('auth.register.checkEmail'), [
+        { text: t('common.ok'), onPress: () => router.replace('/(auth)/onboarding') },
+      ]);
+    } else if (result.success) {
+      // Fallback if no userId returned
       Alert.alert(t('auth.register.registerSuccess'), t('auth.register.checkEmail'), [
         { text: t('common.ok'), onPress: () => router.replace('/(auth)/onboarding') },
       ]);
@@ -79,7 +98,22 @@ export default function RegisterScreen() {
     logger.debug('Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
-    if (result.success) {
+    if (result.success && result.userId) {
+      // Set user in store with social metadata for pre-filling onboarding
+      const { setUser } = useUserStore.getState();
+      
+      const newUser: Partial<User> = {
+        id: result.userId,
+        email: result.email ?? '',
+        onboarding_completed: false,
+        social_metadata: result.userMetadata ? {
+          name: result.userMetadata.name,
+          picture: result.userMetadata.picture,
+        } : undefined,
+      };
+      
+      setUser(newUser as User);
+      
       logger.info('Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
@@ -96,7 +130,22 @@ export default function RegisterScreen() {
     logger.debug('Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
-    if (result.success) {
+    if (result.success && result.userId) {
+      // Set user in store with social metadata for pre-filling onboarding
+      const { setUser } = useUserStore.getState();
+      
+      const newUser: Partial<User> = {
+        id: result.userId,
+        email: result.email ?? '',
+        onboarding_completed: false,
+        social_metadata: result.userMetadata ? {
+          name: result.userMetadata.name,
+          picture: result.userMetadata.picture,
+        } : undefined,
+      };
+      
+      setUser(newUser as User);
+      
       logger.info('Navigating to onboarding...');
       router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {

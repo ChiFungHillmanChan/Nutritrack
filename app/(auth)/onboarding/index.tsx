@@ -5,7 +5,7 @@
  * between step components and handling navigation/validation/completion.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -14,6 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, GRADIENTS } from '../../../constants/colors';
 import { useUserStore, calculateAge } from '../../../stores/userStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { createLogger } from '../../../lib/logger';
+
+const logger = createLogger('[Onboarding]');
 
 // Import from components/onboarding (no longer in app/ directory)
 import {
@@ -34,13 +37,25 @@ import {
   SummaryStep,
   STEPS,
 } from '../../../components/onboarding';
-import type { Step } from '../../../components/onboarding';
+import type { Step, OnboardingInitialValues } from '../../../components/onboarding';
 
 export default function OnboardingScreen() {
   const { t, language } = useTranslation();
   const [step, setStep] = useState<Step>('basics');
-  const state = useOnboardingState();
-  const { updateProfile, calculateDailyTargets, signOut } = useUserStore();
+  const { updateProfile, calculateDailyTargets, signOut, user } = useUserStore();
+  
+  // Get initial values from user's social metadata (Google/Apple login)
+  // This pre-fills the name field if available
+  const initialValues = useMemo<OnboardingInitialValues | undefined>(() => {
+    if (!user) return undefined;
+    
+    return {
+      name: user.social_metadata?.name ?? user.name ?? '',
+      email: user.email,
+    };
+  }, [user]);
+  
+  const state = useOnboardingState(initialValues);
 
   // Get translated options
   const genderOptions = getGenderOptions(t);
@@ -82,8 +97,12 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    if (!state.primaryGoal) return;
+    if (!state.primaryGoal) {
+      logger.warn('handleComplete called without primaryGoal');
+      return;
+    }
 
+    logger.info('Starting onboarding completion...', { userId: user?.id });
     state.setIsLoading(true);
 
     const heightNum = parseFloat(state.height);
@@ -101,6 +120,9 @@ export default function OnboardingScreen() {
       conditions: state.conditions,
     });
 
+    logger.debug('Calculated daily targets, calling updateProfile...');
+    const startTime = Date.now();
+    
     const success = await updateProfile({
       name: state.name,
       gender: state.gender || 'prefer_not_to_say',
@@ -119,11 +141,14 @@ export default function OnboardingScreen() {
       onboarding_completed: true,
     });
 
+    logger.info('updateProfile completed:', { success, duration: Date.now() - startTime, 'ms': true });
     state.setIsLoading(false);
 
     if (success) {
+      logger.info('Onboarding complete, navigating to tabs...');
       router.replace('/(tabs)');
     } else {
+      logger.error('updateProfile failed');
       Alert.alert(t('common.error'), t('onboarding.validation.saveFailed'));
     }
   };

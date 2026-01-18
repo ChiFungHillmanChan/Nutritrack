@@ -120,7 +120,7 @@ This document provides an overview of the project's components, utilities, and d
 | `MedicationsStep` | `steps/MedicationsStep.tsx` | Medications and supplements management |
 | `DietaryStep` | `steps/DietaryStep.tsx` | Dietary preferences and allergies |
 | `SummaryStep` | `steps/SummaryStep.tsx` | Review and confirmation before completion |
-| `useOnboardingState` | `hooks/useOnboardingState.ts` | State management hook for onboarding flow |
+| `useOnboardingState` | `hooks/useOnboardingState.ts` | State management hook for onboarding flow. Accepts optional `OnboardingInitialValues` to pre-fill name from social login metadata. |
 | `options.ts` | `options.ts` | Translated option generators for all step selections |
 | `styles.ts` | `styles.ts` | Shared StyleSheet definitions |
 | `types.ts` | `types.ts` | TypeScript interfaces for onboarding |
@@ -190,13 +190,13 @@ This document provides an overview of the project's components, utilities, and d
 | Service | File | Purpose |
 |---------|------|---------|
 | `ai.ts` | `ai.ts` | AI functions using Gemini via Supabase Edge Functions |
-| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) with native social auth support. Returns `EMAIL_ALREADY_EXISTS` error code for duplicate email registration. Includes detailed console logging for debugging. |
-| `social-auth.ts` | `social-auth.ts` | Native Apple Sign-In and Google Sign-In using expo-apple-authentication and expo-auth-session. Includes detailed console logging for debugging slow login issues. |
+| `auth.ts` | `auth.ts` | Authentication functions (signIn, signUp, signOut) with native social auth support. Returns `EMAIL_ALREADY_EXISTS` error code for duplicate email registration. Returns `userMetadata` (name, picture) from social providers. |
+| `social-auth.ts` | `social-auth.ts` | Native Apple Sign-In and Google Sign-In using expo-apple-authentication and expo-auth-session. Returns `SocialAuthResult` with user info and `userMetadata` for pre-filling onboarding. Handles JWT parsing directly to bypass Supabase session hanging issues on iOS. |
 | `i18n.ts` | `i18n.ts` | Internationalization service (i18n-js) with language detection and persistence |
 | `notifications.ts` | `notifications.ts` | Push notification handling and scheduling |
 | `rate-limiter.ts` | `rate-limiter.ts` | Client-side rate limiting service to prevent API abuse |
 | `secure-storage.ts` | `secure-storage.ts` | Secure token storage (sensitive data) |
-| `supabase.ts` | `supabase.ts` | Supabase client configuration |
+| `supabase.ts` | `supabase.ts` | Supabase client configuration with SecureStore adapter. Provides `clearAuthSession()` for clearing all auth data on logout/back. |
 | `health-integration.ts` | `health-integration.ts` | Apple Health / Google Fit integration (disabled for initial release, manual input only) |
 
 ## Database (`/services/database`)
@@ -215,12 +215,26 @@ Local SQLite database for offline-first data persistence. Production-ready for i
 
 | Repository | File | Purpose |
 |------------|------|---------|
-| `userRepository` | `userRepository.ts` | User profile CRUD, demo user management |
+| `userRepository` | `userRepository.ts` | User profile CRUD, demo user management, social auth user creation |
 | `foodRepository` | `foodRepository.ts` | Food logs CRUD, nutrition calculations, pagination support |
 | `chatRepository` | `chatRepository.ts` | Chat messages CRUD, welcome message, updateWelcomeMessage for language changes |
 | `habitRepository` | `habitRepository.ts` | Habit logs CRUD, streak calculations, pagination support |
 | `exerciseRepository` | `exerciseRepository.ts` | Exercise logs CRUD, activity summaries, pagination support |
 | `settingsRepository` | `settingsRepository.ts` | App settings persistence, login state tracking, data management, clear user data |
+
+### User Repository Functions
+
+| Function | Purpose |
+|----------|---------|
+| `getUserById(id)` | Get user by ID from SQLite |
+| `getUserByEmail(email)` | Get user by email from SQLite |
+| `getDemoUser()` | Get or create demo user for demo mode |
+| `createUser(data)` | Create new user with auto-generated ID |
+| `createUserWithId(id, data)` | Create user with specific ID (for social auth - ID from Supabase) |
+| `updateUser(id, updates)` | Update user profile with encryption for sensitive fields |
+| `deleteUser(id)` | Delete user and all related data |
+| `hasAnyUser()` | Check if any user exists (for first launch detection) |
+| `getCurrentUser()` | Get most recently active user |
 
 ### Database Tables
 
@@ -266,7 +280,7 @@ Types are organized into domain-specific files for better maintainability:
 | File | Purpose |
 |------|---------|
 | `index.ts` | Re-exports all types from domain files |
-| `user.ts` | `User`, `Gender`, `ActivityLevel`, `HealthGoal`, `MedicalCondition`, `Medication`, `Supplement`, `DietaryPreference`, `DailyTargets` |
+| `user.ts` | `User`, `Gender`, `ActivityLevel`, `HealthGoal`, `MedicalCondition`, `Medication`, `Supplement`, `DietaryPreference`, `DailyTargets`, `SocialMetadata` |
 | `nutrition.ts` | `FoodLog`, `NutritionData`, `MealType` |
 | `activity.ts` | `ExerciseLog`, `ExerciseType`, `DailyActivity` |
 | `wellness.ts` | `MeditationSession`, `Affirmation`, `AmbientSoundType`, `BreathingExerciseType` |

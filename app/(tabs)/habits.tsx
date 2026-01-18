@@ -26,8 +26,8 @@ import {
   HabitSummary,
   HabitInputModal,
   type HabitConfig,
-} from './habits/components';
-import { HABIT_CONFIGS } from './habits/config';
+} from '../../components/habits';
+import { HABIT_CONFIGS } from '../../components/habits/config';
 
 export default function HabitsScreen() {
   const { user } = useUserStore();

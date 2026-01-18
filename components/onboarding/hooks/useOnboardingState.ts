@@ -16,7 +16,7 @@ import type {
   Supplement,
 } from '../types';
 
-const INITIAL_STATE: OnboardingState = {
+const DEFAULT_STATE: OnboardingState = {
   // Basic info
   name: '',
   gender: null,
@@ -50,8 +50,23 @@ const INITIAL_STATE: OnboardingState = {
   isLoading: false,
 };
 
-export function useOnboardingState(): OnboardingState & OnboardingActions {
-  const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
+/**
+ * Initial values that can be passed to pre-fill the form
+ * Used when user signs in with Google/Apple to pre-fill name and email
+ */
+export interface OnboardingInitialValues {
+  name?: string;
+  email?: string;
+  // Note: Google and Apple do NOT provide date_of_birth or gender
+}
+
+export function useOnboardingState(initialValues?: OnboardingInitialValues): OnboardingState & OnboardingActions {
+  // Create initial state by merging defaults with provided initial values
+  // Using a function initializer ensures this only runs once on mount
+  const [state, setState] = useState<OnboardingState>(() => ({
+    ...DEFAULT_STATE,
+    ...(initialValues?.name && { name: initialValues.name }),
+  }));
 
   // Basic setters
   const setName = useCallback((name: string) => {

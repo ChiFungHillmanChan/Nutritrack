@@ -111,7 +111,11 @@ const secureStorageAdapter = {
     }
     
     // Clear any existing chunks first
-    await secureStorageAdapter.removeItem(key);
+    try {
+      await secureStorageAdapter.removeItem(key);
+    } catch {
+      // Ignore errors during cleanup
+    }
     
     // If value is small enough, store directly
     if (value.length <= CHUNK_SIZE) {
@@ -202,12 +206,25 @@ export const supabase = {
 };
 
 /**
- * Clear invalid session data from storage
- * Call this when encountering invalid refresh token errors
+ * Get the Supabase storage key for auth tokens
+ * Format: sb-{projectRef}-auth-token
  */
-export async function clearInvalidSession(): Promise<void> {
+export function getAuthStorageKey(): string {
+  const projectRef = SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase/)?.[1] ?? 'unknown';
+  return `sb-${projectRef}-auth-token`;
+}
+
+/**
+ * Clear all auth session data from storage
+ * Call this when user logs out or cancels onboarding
+ */
+export async function clearAuthSession(): Promise<void> {
+  // Get the actual Supabase storage key
+  const authKey = getAuthStorageKey();
+  
   // Clear auth-related items from storage
   const keysToClean = [
+    authKey,
     'sb-auth-token',
     'supabase.auth.token',
   ];
@@ -224,6 +241,15 @@ export async function clearInvalidSession(): Promise<void> {
       // Ignore errors during sign out - session might already be invalid
     });
   }
+}
+
+/**
+ * Clear invalid session data from storage
+ * Call this when encountering invalid refresh token errors
+ * @deprecated Use clearAuthSession() instead
+ */
+export async function clearInvalidSession(): Promise<void> {
+  await clearAuthSession();
 }
 
 /**

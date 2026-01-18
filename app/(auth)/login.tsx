@@ -26,6 +26,7 @@ import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../servic
 import { useUserStore } from '../../stores/userStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createLogger } from '../../lib/logger';
+import type { User } from '../../types';
 
 const logger = createLogger('[Login]');
 
@@ -65,15 +66,31 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     logger.debug('Google login button pressed');
     setIsLoading(true);
-    const startTime = Date.now();
     const result = await signInWithGoogle();
-    logger.debug('Google login completed:', Date.now() - startTime, 'ms');
     logger.debug('Google result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
-    if (result.success) {
-      logger.info('Navigating to tabs...');
-      router.replace('/(tabs)');
+    if (result.success && result.userId) {
+      // Update the user store with the authenticated user
+      // This is needed because we bypass Supabase's setSession (which hangs)
+      // and store the session directly in SecureStore
+      const { setUser } = useUserStore.getState();
+      
+      // Create a minimal user object with social metadata for pre-filling onboarding
+      const newUser: Partial<User> = {
+        id: result.userId,
+        email: result.email ?? '',
+        onboarding_completed: false, // Will trigger onboarding
+        social_metadata: result.userMetadata ? {
+          name: result.userMetadata.name,
+          picture: result.userMetadata.picture,
+        } : undefined,
+      };
+      
+      setUser(newUser as User);
+      
+      logger.info('Navigating to onboarding...');
+      router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
@@ -88,9 +105,27 @@ export default function LoginScreen() {
     logger.debug('Apple result:', { success: result.success, hasError: !!result.error });
     setIsLoading(false);
 
-    if (result.success) {
-      logger.info('Navigating to tabs...');
-      router.replace('/(tabs)');
+    if (result.success && result.userId) {
+      // Update the user store with the authenticated user
+      // This is needed because we bypass Supabase's setSession (which hangs)
+      // and store the session directly in SecureStore
+      const { setUser } = useUserStore.getState();
+      
+      // Create a minimal user object with social metadata for pre-filling onboarding
+      const newUser: Partial<User> = {
+        id: result.userId,
+        email: result.email ?? '',
+        onboarding_completed: false, // Will trigger onboarding
+        social_metadata: result.userMetadata ? {
+          name: result.userMetadata.name,
+          picture: result.userMetadata.picture,
+        } : undefined,
+      };
+      
+      setUser(newUser as User);
+      
+      logger.info('Navigating to onboarding...');
+      router.replace('/(auth)/onboarding');
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }

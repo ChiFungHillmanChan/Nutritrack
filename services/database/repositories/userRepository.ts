@@ -246,6 +246,68 @@ export async function createUser(data: Omit<User, 'id' | 'created_at' | 'updated
 }
 
 /**
+ * Create a new user with a specific ID (for social auth users)
+ * The ID comes from Supabase Auth, not generated locally
+ * Encrypts sensitive health data fields
+ */
+export async function createUserWithId(
+  id: string,
+  data: Omit<User, 'id' | 'created_at' | 'updated_at'>
+): Promise<User> {
+  const db = getDatabase();
+  const timestamp = getCurrentTimestamp();
+
+  // Check if user already exists (prevent duplicate creation)
+  const existing = await getUserById(id);
+  if (existing) {
+    // User already exists, update instead
+    const updated = await updateUser(id, data);
+    return updated!;
+  }
+
+  // Encrypt sensitive health data fields
+  const encryptedMedicalConditions = await encryptJSON(data.medical_conditions ?? []);
+  const encryptedMedications = await encryptJSON(data.medications ?? []);
+  const encryptedSupplements = await encryptJSON(data.supplements ?? []);
+  const encryptedAllergies = await encryptJSON(data.allergies ?? []);
+
+  db.runSync(
+    `INSERT INTO users (
+      id, email, name, gender, date_of_birth, height_cm, weight_kg,
+      activity_level, goal, health_goals, medical_conditions,
+      medications, supplements, allergies, dietary_preferences,
+      daily_targets, notification_settings, onboarding_completed, is_demo_user, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id, // Use provided ID instead of generating
+      data.email,
+      data.name,
+      data.gender ?? null,
+      data.date_of_birth ?? null,
+      data.height_cm,
+      data.weight_kg,
+      data.activity_level ?? 'moderate',
+      data.goal,
+      stringifyJSON(data.health_goals),
+      encryptedMedicalConditions,
+      encryptedMedications,
+      encryptedSupplements,
+      encryptedAllergies,
+      stringifyJSON(data.dietary_preferences),
+      stringifyJSON(data.daily_targets),
+      data.notification_settings ? stringifyJSON(data.notification_settings) : null,
+      data.onboarding_completed ? 1 : 0,
+      0, // is_demo_user = false for social auth users
+      timestamp,
+      timestamp,
+    ]
+  );
+
+  const createdUser = await getUserById(id);
+  return createdUser!;
+}
+
+/**
  * Update user profile
  * Encrypts sensitive health data fields when updating
  */

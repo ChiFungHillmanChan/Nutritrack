@@ -21,8 +21,8 @@ import {
   MealTypeSelector,
   AnalyzeButton,
   AnalysisResult,
-} from './camera/components';
-import { MEAL_TYPES, AnalysisResultData } from './camera/types';
+} from '../../components/camera';
+import { MEAL_TYPES, AnalysisResultData } from '../../components/camera/types';
 
 export default function CameraScreen() {
   const { user } = useUserStore();

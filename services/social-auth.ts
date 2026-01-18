@@ -42,11 +42,7 @@ export function isGoogleSignInAvailable(): boolean {
  * Uses Supabase's native Apple provider integration.
  * Apple Sign-In is only available on iOS devices.
  */
-export async function signInWithApple(): Promise<{
-  success: boolean;
-  error?: string;
-  user?: { id: string; email: string };
-}> {
+export async function signInWithApple(): Promise<SocialAuthResult> {
   const startTime = Date.now();
   logger.debug('[Apple] Starting Apple Sign-In flow...');
   
@@ -99,6 +95,16 @@ export async function signInWithApple(): Promise<{
       logger.error('[Apple] No identity token received');
       return { success: false, error: 'No identity token received from Apple' };
     }
+    
+    // Extract name from Apple credential (only available on first sign-in)
+    let userName: string | undefined;
+    if (credential.fullName) {
+      const nameParts = [credential.fullName.givenName, credential.fullName.familyName]
+        .filter(Boolean);
+      if (nameParts.length > 0) {
+        userName = nameParts.join(' ');
+      }
+    }
 
     // Sign in with Supabase using the Apple credential
     logger.debug('[Apple] Getting Supabase client...');
@@ -127,9 +133,17 @@ export async function signInWithApple(): Promise<{
       return { success: false, error: 'No user data returned' };
     }
 
+    // Build user metadata from Apple credential and Supabase user_metadata
+    const userMetadata: SocialUserMetadata = {
+      ...(userName && { name: userName }),
+      // Also check Supabase user_metadata for name if not from credential
+      ...(!userName && data.user.user_metadata && extractUserMetadata(data.user.user_metadata as Record<string, unknown>)),
+    };
+
     logger.info('[Apple] SUCCESS! User authenticated:', {
       id: data.user.id,
       email: data.user.email,
+      hasName: !!userMetadata.name,
       totalTime: `${Date.now() - startTime}ms`,
     });
     
@@ -139,6 +153,7 @@ export async function signInWithApple(): Promise<{
         id: data.user.id,
         email: data.user.email ?? '',
       },
+      userMetadata,
     };
   } catch (error) {
     // Handle user cancellation
@@ -171,11 +186,7 @@ export async function signInWithApple(): Promise<{
  * 3. Configure Site URL in Supabase Dashboard (Authentication > URL Configuration)
  *    For Expo Go: Use your app's custom scheme (e.g., nutritrack://auth/callback)
  */
-export async function signInWithGoogle(): Promise<{
-  success: boolean;
-  error?: string;
-  user?: { id: string; email: string };
-}> {
+export async function signInWithGoogle(): Promise<SocialAuthResult> {
   const startTime = Date.now();
   logger.debug('[Google] Starting Google Sign-In flow...');
   
@@ -248,14 +259,34 @@ export async function signInWithGoogle(): Promise<{
     logger.debug('[Google] Parsing callback URL...');
     
     // Parse the URL to get the auth tokens
-    // Supabase returns tokens in the URL fragment or query params
+    // Supabase returns tokens in the URL fragment (hash) after the #
+    // Format: nutritrack://auth/callback#access_token=xxx&refresh_token=xxx&expires_in=3600&token_type=bearer
     const parsedUrl = new URL(url);
-    const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
+    
+    // Manual parsing of hash params to handle edge cases
+    // URLSearchParams may have issues with certain characters
+    const hashString = parsedUrl.hash.substring(1); // Remove the leading #
+    
+    // Parse hash parameters manually to ensure we get the full values
+    const hashParamsMap: Record<string, string> = {};
+    if (hashString) {
+      const pairs = hashString.split('&');
+      for (const pair of pairs) {
+        const [key, ...valueParts] = pair.split('=');
+        // Rejoin with = in case the value contains = characters
+        const value = valueParts.join('=');
+        if (key && value) {
+          // URL decode the value
+          hashParamsMap[key] = decodeURIComponent(value);
+        }
+      }
+    }
+    
     const queryParams = parsedUrl.searchParams;
     
     // Get access token and refresh token from URL
-    const accessToken = hashParams.get('access_token') ?? queryParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token') ?? queryParams.get('refresh_token');
+    const accessToken = hashParamsMap['access_token'] ?? queryParams.get('access_token');
+    const refreshToken = hashParamsMap['refresh_token'] ?? queryParams.get('refresh_token');
     
     logger.debug('[Google] Tokens found in URL:', {
       hasAccessToken: !!accessToken,
@@ -263,33 +294,120 @@ export async function signInWithGoogle(): Promise<{
     });
 
     if (accessToken && refreshToken) {
-      // Set the session manually with the tokens from the URL
-      logger.debug('[Google] Setting session with tokens...');
+      // WORKAROUND: Supabase's setSession and getSession hang on iOS
+      // Parse the JWT access token directly to extract user info
+      logger.debug('[Google] Extracting user from JWT token directly...');
       const sessionStartTime = Date.now();
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-      logger.debug('[Google] Session set completed:', Date.now() - sessionStartTime, 'ms');
-
-      if (sessionError) {
-        logger.error('[Google] Session error:', sessionError);
-        return { success: false, error: sessionError.message };
-      }
-
-      if (sessionData.user) {
-        logger.info('[Google] SUCCESS! User authenticated:', {
-          id: sessionData.user.id,
-          email: sessionData.user.email,
-          totalTime: `${Date.now() - startTime}ms`,
+      
+      try {
+        // Parse the JWT token to extract user info
+        // JWT format: header.payload.signature (base64 encoded)
+        const tokenParts = accessToken.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid JWT token format');
+        }
+        
+        // Decode the payload (middle part)
+        const payloadBase64 = tokenParts[1];
+        // Handle base64url encoding (replace - with + and _ with /)
+        const payloadBase64Standard = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        const payloadJson = atob(payloadBase64Standard);
+        const payload = JSON.parse(payloadJson);
+        
+        // Extract user info from the JWT payload
+        const userId = payload.sub;
+        const userEmail = payload.email;
+        
+        if (!userId) {
+          throw new Error('No user ID found in token');
+        }
+        
+        // Store the session directly in SecureStore for persistence
+        // This bypasses Supabase's hanging setSession
+        const sessionData = {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: payload.exp,
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: {
+            id: userId,
+            email: userEmail,
+            app_metadata: payload.app_metadata,
+            user_metadata: payload.user_metadata,
+            aud: payload.aud,
+            role: payload.role,
+          },
+        };
+        
+        // Get the storage key that Supabase uses
+        const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+        const projectRef = SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase/)?.[1] ?? 'unknown';
+        const storageKey = `sb-${projectRef}-auth-token`;
+        
+        // Store directly using SecureStore
+        const sessionString = JSON.stringify(sessionData);
+        
+        // Import SecureStore directly for this operation
+        const SecureStore = await import('expo-secure-store');
+        
+        // Chunk the session data if needed (SecureStore has 2048 byte limit)
+        const CHUNK_SIZE = 1800;
+        if (sessionString.length <= CHUNK_SIZE) {
+          await SecureStore.setItemAsync(storageKey, sessionString, {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED,
+          });
+        } else {
+          // Clear any existing data first
+          await SecureStore.deleteItemAsync(storageKey);
+          const chunkCountStr = await SecureStore.getItemAsync(`${storageKey}_chunks`);
+          if (chunkCountStr) {
+            const oldChunkCount = parseInt(chunkCountStr, 10);
+            for (let i = 0; i < oldChunkCount; i++) {
+              await SecureStore.deleteItemAsync(`${storageKey}_${i}`);
+            }
+            await SecureStore.deleteItemAsync(`${storageKey}_chunks`);
+          }
+          
+          // Chunk and store
+          const chunks: string[] = [];
+          for (let i = 0; i < sessionString.length; i += CHUNK_SIZE) {
+            chunks.push(sessionString.slice(i, i + CHUNK_SIZE));
+          }
+          
+          await SecureStore.setItemAsync(`${storageKey}_chunks`, chunks.length.toString(), {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED,
+          });
+          
+          for (let i = 0; i < chunks.length; i++) {
+            await SecureStore.setItemAsync(`${storageKey}_${i}`, chunks[i], {
+              keychainAccessible: SecureStore.WHEN_UNLOCKED,
+            });
+          }
+        }
+        
+        // Extract user metadata from JWT payload
+        const userMetadata = extractUserMetadata(payload.user_metadata as Record<string, unknown> ?? {});
+        
+        logger.info('[Google] SUCCESS! User authenticated via direct JWT parsing:', {
+          id: userId,
+          email: userEmail,
+          hasName: !!userMetadata.name,
+          totalTime: `${Date.now() - sessionStartTime}ms`,
         });
+        
         return {
           success: true,
           user: {
-            id: sessionData.user.id,
-            email: sessionData.user.email ?? '',
+            id: userId,
+            email: userEmail ?? '',
           },
+          userMetadata,
         };
+      } catch (jwtError) {
+        const errorMessage = jwtError instanceof Error ? jwtError.message : String(jwtError);
+        logger.error('[Google] JWT parsing failed:', errorMessage);
+        return { success: false, error: `Authentication failed: ${errorMessage}` };
       }
     }
 
@@ -297,9 +415,13 @@ export async function signInWithGoogle(): Promise<{
     logger.debug('[Google] No tokens in URL, checking existing session...');
     const { data: currentSession } = await supabase.auth.getSession();
     if (currentSession.session?.user) {
+      const userMetadata = extractUserMetadata(
+        currentSession.session.user.user_metadata as Record<string, unknown> ?? {}
+      );
       logger.info('[Google] SUCCESS! Found existing session:', {
         id: currentSession.session.user.id,
         email: currentSession.session.user.email,
+        hasName: !!userMetadata.name,
         totalTime: `${Date.now() - startTime}ms`,
       });
       return {
@@ -308,6 +430,7 @@ export async function signInWithGoogle(): Promise<{
           id: currentSession.session.user.id,
           email: currentSession.session.user.email ?? '',
         },
+        userMetadata,
       };
     }
 
@@ -324,6 +447,26 @@ export async function signInWithGoogle(): Promise<{
     logger.error('[Google] Unexpected error:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+/**
+ * User metadata from social providers
+ * Contains profile information like name and avatar
+ */
+export interface SocialUserMetadata {
+  name?: string;
+  picture?: string;
+  // Note: Google and Apple do NOT provide date_of_birth or gender
+}
+
+/**
+ * Result from social authentication
+ */
+export interface SocialAuthResult {
+  success: boolean;
+  error?: string;
+  user?: { id: string; email: string };
+  userMetadata?: SocialUserMetadata;
 }
 
 /**
@@ -351,4 +494,25 @@ export function getDisplayNameFromProvider(
   }
   
   return null;
+}
+
+/**
+ * Extract user metadata from social provider payload
+ */
+export function extractUserMetadata(
+  providerData: Record<string, unknown> | null
+): SocialUserMetadata {
+  if (!providerData) return {};
+  
+  const name = getDisplayNameFromProvider(providerData);
+  const picture = typeof providerData.picture === 'string' 
+    ? providerData.picture 
+    : typeof providerData.avatar_url === 'string'
+      ? providerData.avatar_url
+      : undefined;
+  
+  return {
+    ...(name && { name }),
+    ...(picture && { picture }),
+  };
 }

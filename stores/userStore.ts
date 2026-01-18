@@ -9,7 +9,7 @@
 import { create } from 'zustand';
 import { settingsRepository, userRepository } from '../services/database';
 import { getDatabase } from '../services/database/database';
-import { getSupabaseClient, isDemoMode } from '../services/supabase';
+import { getSupabaseClient, isDemoMode, clearAuthSession } from '../services/supabase';
 import {
   calculateBMR,
   getActivityMultiplier,
@@ -410,30 +410,85 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
     }
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    // Clear all auth session data from SecureStore
+    await clearAuthSession();
+    
     set({ user: null, isAuthenticated: false, isDemoMode: false });
   },
 
   // Update user profile
   updateProfile: async (updates) => {
     const { user, isDemoMode: isDemo } = get();
-    if (!user) return false;
+    if (!user) {
+      logger.error('[UserStore] updateProfile called with no user');
+      return false;
+    }
+
+    logger.debug('[UserStore] updateProfile called for user:', user.id);
 
     // Update in SQLite (always, for offline access, async due to encryption)
     try {
-      const updatedUser = await userRepository.updateUser(user.id, updates);
-      if (updatedUser) {
-        set({ user: updatedUser });
+      // First check if user exists in SQLite
+      let existingUser = await userRepository.getUserById(user.id);
+      
+      if (!existingUser) {
+        // User doesn't exist in SQLite (e.g., social auth user)
+        // Create them first with the current user data + updates
+        logger.info('[UserStore] Creating new user in SQLite for:', user.id);
+        
+        // Merge current user state with updates for creation
+        const userDataForCreation = {
+          id: user.id,
+          email: user.email || updates.email || '',
+          name: updates.name || user.name || '',
+          gender: updates.gender || user.gender || 'prefer_not_to_say',
+          date_of_birth: updates.date_of_birth || user.date_of_birth,
+          height_cm: updates.height_cm || user.height_cm || 170,
+          weight_kg: updates.weight_kg || user.weight_kg || 65,
+          activity_level: updates.activity_level || user.activity_level || 'moderate',
+          goal: updates.goal || user.goal || 'maintain',
+          health_goals: updates.health_goals || user.health_goals || [],
+          medical_conditions: updates.medical_conditions || user.medical_conditions || [],
+          medications: updates.medications || user.medications || [],
+          supplements: updates.supplements || user.supplements || [],
+          allergies: updates.allergies || user.allergies || [],
+          dietary_preferences: updates.dietary_preferences || user.dietary_preferences || [],
+          daily_targets: updates.daily_targets || user.daily_targets || {
+            calories: { min: 1800, max: 2200 },
+            protein: { min: 100, max: 150 },
+            carbs: { min: 200, max: 300 },
+            fat: { min: 50, max: 80 },
+            fiber: { min: 25, max: 35 },
+            sodium: { min: 1500, max: 2300 },
+            water: 2000,
+          },
+          onboarding_completed: updates.onboarding_completed ?? false,
+        };
+        
+        // Create user with specific ID (for social auth users)
+        existingUser = await userRepository.createUserWithId(user.id, userDataForCreation);
+        logger.info('[UserStore] User created in SQLite:', existingUser?.id);
+      } else {
+        // User exists, update them
+        existingUser = await userRepository.updateUser(user.id, updates);
+      }
+      
+      if (existingUser) {
+        // Save login state to settings
+        settingsRepository.setLoginState(true, existingUser.id);
+        set({ user: existingUser });
+        logger.info('[UserStore] User profile updated successfully');
+      } else {
+        logger.error('[UserStore] Failed to update/create user in SQLite');
+        return false;
       }
     } catch (error) {
       logger.error('[UserStore] SQLite update error:', error);
+      return false;
     }
 
-    // If in demo mode, we're done
-    if (isDemo) {
+    // If in demo mode (no Supabase), we're done
+    if (isDemo || !getSupabaseClient()) {
       return true;
     }
 
@@ -452,8 +507,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       .eq('id', user.id);
 
     if (error) {
+      // Don't fail the whole operation if Supabase update fails
+      // The local SQLite update already succeeded
+      logger.error('[UserStore] Supabase update error:', error.message);
       set({ isLoading: false, error: error.message });
-      return false;
+      // Return true since local update succeeded
+      return true;
     }
 
     set({ isLoading: false });

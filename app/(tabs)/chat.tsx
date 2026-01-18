@@ -25,7 +25,7 @@ import {
   ChatInput,
   SuggestedQuestions,
   TypingIndicator,
-} from './chat/components';
+} from '../../components/chat';
 
 export default function ChatScreen() {
   const { user } = useUserStore();

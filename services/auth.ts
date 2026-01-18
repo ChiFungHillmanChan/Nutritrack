@@ -25,6 +25,7 @@ import {
   signInWithGoogle as nativeGoogleSignIn,
   isAppleSignInAvailable,
   isGoogleSignInAvailable,
+  type SocialUserMetadata,
 } from './social-auth';
 import { createLogger } from '../lib/logger';
 
@@ -43,7 +44,12 @@ export interface AuthResult {
   success: boolean;
   error?: string;
   userId?: string;
+  email?: string;
+  userMetadata?: SocialUserMetadata;
 }
+
+// Re-export for convenience
+export type { SocialUserMetadata };
 
 /**
  * Sign in with email and password
@@ -174,7 +180,12 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     
     // Session is already stored by Supabase auth
     logger.info('Google login SUCCESS! Total time:', Date.now() - startTime, 'ms');
-    return { success: true, userId: result.user?.id };
+    return { 
+      success: true, 
+      userId: result.user?.id, 
+      email: result.user?.email,
+      userMetadata: result.userMetadata,
+    };
   }
 
   // Fall back to web OAuth
@@ -243,7 +254,12 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
     
     // Session is already stored by Supabase auth
-    return { success: true, userId: result.user?.id };
+    return { 
+      success: true, 
+      userId: result.user?.id,
+      email: result.user?.email,
+      userMetadata: result.userMetadata,
+    };
   }
 
   // Fall back to web OAuth for non-iOS platforms

@@ -41,7 +41,9 @@ class Logger {
 
   constructor(options: LoggerOptions = {}) {
     this.forceEnable = options.forceEnable ?? false;
-    this.minLevel = LOG_LEVELS[options.minLevel ?? 'debug'];
+    // Default to 'warn' level - only show warnings and errors
+    // Set to 'debug' for verbose logging during development
+    this.minLevel = LOG_LEVELS[options.minLevel ?? 'warn'];
   }
 
   private shouldLog(level: LogLevel): boolean {

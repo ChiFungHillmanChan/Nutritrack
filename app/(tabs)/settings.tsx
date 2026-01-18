@@ -28,7 +28,7 @@ import {
   DataManagementSection,
   SettingRow,
   type DataStats,
-} from './settings/components';
+} from '../../components/settings-page';
 
 export default function ProfileScreen() {
   const { user, signOut: storeSignOut } = useUserStore();

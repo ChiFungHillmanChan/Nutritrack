@@ -86,6 +86,16 @@ export interface Supplement {
   notes?: string;
 }
 
+/**
+ * Metadata from social login providers (Google, Apple)
+ * Used to pre-fill onboarding form
+ */
+export interface SocialMetadata {
+  name?: string;
+  picture?: string;
+  // Note: Google and Apple do NOT provide date_of_birth or gender
+}
+
 // Enhanced User type
 export interface User {
   id: string;
@@ -106,6 +116,7 @@ export interface User {
   dietary_preferences: DietaryPreference[];
   daily_targets: DailyTargets;
   notification_settings?: NotificationSettings;
+  social_metadata?: SocialMetadata;
   created_at: string;
   updated_at: string;
 }

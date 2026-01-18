@@ -25,7 +25,7 @@ import {
   MealsSummary,
   QuickActions,
   RecordIntakeButton,
-} from './home/components';
+} from '../../components/home';
 
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();

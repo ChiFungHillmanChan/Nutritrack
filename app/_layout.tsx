@@ -38,8 +38,8 @@ export default function RootLayout() {
       // Initialize SQLite database first
       await initializeDatabase();
 
-      // Initialize user store from SQLite
-      initialize();
+      // Initialize user store from SQLite (await to ensure completion)
+      await initialize();
 
     } catch (error) {
       logger.error('Initialization error:', error);
