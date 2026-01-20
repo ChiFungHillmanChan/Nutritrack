@@ -293,6 +293,9 @@ export async function signInWithApple(): Promise<AuthResult> {
 
 /**
  * Sign out
+ * 
+ * WORKAROUND: Supabase's signOut can hang on iOS, similar to setSession.
+ * We use a timeout to prevent the app from freezing.
  */
 export async function signOut(): Promise<AuthResult> {
   // Demo mode - always succeed
@@ -305,10 +308,20 @@ export async function signOut(): Promise<AuthResult> {
     return { success: true };
   }
 
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    return { success: false, error: error.message };
+  // Use a timeout to prevent hanging on iOS
+  try {
+    const timeoutPromise = new Promise<{ error: Error }>((_, reject) => {
+      setTimeout(() => reject(new Error('SignOut timeout')), 3000);
+    });
+    
+    const signOutPromise = supabase.auth.signOut({ scope: 'local' });
+    
+    await Promise.race([signOutPromise, timeoutPromise]).catch(() => {
+      // Ignore timeout or errors - we'll clear storage manually anyway
+      logger.debug('SignOut timed out or failed, continuing with local cleanup');
+    });
+  } catch {
+    // Ignore errors - the important thing is clearing local state
   }
 
   return { success: true };

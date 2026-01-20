@@ -217,6 +217,10 @@ export function getAuthStorageKey(): string {
 /**
  * Clear all auth session data from storage
  * Call this when user logs out or cancels onboarding
+ * 
+ * NOTE: This function only clears local storage. It does NOT call
+ * supabase.auth.signOut() because that can hang on iOS.
+ * The signOut() in auth.ts handles the Supabase signOut with a timeout.
  */
 export async function clearAuthSession(): Promise<void> {
   // Get the actual Supabase storage key
@@ -232,15 +236,9 @@ export async function clearAuthSession(): Promise<void> {
   for (const key of keysToClean) {
     await secureStorageAdapter.removeItem(key);
   }
-
-  // Sign out from Supabase if client exists
-  const client = getSupabaseClient();
-  if (client) {
-    // Sign out to clear any in-memory state
-    await client.auth.signOut({ scope: 'local' }).catch(() => {
-      // Ignore errors during sign out - session might already be invalid
-    });
-  }
+  
+  // DO NOT call supabase.auth.signOut() here - it can hang on iOS
+  // The auth.ts signOut() function handles this with a timeout
 }
 
 /**

@@ -24,6 +24,7 @@ import { COLORS, SHADOWS, GRADIENTS } from '../../constants/colors';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/typography';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '../../services/auth';
 import { useUserStore } from '../../stores/userStore';
+import { userRepository, settingsRepository } from '../../services/database';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createLogger } from '../../lib/logger';
 import type { User } from '../../types';
@@ -71,26 +72,35 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (result.success && result.userId) {
-      // Update the user store with the authenticated user
-      // This is needed because we bypass Supabase's setSession (which hangs)
-      // and store the session directly in SecureStore
+      // Check if user already exists in SQLite (returning user who completed onboarding)
+      const existingUser = await userRepository.getUserById(result.userId);
       const { setUser } = useUserStore.getState();
       
-      // Create a minimal user object with social metadata for pre-filling onboarding
-      const newUser: Partial<User> = {
-        id: result.userId,
-        email: result.email ?? '',
-        onboarding_completed: false, // Will trigger onboarding
-        social_metadata: result.userMetadata ? {
-          name: result.userMetadata.name,
-          picture: result.userMetadata.picture,
-        } : undefined,
-      };
-      
-      setUser(newUser as User);
-      
-      logger.info('Navigating to onboarding...');
-      router.replace('/(auth)/onboarding');
+      if (existingUser && existingUser.onboarding_completed) {
+        // Returning user - restore their session
+        settingsRepository.setLoginState(true, existingUser.id);
+        setUser(existingUser);
+        logger.info('Returning user, navigating to tabs...');
+        router.replace('/(tabs)');
+      } else {
+        // New user or incomplete onboarding - go to onboarding
+        const newUser: Partial<User> = {
+          id: result.userId,
+          email: result.email ?? '',
+          onboarding_completed: false,
+          social_metadata: result.userMetadata ? {
+            name: result.userMetadata.name,
+            picture: result.userMetadata.picture,
+          } : undefined,
+        };
+        
+        // Save login state so we can recover on app restart
+        settingsRepository.setLoginState(true, result.userId);
+        setUser(newUser as User);
+        
+        logger.info('New user, navigating to onboarding...');
+        router.replace('/(auth)/onboarding');
+      }
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }
@@ -106,26 +116,35 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (result.success && result.userId) {
-      // Update the user store with the authenticated user
-      // This is needed because we bypass Supabase's setSession (which hangs)
-      // and store the session directly in SecureStore
+      // Check if user already exists in SQLite (returning user who completed onboarding)
+      const existingUser = await userRepository.getUserById(result.userId);
       const { setUser } = useUserStore.getState();
       
-      // Create a minimal user object with social metadata for pre-filling onboarding
-      const newUser: Partial<User> = {
-        id: result.userId,
-        email: result.email ?? '',
-        onboarding_completed: false, // Will trigger onboarding
-        social_metadata: result.userMetadata ? {
-          name: result.userMetadata.name,
-          picture: result.userMetadata.picture,
-        } : undefined,
-      };
-      
-      setUser(newUser as User);
-      
-      logger.info('Navigating to onboarding...');
-      router.replace('/(auth)/onboarding');
+      if (existingUser && existingUser.onboarding_completed) {
+        // Returning user - restore their session
+        settingsRepository.setLoginState(true, existingUser.id);
+        setUser(existingUser);
+        logger.info('Returning user, navigating to tabs...');
+        router.replace('/(tabs)');
+      } else {
+        // New user or incomplete onboarding - go to onboarding
+        const newUser: Partial<User> = {
+          id: result.userId,
+          email: result.email ?? '',
+          onboarding_completed: false,
+          social_metadata: result.userMetadata ? {
+            name: result.userMetadata.name,
+            picture: result.userMetadata.picture,
+          } : undefined,
+        };
+        
+        // Save login state so we can recover on app restart
+        settingsRepository.setLoginState(true, result.userId);
+        setUser(newUser as User);
+        
+        logger.info('New user, navigating to onboarding...');
+        router.replace('/(auth)/onboarding');
+      }
     } else if (result.error !== 'cancelled' && result.error !== '登入已取消') {
       Alert.alert(t('auth.login.loginFailed'), result.error ?? t('auth.login.tryAgain'));
     }

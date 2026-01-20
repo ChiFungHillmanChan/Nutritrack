@@ -62,7 +62,7 @@ export default function ProfileScreen() {
   }, []);
 
   // Handle sign out
-  const handleSignOut = useCallback(async () => {
+  const handleSignOut = useCallback(() => {
     Alert.alert(t('auth.logout.title'), t('auth.logout.confirm'), [
       { text: t('common.cancel'), style: 'cancel' },
       {

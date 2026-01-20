@@ -549,6 +549,7 @@ const zhTW = {
     recorded: '已記錄',
     recordedMessage: '{{food}} 已加入今日記錄',
     saveFailed: '儲存失敗',
+    openSettings: '開啟設定',
   },
 
   // Meal Types

@@ -549,6 +549,7 @@ const en = {
     recorded: 'Recorded',
     recordedMessage: '{{food}} has been added to today\'s record',
     saveFailed: 'Save Failed',
+    openSettings: 'Open Settings',
   },
 
   // Meal Types

@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Alert, ScrollView, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../constants/colors';
 import { SPACING } from '../../constants/typography';
@@ -35,10 +35,41 @@ export default function CameraScreen() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
 
+  const openAppSettings = useCallback(() => {
+    Linking.openSettings();
+  }, []);
+
+  const showPermissionDeniedAlert = useCallback(
+    (permissionType: 'camera' | 'gallery') => {
+      const message =
+        permissionType === 'camera'
+          ? t('camera.cameraPermission')
+          : t('camera.galleryPermission');
+
+      Alert.alert(t('camera.permissionRequired'), message, [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('camera.openSettings'),
+          onPress: openAppSettings,
+        },
+      ]);
+    },
+    [t, openAppSettings]
+  );
+
   const handleTakePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('camera.permissionRequired'), t('camera.cameraPermission'));
+      if (!canAskAgain) {
+        // User has permanently denied, must open settings
+        showPermissionDeniedAlert('camera');
+      } else {
+        // User denied but can ask again
+        Alert.alert(t('camera.permissionRequired'), t('camera.cameraPermission'));
+      }
       return;
     }
 
@@ -53,12 +84,18 @@ export default function CameraScreen() {
       setImageBase64(result.assets[0].base64 ?? null);
       setAnalysisResult(null);
     }
-  }, [t]);
+  }, [t, showPermissionDeniedAlert]);
 
   const handlePickImage = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('camera.permissionRequired'), t('camera.galleryPermission'));
+      if (!canAskAgain) {
+        // User has permanently denied, must open settings
+        showPermissionDeniedAlert('gallery');
+      } else {
+        // User denied but can ask again
+        Alert.alert(t('camera.permissionRequired'), t('camera.galleryPermission'));
+      }
       return;
     }
 
@@ -73,7 +110,7 @@ export default function CameraScreen() {
       setImageBase64(result.assets[0].base64 ?? null);
       setAnalysisResult(null);
     }
-  }, [t]);
+  }, [t, showPermissionDeniedAlert]);
 
   const handleAnalyze = useCallback(async () => {
     if (!imageBase64) return;

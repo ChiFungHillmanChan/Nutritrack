@@ -4,7 +4,18 @@
  * Modal for inputting habit values with numeric input or specialized selectors.
  */
 
-import { View, Text, TouchableOpacity, Modal, TextInput, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, GRADIENTS } from '../../constants/colors';
@@ -38,49 +49,13 @@ export function HabitInputModal({
 }: HabitInputModalProps) {
   const { t } = useTranslation();
 
-  const renderModalContent = () => {
-    if (selectedHabit?.type === 'mood') {
-      return <MoodSelector onSelect={onMoodSelect} />;
-    }
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
-    if (selectedHabit?.type === 'bowels') {
-      return <BristolSelector onSelect={onBowelSelect} />;
-    }
-
-    return (
-      <>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('habits.inputPlaceholder', {
-              habit: selectedHabit ? t(selectedHabit.labelKey) : '',
-            })}
-            placeholderTextColor={COLORS.textTertiary}
-            value={inputValue}
-            onChangeText={onInputChange}
-            keyboardType="numeric"
-            autoFocus
-            accessibilityLabel={t('habits.inputPlaceholder', {
-              habit: selectedHabit ? t(selectedHabit.labelKey) : '',
-            })}
-            accessibilityHint={t('accessibility.enterNumericValue')}
-          />
-          {selectedHabit?.unitKey && (
-            <Text style={styles.inputUnit}>{t(selectedHabit.unitKey)}</Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={onSubmit}
-          accessibilityLabel={t('habits.record')}
-          accessibilityRole="button"
-        >
-          <LinearGradient colors={GRADIENTS.primary} style={styles.submitGradient}>
-            <Text style={styles.submitText}>{t('habits.record')}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </>
-    );
+  const handleSubmitWithKeyboardDismiss = () => {
+    Keyboard.dismiss();
+    onSubmit();
   };
 
   return (
@@ -90,24 +65,74 @@ export function HabitInputModal({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {t('habits.record')} {selectedHabit ? t(selectedHabit.labelKey) : ''}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              accessibilityLabel={t('common.close')}
-              accessibilityRole="button"
-            >
-              <Ionicons name="close" size={24} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {t('habits.record')} {selectedHabit ? t(selectedHabit.labelKey) : ''}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    dismissKeyboard();
+                    onClose();
+                  }}
+                  accessibilityLabel={t('common.close')}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
 
-          {renderModalContent()}
-        </View>
-      </View>
+              {selectedHabit?.type === 'mood' ? (
+                <MoodSelector onSelect={onMoodSelect} />
+              ) : selectedHabit?.type === 'bowels' ? (
+                <BristolSelector onSelect={onBowelSelect} />
+              ) : (
+                <>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder={t('habits.inputPlaceholder', {
+                        habit: selectedHabit ? t(selectedHabit.labelKey) : '',
+                      })}
+                      placeholderTextColor={COLORS.textTertiary}
+                      value={inputValue}
+                      onChangeText={onInputChange}
+                      keyboardType="numeric"
+                      autoFocus
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmitWithKeyboardDismiss}
+                      blurOnSubmit={false}
+                      accessibilityLabel={t('habits.inputPlaceholder', {
+                        habit: selectedHabit ? t(selectedHabit.labelKey) : '',
+                      })}
+                      accessibilityHint={t('accessibility.enterNumericValue')}
+                    />
+                    {selectedHabit?.unitKey && (
+                      <Text style={styles.inputUnit}>{t(selectedHabit.unitKey)}</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={handleSubmitWithKeyboardDismiss}
+                    accessibilityLabel={t('habits.record')}
+                    accessibilityRole="button"
+                  >
+                    <LinearGradient colors={GRADIENTS.primary} style={styles.submitGradient}>
+                      <Text style={styles.submitText}>{t('habits.record')}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
