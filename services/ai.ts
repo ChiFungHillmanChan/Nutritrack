@@ -338,7 +338,43 @@ ${context ? formatContext(context) : ''}`;
 }
 
 /**
+ * JSON Schema for food analysis response
+ * Used by Gemini API structured output to ensure consistent JSON responses
+ */
+const FOOD_ANALYSIS_SCHEMA = {
+  type: 'object',
+  properties: {
+    food_name: {
+      type: 'string',
+      description: 'Name of the food in Traditional Chinese',
+    },
+    portion_size_grams: {
+      type: 'number',
+      description: 'Estimated portion size in grams',
+    },
+    nutrition: {
+      type: 'object',
+      properties: {
+        calories: { type: 'number', description: 'Calories in kcal' },
+        protein: { type: 'number', description: 'Protein in grams' },
+        carbs: { type: 'number', description: 'Carbohydrates in grams' },
+        fat: { type: 'number', description: 'Fat in grams' },
+        fiber: { type: 'number', description: 'Fiber in grams' },
+        sodium: { type: 'number', description: 'Sodium in mg' },
+      },
+      required: ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'],
+    },
+    confidence: {
+      type: 'number',
+      description: 'Confidence score between 0 and 1',
+    },
+  },
+  required: ['food_name', 'portion_size_grams', 'nutrition', 'confidence'],
+};
+
+/**
  * Call Gemini Vision API directly for food analysis
+ * Uses structured output (responseMimeType: application/json) for reliable JSON responses
  */
 async function callGeminiVision(
   imageBase64: string,
@@ -351,31 +387,10 @@ async function callGeminiVision(
 
 1. 食物名稱（用繁體中文）
 2. 估計份量（克）
-3. 營養資料：
-   - 卡路里 (kcal)
-   - 蛋白質 (g)
-   - 碳水化合物 (g)
-   - 脂肪 (g)
-   - 纖維 (g)
-   - 鈉 (mg)
+3. 營養資料：卡路里 (kcal)、蛋白質 (g)、碳水化合物 (g)、脂肪 (g)、纖維 (g)、鈉 (mg)
 4. 你對識別結果嘅信心度 (0-1)
 
-${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
-
-用以下 JSON 格式回覆（唔好加任何其他文字）：
-{
-  "food_name": "食物名稱",
-  "portion_size_grams": 數字,
-  "nutrition": {
-    "calories": 數字,
-    "protein": 數字,
-    "carbs": 數字,
-    "fat": 數字,
-    "fiber": 數字,
-    "sodium": 數字
-  },
-  "confidence": 0到1之間嘅數字
-}`;
+${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
 
   try {
     const response = await fetch(
@@ -400,6 +415,8 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 1024,
+            responseMimeType: 'application/json',
+            responseSchema: FOOD_ANALYSIS_SCHEMA,
           },
         }),
       }
@@ -424,17 +441,8 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}
       };
     }
 
-    // Parse JSON from response
-    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      logger.error('Invalid JSON response:', textContent);
-      return {
-        success: false,
-        error: '無法解析 AI 回應',
-      };
-    }
-
-    const analysisData = JSON.parse(jsonMatch[0]);
+    // With responseMimeType: application/json, the response is guaranteed to be valid JSON
+    const analysisData = JSON.parse(textContent);
 
     return {
       success: true,
