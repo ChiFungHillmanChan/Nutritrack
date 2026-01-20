@@ -416,7 +416,7 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
             temperature: 0.1,
             maxOutputTokens: 1024,
             responseMimeType: 'application/json',
-            responseSchema: FOOD_ANALYSIS_SCHEMA,
+            responseJsonSchema: FOOD_ANALYSIS_SCHEMA,
           },
         }),
       }
@@ -441,16 +441,34 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
       };
     }
 
-    // With responseMimeType: application/json, the response is guaranteed to be valid JSON
-    const analysisData = JSON.parse(textContent);
+    // Parse JSON response - add error handling for edge cases
+    let analysisData;
+    try {
+      analysisData = JSON.parse(textContent);
+    } catch (parseError) {
+      logger.error('Failed to parse Gemini response as JSON:', textContent);
+      return {
+        success: false,
+        error: '無法解析 AI 回應',
+      };
+    }
+
+    // Validate required fields exist
+    if (!analysisData.food_name || !analysisData.nutrition) {
+      logger.error('Gemini response missing required fields:', analysisData);
+      return {
+        success: false,
+        error: 'AI 回應缺少必要資料',
+      };
+    }
 
     return {
       success: true,
       data: {
         food_name: analysisData.food_name,
-        portion_size_grams: analysisData.portion_size_grams,
+        portion_size_grams: analysisData.portion_size_grams ?? 100,
         nutrition: analysisData.nutrition,
-        confidence: analysisData.confidence,
+        confidence: analysisData.confidence ?? 0.5,
       },
     };
   } catch (error) {
