@@ -16,6 +16,7 @@ export type {
   Supplement,
   User,
   DailyTargets,
+  WeightUnit,
 } from './user';
 
 // Food and nutrition types

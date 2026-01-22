@@ -77,7 +77,8 @@ export function MetricsStep({
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
+        {/* Activity Level - Hidden for now per design spec */}
+        {/* <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>{t('onboarding.metrics.activityLevel')}</Text>
           <View style={styles.activityList}>
             {activityLevels.map((item) => (
@@ -109,7 +110,7 @@ export function MetricsStep({
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View> */}
       </Card>
     </Animated.View>
   );

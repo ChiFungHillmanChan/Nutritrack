@@ -20,6 +20,7 @@ export interface HabitConfig {
   unitKey?: string;
   quickAdd?: number[];
   maxValue?: number;
+  explanationKey?: string;
 }
 
 interface HabitCardProps {

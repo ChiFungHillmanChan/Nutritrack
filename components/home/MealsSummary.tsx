@@ -1,7 +1,8 @@
 /**
  * MealsSummary Component
  *
- * Displays today's meals count and nutrition summary.
+ * Displays today's meals with nutrition summary and individual food entries.
+ * Supports edit and delete actions for each entry.
  */
 
 import { StyleSheet, Text, View } from 'react-native';
@@ -10,14 +11,22 @@ import { Card } from '../../components/ui';
 import { COLORS } from '../../constants/colors';
 import { RADIUS, SPACING, TYPOGRAPHY } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
+import { FoodLogItem } from './FoodLogItem';
 import type { FoodLog, NutritionData } from '../../types';
 
 interface MealsSummaryProps {
   todayLogs: FoodLog[];
   todayNutrition: NutritionData;
+  onEditLog?: (log: FoodLog) => void;
+  onDeleteLog?: (logId: string) => void;
 }
 
-export function MealsSummary({ todayLogs, todayNutrition }: MealsSummaryProps) {
+export function MealsSummary({
+  todayLogs,
+  todayNutrition,
+  onEditLog,
+  onDeleteLog,
+}: MealsSummaryProps) {
   const { t } = useTranslation();
 
   if (todayLogs.length === 0) {
@@ -35,6 +44,7 @@ export function MealsSummary({ todayLogs, todayNutrition }: MealsSummaryProps) {
           <Text style={styles.mealsCount}>{todayLogs.length} {t('common.items')}</Text>
         </View>
 
+        {/* Nutrition Summary */}
         <View style={styles.mealsSummary}>
           <View style={styles.mealSummaryItem}>
             <Text style={styles.mealSummaryValue}>
@@ -56,6 +66,18 @@ export function MealsSummary({ todayLogs, todayNutrition }: MealsSummaryProps) {
             </Text>
             <Text style={styles.mealSummaryLabel}>{t('onboarding.nutrients.carbs')}</Text>
           </View>
+        </View>
+
+        {/* Individual Food Entries */}
+        <View style={styles.foodLogsList}>
+          {todayLogs.map((log) => (
+            <FoodLogItem
+              key={log.id}
+              log={log}
+              onEdit={onEditLog}
+              onDelete={onDeleteLog}
+            />
+          ))}
         </View>
       </Card>
     </Animated.View>
@@ -118,5 +140,8 @@ const styles = StyleSheet.create({
     width: 1,
     height: 30,
     backgroundColor: COLORS.border,
+  },
+  foodLogsList: {
+    marginTop: SPACING.md,
   },
 });

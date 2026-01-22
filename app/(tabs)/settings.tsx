@@ -82,6 +82,11 @@ export default function ProfileScreen() {
     router.push('/timeline' as never);
   }, []);
 
+  // Handle goals edit navigation
+  const handleGoalsEdit = useCallback(() => {
+    router.push('/goals-edit' as never);
+  }, []);
+
   // Handle clear data
   const handleClearData = useCallback(() => {
     if (user?.id) {
@@ -119,7 +124,11 @@ export default function ProfileScreen() {
 
       {/* My Goals */}
       <Animated.View entering={FadeInDown.delay(200).springify()}>
-        <GoalsCard goals={user?.health_goals || []} style={styles.goalsCard} />
+        <GoalsCard
+          goals={user?.health_goals || []}
+          onEditPress={handleGoalsEdit}
+          style={styles.goalsCard}
+        />
       </Animated.View>
 
       {/* Timeline Entry Card */}

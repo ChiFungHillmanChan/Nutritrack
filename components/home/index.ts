@@ -10,3 +10,4 @@ export { IntakeCard } from './IntakeCard';
 export { MealsSummary } from './MealsSummary';
 export { QuickActions } from './QuickActions';
 export { RecordIntakeButton } from './RecordIntakeButton';
+export { FoodLogItem } from './FoodLogItem';

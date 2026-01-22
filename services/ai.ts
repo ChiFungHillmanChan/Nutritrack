@@ -23,7 +23,8 @@ const isProduction = !__DEV__ && Constants.expoConfig?.extra?.eas?.projectId;
 // Models - use centralized AI model constants
 const MODELS = {
   CHAT: getRecommendedModel('chat'),    // Use recommended model for chat
-  VISION: getRecommendedModel('food_analysis'), // Use recommended model for vision/food analysis
+  // Using gemini-3-flash-preview as gemini-2.5-flash has issues with MAX_TOKENS truncation
+  VISION: 'gemini-3-flash-preview',
 };
 
 // Types
@@ -383,14 +384,37 @@ async function callGeminiVision(
   // Sanitize meal context to prevent prompt injection
   const sanitizedMealContext = sanitizeMealType(mealContext);
 
-  const prompt = `你係一個專業嘅營養師助手。分析呢張食物相片，並提供以下資訊：
+  const prompt = `You are a professional nutritionist analyzing food images. Be OBJECTIVE and ACCURATE.
 
-1. 食物名稱（用繁體中文）
-2. 估計份量（克）
-3. 營養資料：卡路里 (kcal)、蛋白質 (g)、碳水化合物 (g)、脂肪 (g)、纖維 (g)、鈉 (mg)
-4. 你對識別結果嘅信心度 (0-1)
+ANALYSIS GUIDELINES:
+1. Identify ALL visible food items in the image
+2. Estimate portion sizes based on visual cues (plate size, utensils, common serving sizes)
+3. Use standard nutritional databases (USDA, etc.) for calorie/nutrient calculations
+4. If multiple items are visible, combine them into one analysis with a descriptive name
+5. Be conservative with estimates - don't overestimate portions
+6. Consider cooking methods visible (fried, steamed, grilled) for fat content
 
-${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
+RESPOND IN THIS EXACT JSON FORMAT:
+{
+  "food_name": "Food name in Traditional Chinese",
+  "portion_size_grams": estimated_weight_in_grams,
+  "nutrition": {
+    "calories": calories_in_kcal,
+    "protein": protein_in_grams,
+    "carbs": carbohydrates_in_grams,
+    "fat": fat_in_grams,
+    "fiber": fiber_in_grams,
+    "sodium": sodium_in_mg
+  },
+  "confidence": confidence_score_between_0_and_1
+}
+
+${sanitizedMealContext ? `Context: This is ${sanitizedMealContext}.` : ''}
+
+IMPORTANT:
+- Output ONLY valid JSON, no markdown, no explanations
+- Use realistic nutritional values based on standard food databases
+- Confidence should reflect how clearly you can identify the food (1.0 = very clear, 0.5 = uncertain)`;
 
   try {
     const response = await fetch(
@@ -414,9 +438,7 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
           ],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 1024,
-            responseMimeType: 'application/json',
-            responseJsonSchema: FOOD_ANALYSIS_SCHEMA,
+            maxOutputTokens: 8192,
           },
         }),
       }
@@ -441,10 +463,24 @@ ${sanitizedMealContext ? `用戶表示呢係${sanitizedMealContext}。` : ''}`;
       };
     }
 
+    // Extract JSON from response - handle markdown code blocks if present
+    let jsonString = textContent.trim();
+    
+    // Remove markdown code block wrapper if present
+    if (jsonString.startsWith('```json')) {
+      jsonString = jsonString.slice(7);
+    } else if (jsonString.startsWith('```')) {
+      jsonString = jsonString.slice(3);
+    }
+    if (jsonString.endsWith('```')) {
+      jsonString = jsonString.slice(0, -3);
+    }
+    jsonString = jsonString.trim();
+
     // Parse JSON response - add error handling for edge cases
     let analysisData;
     try {
-      analysisData = JSON.parse(textContent);
+      analysisData = JSON.parse(jsonString);
     } catch (parseError) {
       logger.error('Failed to parse Gemini response as JSON:', textContent);
       return {

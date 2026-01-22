@@ -64,6 +64,7 @@ export type HabitType =
   | 'bowels'
   | 'period_cycle'
   | 'five_a_day'
+  | 'exercise'
   | 'steps'
   | 'medication_taken'
   | 'supplement_taken'

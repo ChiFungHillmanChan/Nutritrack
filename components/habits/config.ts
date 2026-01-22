@@ -17,6 +17,7 @@ export const HABIT_CONFIGS: HabitConfig[] = [
     unitKey: 'units.ml',
     quickAdd: [250, 500],
     maxValue: 3000,
+    explanationKey: 'habits.fluids.explanation',
   },
   {
     type: 'sleep_duration',
@@ -34,13 +35,12 @@ export const HABIT_CONFIGS: HabitConfig[] = [
     maxValue: 5,
   },
   {
-    type: 'five_a_day',
-    labelKey: 'habits.types.fiveADay',
-    icon: 'nutrition',
+    type: 'exercise',
+    labelKey: 'habits.types.exercise',
+    icon: 'fitness',
     color: COLORS.fiber,
-    unitKey: 'units.servings',
-    quickAdd: [1],
-    maxValue: 5,
+    unitKey: 'units.minutes',
+    maxValue: 180,
   },
   {
     type: 'weight',
@@ -52,7 +52,7 @@ export const HABIT_CONFIGS: HabitConfig[] = [
   {
     type: 'bowels',
     labelKey: 'habits.types.bowels',
-    icon: 'fitness',
+    icon: 'barbell',
     color: COLORS.fat,
   },
 ];

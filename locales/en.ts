@@ -34,6 +34,7 @@ const en = {
     of: 'of',
     left: 'left',
     version: 'Version',
+    add: 'Add',
   },
 
   // Units
@@ -59,6 +60,7 @@ const en = {
     habits: 'Habits',
     profile: 'Profile',
     settings: 'Settings',
+    calendar: 'Calendar',
   },
 
   // Tab titles (for header)
@@ -68,6 +70,7 @@ const en = {
     habits: 'Habits',
     chat: 'AI Nutritionist',
     profile: 'My Profile',
+    calendar: 'Timeline',
   },
 
   // Nutrient labels
@@ -434,14 +437,16 @@ const en = {
     noRecords: 'No records today',
     tapToStart: 'Tap cards above to start tracking',
     record: 'Record',
+    optional: 'optional',
     types: {
-      hydration: 'Water',
+      hydration: 'Fluids',
       sleep: 'Sleep',
       mood: 'Mood',
       fiveADay: 'Fruits & Veg',
       weight: 'Weight',
       bowels: 'Bowel',
       periodCycle: 'Period Cycle',
+      exercise: 'Exercise',
     },
     habitRecord: 'Habit Record',
     mood: {
@@ -467,6 +472,56 @@ const en = {
       type7: 'Type 7',
       type7Desc: 'Watery',
     },
+    sleep: {
+      recordSleep: 'Record Sleep',
+      qualityTitle: 'Sleep Quality',
+      quality: {
+        poor: 'Poor',
+        okay: 'Okay',
+        great: 'Great',
+      },
+      times: 'Sleep & Wake Time',
+      sleepTime: 'Bedtime',
+      wakeTime: 'Wake up',
+      wokeDuring: 'Wake up during the night?',
+      cantRemember: "Can't remember",
+      energyTitle: 'Energy on waking',
+      energy: {
+        low: 'Low',
+        moderate: 'Moderate',
+        high: 'High',
+      },
+      dreamTitle: 'Any dreams?',
+      dreamPlaceholder: 'Describe your dream (optional)',
+    },
+    fluids: {
+      title: 'Fluids',
+      explanation: 'Includes all drinks: water, coffee, tea, juice, etc.',
+      quickAdd: 'Quick add',
+      custom: 'Custom',
+    },
+    exercise: {
+      title: 'Record Exercise',
+      type: 'Exercise Type',
+      duration: 'Duration',
+      durationMinutes: 'Duration (minutes)',
+    },
+    weight: {
+      lastRecord: 'Last record',
+      change: 'Change',
+      unitPreference: 'Unit',
+    },
+    moodCategories: {
+      selectCategory: 'How are you feeling?',
+      positive: 'Positive',
+      neutral: 'Neutral',
+      low: 'Low',
+      stressed: 'Stressed',
+      angry: 'Angry',
+      tired: 'Tired',
+      reflective: 'Reflective',
+      mixed: 'Mixed',
+    },
     inputPlaceholder: 'Enter {{habit}} value',
     invalidNumber: 'Please enter a valid number',
     notSupported: 'This habit type is not yet supported',
@@ -482,7 +537,7 @@ const en = {
       totalRecords: '{{count}} records total',
     },
     supportInfo: 'Support & Info',
-    privacyPolicy: 'Privacy Policy',
+    termsAndConditions: 'Terms and Conditions',
     about: 'About Nutritrack',
     faq: 'FAQ',
     faqComingSoon: 'This feature is coming soon',
@@ -550,6 +605,23 @@ const en = {
     recordedMessage: '{{food}} has been added to today\'s record',
     saveFailed: 'Save Failed',
     openSettings: 'Open Settings',
+    // Confidence levels
+    confidenceHigh: 'High confidence',
+    confidenceMedium: 'Medium confidence',
+    confidenceLow: 'Low confidence',
+    // Ingredients
+    detectedIngredients: 'Detected ingredients',
+    extraIngredients: 'Extra Ingredients',
+    extraIngredientsHint: 'Add any ingredients not detected by AI',
+    addIngredient: 'Add Ingredient',
+    ingredientName: 'Ingredient name',
+    // Size options
+    size: {
+      label: 'Portion Size',
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large',
+    },
   },
 
   // Meal Types
@@ -615,6 +687,18 @@ const en = {
     reduce_smoking: 'Reduce Smoking',
     achieve_10k_steps: '10K Steps Daily',
     improve_mental_health: 'Mental Wellness',
+    symptoms_improvement: 'Symptom Improvement',
+    body_aesthetics: 'Body Aesthetics',
+  },
+
+  // Goals Edit Screen
+  goalsEdit: {
+    title: 'Edit Goals',
+    weightGoals: 'Weight Goals',
+    otherGoals: 'Other Goals',
+    notesTitle: 'Goal Notes',
+    notesPlaceholder: 'Add any personal notes about your goals...',
+    selectMultiple: 'Select all that apply',
   },
 
   // Tools
@@ -974,6 +1058,61 @@ const en = {
     viewTimeline: 'View your timeline of all entries',
   },
 
+  // RNI (Recommended Nutrient Intake)
+  rni: {
+    title: 'Nutrition Breakdown',
+    subtitle: "Today's intake vs recommended",
+    intake: 'Intake',
+    recommended: 'RNI',
+    categoryMacros: 'Main Nutrients',
+    categoryFats: 'Fats',
+    categoryCarbs: 'Carbohydrates',
+    categoryMicros: 'Vitamins & Minerals',
+    calories: 'Calories',
+    protein: 'Protein',
+    saturatedFat: 'Saturated Fat',
+    unsaturatedFat: 'Unsaturated Fat',
+    omega3: 'Omega-3',
+    omega6: 'Omega-6',
+    transFat: 'Trans Fat',
+    cholesterol: 'Cholesterol',
+    totalCarbs: 'Total Carbs',
+    dietaryFiber: 'Dietary Fiber',
+    totalSugars: 'Total Sugars',
+    addedSugars: 'Added Sugars',
+    sodium: 'Sodium',
+    vitaminA: 'Vitamin A',
+    vitaminB1: 'Vitamin B1',
+    vitaminB2: 'Vitamin B2',
+    vitaminB3: 'Vitamin B3',
+    vitaminB6: 'Vitamin B6',
+    vitaminB12: 'Vitamin B12',
+    vitaminC: 'Vitamin C',
+    vitaminD: 'Vitamin D',
+    vitaminE: 'Vitamin E',
+    vitaminK: 'Vitamin K',
+    calcium: 'Calcium',
+    iron: 'Iron',
+    potassium: 'Potassium',
+    water: 'Water',
+    avoid: 'Avoid',
+  },
+
+  // Exercise types
+  exercises: {
+    walking: 'Walking',
+    running: 'Running',
+    cycling: 'Cycling',
+    swimming: 'Swimming',
+    strength: 'Strength',
+    yoga: 'Yoga',
+    hiit: 'HIIT',
+    dancing: 'Dancing',
+    hiking: 'Hiking',
+    stretching: 'Stretching',
+    other: 'Other',
+  },
+
   // Errors
   errors: {
     generic: 'Something went wrong',
@@ -983,9 +1122,9 @@ const en = {
     serverError: 'Server error. Please try again later.',
   },
 
-  // Privacy Policy
+  // Privacy Policy / Terms and Conditions
   privacyPolicy: {
-    title: 'Privacy Policy',
+    title: 'Terms and Conditions',
     lastUpdated: 'Last Updated: January 2024',
     intro: 'Nutritrack ("we") is committed to protecting your privacy. This privacy policy explains how we collect, use, and protect your personal data.',
     section1Title: '1. Data Collection',

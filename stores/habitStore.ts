@@ -75,6 +75,7 @@ const DEFAULT_STREAKS: Record<HabitType, HabitStreak> = {
   supplement_taken: { habitType: 'supplement_taken', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   alcohol: { habitType: 'alcohol', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   smoking: { habitType: 'smoking', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
+  exercise: { habitType: 'exercise', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
   custom: { habitType: 'custom', currentStreak: 0, longestStreak: 0, lastLoggedDate: null },
 };
 

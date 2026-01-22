@@ -40,7 +40,7 @@ export function SupportInfoSection() {
         icon="document-text"
         iconBackgroundColor={COLORS.fiberBg}
         iconColor={COLORS.fiber}
-        label={t('settings.privacyPolicy')}
+        label={t('settings.termsAndConditions')}
         onPress={handlePrivacyPolicy}
       />
 

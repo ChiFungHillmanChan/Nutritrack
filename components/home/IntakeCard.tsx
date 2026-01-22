@@ -5,7 +5,9 @@
  * and horizontal nutrient progress bars.
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   Card,
@@ -13,7 +15,7 @@ import {
   NutrientProgressBars,
 } from '../../components/ui';
 import { COLORS } from '../../constants/colors';
-import { SPACING, TYPOGRAPHY } from '../../constants/typography';
+import { SPACING, TYPOGRAPHY, RADIUS } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { DailyTargets, NutritionData } from '../../types';
 
@@ -31,6 +33,10 @@ export function IntakeCard({
   todayHydration,
 }: IntakeCardProps) {
   const { t } = useTranslation();
+
+  const handleBreakdownPress = () => {
+    router.push('/nutrition-breakdown' as never);
+  };
 
   return (
     <Animated.View entering={FadeInDown.delay(200).springify()}>
@@ -82,6 +88,17 @@ export function IntakeCard({
             />
           </View>
         </View>
+
+        {/* Nutrition Breakdown Button */}
+        <TouchableOpacity
+          style={styles.breakdownButton}
+          onPress={handleBreakdownPress}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="analytics-outline" size={18} color={COLORS.primary} />
+          <Text style={styles.breakdownButtonText}>{t('rni.title')}</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textTertiary} />
+        </TouchableOpacity>
       </Card>
     </Animated.View>
   );
@@ -123,5 +140,20 @@ const styles = StyleSheet.create({
   nutrientBarsContainer: {
     flex: 1,
     marginLeft: SPACING.lg,
+  },
+  breakdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    gap: SPACING.xs,
+  },
+  breakdownButtonText: {
+    ...TYPOGRAPHY.labelMedium,
+    color: COLORS.primary,
+    flex: 1,
   },
 });

@@ -58,6 +58,9 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
     );
   }, [user?.medical_conditions]);
 
+  // Filtered menu items per design spec:
+  // Keep: About us, Portion guide, Nutrition facts, Medication, Affirmation, Mini games, Contact us
+  // Hidden: Carb-counting, Lifestyle tips, Exercise guide, Meditation, Other services, Book consultation
   const menuItems: MenuItem[] = [
     {
       id: 'about',
@@ -66,29 +69,10 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
       route: '/about',
     },
     {
-      id: 'carb-counting',
-      labelKey: 'menu.carbCounting',
-      icon: 'calculator',
-      route: '/tools/carb-counting',
-    },
-    {
-      id: 'medications',
-      labelKey: 'menu.myMedications',
-      icon: 'medkit',
-      route: '/tools/medications',
-      showIf: hasMedicalConditions,
-    },
-    {
       id: 'portion-guide',
       labelKey: 'menu.portionGuide',
       icon: 'resize',
       route: '/tools/portion-guide',
-    },
-    {
-      id: 'lifestyle-tips',
-      labelKey: 'menu.lifestyleTips',
-      icon: 'bulb',
-      route: '/tools/lifestyle-tips',
     },
     {
       id: 'nutrition-facts',
@@ -97,16 +81,11 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
       route: '/tools/nutrition-facts',
     },
     {
-      id: 'exercise-guide',
-      labelKey: 'menu.exerciseGuide',
-      icon: 'fitness',
-      route: '/tools/exercise-guide',
-    },
-    {
-      id: 'meditation',
-      labelKey: 'menu.meditation',
-      icon: 'leaf',
-      route: '/wellness/meditation',
+      id: 'medications',
+      labelKey: 'menu.myMedications',
+      icon: 'medkit',
+      route: '/tools/medications',
+      showIf: hasMedicalConditions,
     },
     {
       id: 'affirmation',
@@ -119,18 +98,6 @@ export function HamburgerMenu({ visible, onClose }: HamburgerMenuProps) {
       labelKey: 'menu.miniGames',
       icon: 'game-controller',
       route: '/tools/games',
-    },
-    {
-      id: 'other-services',
-      labelKey: 'menu.otherServices',
-      icon: 'apps',
-      route: '/services',
-    },
-    {
-      id: 'consultation',
-      labelKey: 'menu.bookConsultation',
-      icon: 'calendar',
-      route: '/consultation',
     },
     {
       id: 'contact',

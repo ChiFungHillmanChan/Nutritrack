@@ -34,6 +34,7 @@ const zhTW = {
     of: '/',
     left: '剩餘',
     version: '版本',
+    add: '新增',
   },
 
   // Units
@@ -59,6 +60,7 @@ const zhTW = {
     habits: '習慣',
     profile: '個人資料',
     settings: '設定',
+    calendar: '日曆',
   },
 
   // Tab titles (for header)
@@ -68,6 +70,7 @@ const zhTW = {
     habits: '習慣',
     chat: 'AI 營養師',
     profile: '我的檔案',
+    calendar: '時間軸',
   },
 
   // Nutrient labels
@@ -434,14 +437,16 @@ const zhTW = {
     noRecords: '今日未有記錄',
     tapToStart: '點撃上面的卡片開始記錄',
     record: '記錄',
+    optional: '選填',
     types: {
-      hydration: '飲水',
+      hydration: '水份',
       sleep: '睡眠',
       mood: '心情',
       fiveADay: '蔬果',
       weight: '體重',
       bowels: '排便',
       periodCycle: '生理週期',
+      exercise: '運動',
     },
     habitRecord: '習慣記錄',
     mood: {
@@ -467,6 +472,56 @@ const zhTW = {
       type7: '第七型',
       type7Desc: '水狀',
     },
+    sleep: {
+      recordSleep: '記錄睡眠',
+      qualityTitle: '睡眠質素',
+      quality: {
+        poor: '差',
+        okay: '普通',
+        great: '好',
+      },
+      times: '入睡及起床時間',
+      sleepTime: '入睡時間',
+      wakeTime: '起床時間',
+      wokeDuring: '半夜有冇醒過？',
+      cantRemember: '唔記得',
+      energyTitle: '起床精神狀態',
+      energy: {
+        low: '冇精神',
+        moderate: '普通',
+        high: '精神',
+      },
+      dreamTitle: '有冇發夢？',
+      dreamPlaceholder: '形容一下你嘅夢 (選填)',
+    },
+    fluids: {
+      title: '水份',
+      explanation: '包括所有飲品：水、咖啡、茶、果汁等',
+      quickAdd: '快捷加入',
+      custom: '自訂',
+    },
+    exercise: {
+      title: '記錄運動',
+      type: '運動類型',
+      duration: '時長',
+      durationMinutes: '時長 (分鐘)',
+    },
+    weight: {
+      lastRecord: '上次記錄',
+      change: '變化',
+      unitPreference: '單位',
+    },
+    moodCategories: {
+      selectCategory: '你今日感覺點？',
+      positive: '正面',
+      neutral: '普通',
+      low: '低落',
+      stressed: '壓力',
+      angry: '憤怒',
+      tired: '疲倦',
+      reflective: '反思',
+      mixed: '複雜',
+    },
     inputPlaceholder: '輸入{{habit}}數值',
     invalidNumber: '請輸入有效數字',
     notSupported: '呢個習慣類型暫未支援',
@@ -482,7 +537,7 @@ const zhTW = {
       totalRecords: '共 {{count}} 筆記錄',
     },
     supportInfo: '支援及資訊',
-    privacyPolicy: '私隱政策',
+    termsAndConditions: '條款及細則',
     about: '關於 Nutritrack',
     faq: '常見問題',
     faqComingSoon: '此功能即將推出',
@@ -550,6 +605,23 @@ const zhTW = {
     recordedMessage: '{{food}} 已加入今日記錄',
     saveFailed: '儲存失敗',
     openSettings: '開啟設定',
+    // Confidence levels
+    confidenceHigh: '高信心度',
+    confidenceMedium: '中等信心度',
+    confidenceLow: '低信心度',
+    // Ingredients
+    detectedIngredients: '識別到嘅食材',
+    extraIngredients: '額外食材',
+    extraIngredientsHint: '加入 AI 未識別到嘅食材',
+    addIngredient: '新增食材',
+    ingredientName: '食材名稱',
+    // Size options
+    size: {
+      label: '份量大細',
+      small: '細',
+      medium: '中',
+      large: '大',
+    },
   },
 
   // Meal Types
@@ -615,6 +687,18 @@ const zhTW = {
     reduce_smoking: '減少吸煙',
     achieve_10k_steps: '每日萬步',
     improve_mental_health: '改善心理健康',
+    symptoms_improvement: '改善症狀',
+    body_aesthetics: '體態塑形',
+  },
+
+  // Goals Edit Screen
+  goalsEdit: {
+    title: '編輯目標',
+    weightGoals: '體重相關目標',
+    otherGoals: '其他健康目標',
+    notesTitle: '目標備註',
+    notesPlaceholder: '加入任何關於目標嘅個人備註...',
+    selectMultiple: '可多選',
   },
 
   // Tools
@@ -974,6 +1058,61 @@ const zhTW = {
     viewTimeline: '查看所有記錄的時間線',
   },
 
+  // RNI (Recommended Nutrient Intake)
+  rni: {
+    title: '營養分析',
+    subtitle: '今日攝取與建議量對比',
+    intake: '攝取',
+    recommended: '建議量',
+    categoryMacros: '主要營養素',
+    categoryFats: '脂肪',
+    categoryCarbs: '碳水化合物',
+    categoryMicros: '維他命與礦物質',
+    calories: '熱量',
+    protein: '蛋白質',
+    saturatedFat: '飽和脂肪',
+    unsaturatedFat: '不飽和脂肪',
+    omega3: 'Omega-3',
+    omega6: 'Omega-6',
+    transFat: '反式脂肪',
+    cholesterol: '膽固醇',
+    totalCarbs: '總碳水',
+    dietaryFiber: '膳食纖維',
+    totalSugars: '總糖',
+    addedSugars: '添加糖',
+    sodium: '鈉',
+    vitaminA: '維他命 A',
+    vitaminB1: '維他命 B1',
+    vitaminB2: '維他命 B2',
+    vitaminB3: '維他命 B3',
+    vitaminB6: '維他命 B6',
+    vitaminB12: '維他命 B12',
+    vitaminC: '維他命 C',
+    vitaminD: '維他命 D',
+    vitaminE: '維他命 E',
+    vitaminK: '維他命 K',
+    calcium: '鈣',
+    iron: '鐵',
+    potassium: '鉀',
+    water: '水份',
+    avoid: '應避免',
+  },
+
+  // Exercise types
+  exercises: {
+    walking: '步行',
+    running: '跑步',
+    cycling: '單車',
+    swimming: '游泳',
+    strength: '力量訓練',
+    yoga: '瑜伽',
+    hiit: 'HIIT',
+    dancing: '跳舞',
+    hiking: '行山',
+    stretching: '拉伸',
+    other: '其他',
+  },
+
   // Errors
   errors: {
     generic: '發生錯誤',
@@ -983,9 +1122,9 @@ const zhTW = {
     serverError: '伺服器錯誤。請稍後再試。',
   },
 
-  // Privacy Policy
+  // Privacy Policy / Terms and Conditions
   privacyPolicy: {
-    title: '私隱政策',
+    title: '條款及細則',
     lastUpdated: '最後更新: 2024年1月',
     intro: 'Nutritrack（「我們」）致力於保護你的私隱。本私隱政策說明我們如何收集、使用和保護你的個人資料。',
     section1Title: '1. 資料收集',

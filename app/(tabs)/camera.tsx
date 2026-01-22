@@ -21,6 +21,7 @@ import {
   MealTypeSelector,
   AnalyzeButton,
   AnalysisResult,
+  ExtraIngredient,
 } from '../../components/camera';
 import { MEAL_TYPES, AnalysisResultData } from '../../components/camera/types';
 
@@ -34,6 +35,7 @@ export default function CameraScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
+  const [extraIngredients, setExtraIngredients] = useState<ExtraIngredient[]>([]);
 
   const openAppSettings = useCallback(() => {
     Linking.openSettings();
@@ -143,10 +145,17 @@ export default function CameraScreen() {
   const handleSave = useCallback(async () => {
     if (!user?.id || !analysisResult) return;
 
+    // Build food name with extra ingredients if any
+    let foodName = analysisResult.food_name;
+    if (extraIngredients.length > 0) {
+      const extraNames = extraIngredients.map((ing) => ing.name).join(', ');
+      foodName = `${foodName} + ${extraNames}`;
+    }
+
     const isSuccessful = await addFoodLog({
       user_id: user.id,
       meal_type: selectedMealType,
-      food_name: analysisResult.food_name,
+      food_name: foodName,
       portion_size: analysisResult.portion_size_grams,
       nutrition_data: analysisResult.nutrition,
       image_url: imageUri ?? undefined,
@@ -157,20 +166,30 @@ export default function CameraScreen() {
     if (isSuccessful) {
       Alert.alert(
         t('camera.recorded'),
-        t('camera.recordedMessage', { food: analysisResult.food_name })
+        t('camera.recordedMessage', { food: foodName })
       );
       setImageUri(null);
       setImageBase64(null);
       setAnalysisResult(null);
+      setExtraIngredients([]);
     } else {
       Alert.alert(t('camera.saveFailed'), t('camera.tryAgain'));
     }
-  }, [user?.id, analysisResult, selectedMealType, imageUri, addFoodLog, t]);
+  }, [user?.id, analysisResult, selectedMealType, imageUri, extraIngredients, addFoodLog, t]);
 
   const handleReset = useCallback(() => {
     setImageUri(null);
     setImageBase64(null);
     setAnalysisResult(null);
+    setExtraIngredients([]);
+  }, []);
+
+  const handleAddIngredient = useCallback((ingredient: ExtraIngredient) => {
+    setExtraIngredients((prev) => [...prev, ingredient]);
+  }, []);
+
+  const handleRemoveIngredient = useCallback((id: string) => {
+    setExtraIngredients((prev) => prev.filter((ing) => ing.id !== id));
   }, []);
 
   return (
@@ -204,7 +223,15 @@ export default function CameraScreen() {
       )}
 
       {/* Analysis Result */}
-      {analysisResult && <AnalysisResult result={analysisResult} onSave={handleSave} />}
+      {analysisResult && (
+        <AnalysisResult
+          result={analysisResult}
+          extraIngredients={extraIngredients}
+          onAddIngredient={handleAddIngredient}
+          onRemoveIngredient={handleRemoveIngredient}
+          onSave={handleSave}
+        />
+      )}
 
       <View style={styles.bottomSpacer} />
     </ScrollView>

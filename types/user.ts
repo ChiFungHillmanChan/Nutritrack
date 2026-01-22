@@ -12,7 +12,10 @@ export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 
-// Expanded health goals (13 options as per spec)
+// Weight unit preference
+export type WeightUnit = 'kg' | 'stone' | 'pounds';
+
+// Expanded health goals (15 options as per spec)
 export type HealthGoal =
   | 'healthy_balanced_eating'
   | 'weight_loss'
@@ -27,7 +30,9 @@ export type HealthGoal =
   | 'reduce_alcohol'
   | 'reduce_smoking'
   | 'achieve_10k_steps'
-  | 'improve_mental_health';
+  | 'improve_mental_health'
+  | 'symptoms_improvement'
+  | 'body_aesthetics';
 
 // Legacy goal type for backward compatibility
 export type UserGoal = 'lose_weight' | 'gain_weight' | 'maintain' | 'build_muscle';
@@ -105,6 +110,7 @@ export interface User {
   date_of_birth?: string;
   height_cm: number;
   weight_kg: number;
+  weight_unit?: WeightUnit; // User's preferred weight display unit
   activity_level?: ActivityLevel;
   goal: UserGoal;
   health_goals: HealthGoal[];
@@ -117,6 +123,7 @@ export interface User {
   daily_targets: DailyTargets;
   notification_settings?: NotificationSettings;
   social_metadata?: SocialMetadata;
+  goal_notes?: string; // Custom notes for user goals
   created_at: string;
   updated_at: string;
 }

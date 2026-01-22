@@ -139,6 +139,18 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="calendar"
+          options={{
+            title: t('nav.calendar'),
+            tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('nav.calendar'),
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="calendar" color={color} focused={focused} />
+            ),
+            headerTitle: t('tabs.calendar'),
+          }}
+        />
+        <Tabs.Screen
           name="chat"
           options={{
             title: t('nav.chat'),
@@ -148,6 +160,8 @@ export default function TabLayout() {
               <TabBarIcon name="chatbubbles" color={color} focused={focused} />
             ),
             headerTitle: t('tabs.chat'),
+            // Hide chat from tab bar
+            href: null,
           }}
         />
         <Tabs.Screen

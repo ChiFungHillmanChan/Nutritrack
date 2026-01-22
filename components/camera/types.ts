@@ -27,6 +27,21 @@ export const MEAL_TYPES: MealTypeConfig[] = [
 ];
 
 /**
+ * Size option for extra ingredients
+ */
+export type IngredientSize = 'small' | 'medium' | 'large';
+
+/**
+ * Extra ingredient added by user
+ */
+export interface ExtraIngredient {
+  id: string;
+  name: string;
+  grams: number;
+  size?: IngredientSize;
+}
+
+/**
  * Analysis result data structure
  */
 export interface AnalysisResultData {
@@ -34,4 +49,6 @@ export interface AnalysisResultData {
   portion_size_grams: number;
   nutrition: NutritionData;
   confidence: number;
+  ingredients?: string[]; // AI-detected ingredients
+  extraIngredients?: ExtraIngredient[]; // User-added ingredients
 }
