@@ -40,7 +40,8 @@ export default function ProfileEditScreen() {
   const [heightCm, setHeightCm] = useState(user?.height_cm?.toString() ?? '');
   const [weightKg, setWeightKg] = useState(user?.weight_kg?.toString() ?? '');
   const [goal, setGoal] = useState<UserGoal>(user?.goal ?? 'maintain');
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
+  // Activity level state - hidden per client request, kept for future use
+  const [activityLevel] = useState<ActivityLevel>(
     user?.activity_level ?? 'moderate'
   );
   const [gender, setGender] = useState<Gender>(user?.gender ?? 'prefer_not_to_say');
@@ -52,14 +53,6 @@ export default function ProfileEditScreen() {
     { value: 'maintain' as UserGoal, label: t('profileEdit.goals.maintain'), icon: 'remove' },
     { value: 'gain_weight' as UserGoal, label: t('profileEdit.goals.gainWeight'), icon: 'trending-up' },
     { value: 'build_muscle' as UserGoal, label: t('profileEdit.goals.buildMuscle'), icon: 'barbell' },
-  ], [t]);
-
-  const ACTIVITY_LEVELS = useMemo(() => [
-    { value: 'sedentary' as ActivityLevel, label: t('profileEdit.activity.sedentary'), desc: t('profileEdit.activity.sedentaryDesc') },
-    { value: 'light' as ActivityLevel, label: t('profileEdit.activity.light'), desc: t('profileEdit.activity.lightDesc') },
-    { value: 'moderate' as ActivityLevel, label: t('profileEdit.activity.moderate'), desc: t('profileEdit.activity.moderateDesc') },
-    { value: 'active' as ActivityLevel, label: t('profileEdit.activity.active'), desc: t('profileEdit.activity.activeDesc') },
-    { value: 'very_active' as ActivityLevel, label: t('profileEdit.activity.veryActive'), desc: t('profileEdit.activity.veryActiveDesc') },
   ], [t]);
 
   const GENDERS = useMemo(() => [
@@ -292,7 +285,8 @@ export default function ProfileEditScreen() {
             </View>
           </Card>
 
-          {/* Activity Level */}
+          {/* Activity Level - Hidden per client request */}
+          {/* TODO: Unhide when activity level feature is ready
           <Card style={styles.card}>
             <Text style={styles.sectionTitle}>{t('profileEdit.activityLevel')}</Text>
             {ACTIVITY_LEVELS.map((level) => (
@@ -325,6 +319,7 @@ export default function ProfileEditScreen() {
               </TouchableOpacity>
             ))}
           </Card>
+          */}
 
           <View style={styles.bottomSpacer} />
         </ScrollView>

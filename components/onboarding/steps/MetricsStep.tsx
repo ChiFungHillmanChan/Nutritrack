@@ -2,7 +2,7 @@
  * MetricsStep - Collects height, weight, and activity level
  */
 
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,10 +27,10 @@ export function MetricsStep({
   setHeight,
   weight,
   setWeight,
-  activityLevel,
-  setActivityLevel,
+  activityLevel: _activityLevel,
+  setActivityLevel: _setActivityLevel,
   t,
-  activityLevels,
+  activityLevels: _activityLevels,
 }: MetricsStepProps) {
   return (
     <Animated.View entering={FadeInDown.springify()}>

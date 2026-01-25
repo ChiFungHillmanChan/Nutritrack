@@ -15,7 +15,7 @@ import {
   NutrientProgressBars,
 } from '../../components/ui';
 import { COLORS } from '../../constants/colors';
-import { SPACING, TYPOGRAPHY, RADIUS } from '../../constants/typography';
+import { SPACING, TYPOGRAPHY } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { DailyTargets, NutritionData } from '../../types';
 

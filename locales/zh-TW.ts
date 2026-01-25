@@ -439,7 +439,7 @@ const zhTW = {
     record: '記錄',
     optional: '選填',
     types: {
-      hydration: '水份',
+      hydration: '液體攝取',
       sleep: '睡眠',
       mood: '心情',
       fiveADay: '蔬果',

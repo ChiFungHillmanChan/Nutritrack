@@ -40,29 +40,85 @@ export default function NutritionBreakdownScreen() {
   // Calculate today's totals from food logs
   const todayTotals = useMemo(() => {
     const totals: Record<string, number> = {
+      // Core macros
       calories: 0,
       protein: 0,
       totalCarbs: 0,
       dietaryFiber: 0,
+      sodium: 0,
+      // Fats
       saturatedFat: 0,
       unsaturatedFat: 0,
-      sodium: 0,
+      transFat: 0,
+      cholesterol: 0,
+      omega3: 0,
+      omega6: 0,
+      // Carbs details
       totalSugars: 0,
-      // Set default 0 for all nutrients that we don't have data for
+      addedSugars: 0,
+      // Vitamins
+      vitaminA: 0,
+      vitaminB1: 0,
+      vitaminB2: 0,
+      vitaminB3: 0,
+      vitaminB6: 0,
+      vitaminB12: 0,
+      vitaminC: 0,
+      vitaminD: 0,
+      vitaminE: 0,
+      vitaminK: 0,
+      // Minerals
+      calcium: 0,
+      iron: 0,
+      potassium: 0,
     };
 
     todayLogs.forEach((log) => {
       if (log.nutrition_data) {
-        totals.calories += log.nutrition_data.calories || 0;
-        totals.protein += log.nutrition_data.protein || 0;
-        totals.totalCarbs += log.nutrition_data.carbs || 0;
-        totals.dietaryFiber += log.nutrition_data.fiber || 0;
-        // Approximate fat distribution
-        const totalFat = log.nutrition_data.fat || 0;
-        totals.saturatedFat += totalFat * 0.35; // Estimate
-        totals.unsaturatedFat += totalFat * 0.65; // Estimate
-        totals.sodium += log.nutrition_data.sodium || 0;
-        totals.totalSugars += log.nutrition_data.sugar || 0;
+        const nutritionData = log.nutrition_data;
+
+        // Core macros
+        totals.calories += nutritionData.calories || 0;
+        totals.protein += nutritionData.protein || 0;
+        totals.totalCarbs += nutritionData.carbs || 0;
+        totals.dietaryFiber += nutritionData.fiber || 0;
+        totals.sodium += nutritionData.sodium || 0;
+
+        // Fats - use actual values if available, otherwise estimate
+        const totalFat = nutritionData.fat || 0;
+        if (nutritionData.saturated_fat !== undefined) {
+          totals.saturatedFat += nutritionData.saturated_fat;
+          totals.unsaturatedFat += nutritionData.unsaturated_fat || 0;
+        } else {
+          // Fallback estimation when detailed fat data not available
+          totals.saturatedFat += totalFat * 0.35;
+          totals.unsaturatedFat += totalFat * 0.65;
+        }
+        totals.transFat += nutritionData.trans_fat || 0;
+        totals.cholesterol += nutritionData.cholesterol || 0;
+        totals.omega3 += nutritionData.omega3 || 0;
+        totals.omega6 += nutritionData.omega6 || 0;
+
+        // Carbs details
+        totals.totalSugars += nutritionData.sugar || 0;
+        totals.addedSugars += nutritionData.added_sugar || 0;
+
+        // Vitamins
+        totals.vitaminA += nutritionData.vitamin_a || 0;
+        totals.vitaminB1 += nutritionData.vitamin_b1 || 0;
+        totals.vitaminB2 += nutritionData.vitamin_b2 || 0;
+        totals.vitaminB3 += nutritionData.vitamin_b3 || 0;
+        totals.vitaminB6 += nutritionData.vitamin_b6 || 0;
+        totals.vitaminB12 += nutritionData.vitamin_b12 || 0;
+        totals.vitaminC += nutritionData.vitamin_c || 0;
+        totals.vitaminD += nutritionData.vitamin_d || 0;
+        totals.vitaminE += nutritionData.vitamin_e || 0;
+        totals.vitaminK += nutritionData.vitamin_k || 0;
+
+        // Minerals
+        totals.calcium += nutritionData.calcium || 0;
+        totals.iron += nutritionData.iron || 0;
+        totals.potassium += nutritionData.potassium || 0;
       }
     });
 

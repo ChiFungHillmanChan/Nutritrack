@@ -11,15 +11,42 @@ import type { MedicalCondition } from './user';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export interface NutritionData {
+  // Core macronutrients (required)
   calories: number;
   protein: number;      // grams
   carbs: number;        // grams
   fat: number;          // grams
   fiber: number;        // grams
   sodium: number;       // mg
-  sugar?: number;       // grams
+
+  // Extended macronutrients (optional - from AI analysis)
+  sugar?: number;       // grams - total sugars
+  added_sugar?: number; // grams - added sugars only
   saturated_fat?: number; // grams
+  unsaturated_fat?: number; // grams
+  trans_fat?: number;   // grams
   cholesterol?: number; // mg
+
+  // Fatty acids (optional)
+  omega3?: number;      // grams
+  omega6?: number;      // grams
+
+  // Vitamins (optional - AI estimates)
+  vitamin_a?: number;   // mcg RAE
+  vitamin_b1?: number;  // mg (thiamin)
+  vitamin_b2?: number;  // mg (riboflavin)
+  vitamin_b3?: number;  // mg (niacin)
+  vitamin_b6?: number;  // mg
+  vitamin_b12?: number; // mcg
+  vitamin_c?: number;   // mg
+  vitamin_d?: number;   // mcg
+  vitamin_e?: number;   // mg
+  vitamin_k?: number;   // mcg
+
+  // Minerals (optional - AI estimates)
+  calcium?: number;     // mg
+  iron?: number;        // mg
+  potassium?: number;   // mg
 }
 
 export interface FoodLog {
@@ -55,6 +82,7 @@ export interface FoodAnalysisResponse {
   success: boolean;
   data?: {
     food_name: string;
+    ingredients: string[];
     portion_size_grams: number;
     nutrition: NutritionData;
     confidence: number;

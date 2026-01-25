@@ -59,6 +59,7 @@ interface FoodAnalysisResponse {
   success: boolean;
   data?: {
     food_name: string;
+    ingredients: string[];
     portion_size_grams: number;
     nutrition: NutritionData;
     confidence: number;
@@ -151,6 +152,7 @@ function sanitizeChatHistory(history?: ChatMessage[]): ChatMessage[] | undefined
 
 const DEMO_FOOD_ANALYSIS = {
   food_name: '白飯',
+  ingredients: ['白米'],
   portion_size_grams: 200,
   nutrition: {
     calories: 260,
@@ -159,6 +161,15 @@ const DEMO_FOOD_ANALYSIS = {
     fat: 0.5,
     fiber: 0.6,
     sodium: 2,
+    sugar: 0,
+    saturated_fat: 0.1,
+    unsaturated_fat: 0.3,
+    cholesterol: 0,
+    vitamin_a: 0,
+    vitamin_c: 0,
+    calcium: 10,
+    iron: 0.4,
+    potassium: 35,
   },
   confidence: 0.85,
 };
@@ -339,43 +350,7 @@ ${context ? formatContext(context) : ''}`;
 }
 
 /**
- * JSON Schema for food analysis response
- * Used by Gemini API structured output to ensure consistent JSON responses
- */
-const FOOD_ANALYSIS_SCHEMA = {
-  type: 'object',
-  properties: {
-    food_name: {
-      type: 'string',
-      description: 'Name of the food in Traditional Chinese',
-    },
-    portion_size_grams: {
-      type: 'number',
-      description: 'Estimated portion size in grams',
-    },
-    nutrition: {
-      type: 'object',
-      properties: {
-        calories: { type: 'number', description: 'Calories in kcal' },
-        protein: { type: 'number', description: 'Protein in grams' },
-        carbs: { type: 'number', description: 'Carbohydrates in grams' },
-        fat: { type: 'number', description: 'Fat in grams' },
-        fiber: { type: 'number', description: 'Fiber in grams' },
-        sodium: { type: 'number', description: 'Sodium in mg' },
-      },
-      required: ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium'],
-    },
-    confidence: {
-      type: 'number',
-      description: 'Confidence score between 0 and 1',
-    },
-  },
-  required: ['food_name', 'portion_size_grams', 'nutrition', 'confidence'],
-};
-
-/**
  * Call Gemini Vision API directly for food analysis
- * Uses structured output (responseMimeType: application/json) for reliable JSON responses
  */
 async function callGeminiVision(
   imageBase64: string,
@@ -388,23 +363,35 @@ async function callGeminiVision(
 
 ANALYSIS GUIDELINES:
 1. Identify ALL visible food items in the image
-2. Estimate portion sizes based on visual cues (plate size, utensils, common serving sizes)
-3. Use standard nutritional databases (USDA, etc.) for calorie/nutrient calculations
-4. If multiple items are visible, combine them into one analysis with a descriptive name
-5. Be conservative with estimates - don't overestimate portions
-6. Consider cooking methods visible (fried, steamed, grilled) for fat content
+2. List the main ingredients you can detect
+3. Estimate portion sizes based on visual cues (plate size, utensils, common serving sizes)
+4. Use standard nutritional databases (USDA, etc.) for calorie/nutrient calculations
+5. If multiple items are visible, combine them into one analysis with a descriptive name
+6. Be conservative with estimates - don't overestimate portions
+7. Consider cooking methods visible (fried, steamed, grilled) for fat content
+8. Estimate micronutrients when possible based on visible ingredients
 
 RESPOND IN THIS EXACT JSON FORMAT:
 {
   "food_name": "Food name in Traditional Chinese",
+  "ingredients": ["ingredient1 in Chinese", "ingredient2 in Chinese", ...],
   "portion_size_grams": estimated_weight_in_grams,
   "nutrition": {
     "calories": calories_in_kcal,
     "protein": protein_in_grams,
     "carbs": carbohydrates_in_grams,
-    "fat": fat_in_grams,
+    "fat": total_fat_in_grams,
     "fiber": fiber_in_grams,
-    "sodium": sodium_in_mg
+    "sodium": sodium_in_mg,
+    "sugar": total_sugars_in_grams,
+    "saturated_fat": saturated_fat_in_grams,
+    "unsaturated_fat": unsaturated_fat_in_grams,
+    "cholesterol": cholesterol_in_mg,
+    "vitamin_a": vitamin_a_in_mcg,
+    "vitamin_c": vitamin_c_in_mg,
+    "calcium": calcium_in_mg,
+    "iron": iron_in_mg,
+    "potassium": potassium_in_mg
   },
   "confidence": confidence_score_between_0_and_1
 }
@@ -414,7 +401,9 @@ ${sanitizedMealContext ? `Context: This is ${sanitizedMealContext}.` : ''}
 IMPORTANT:
 - Output ONLY valid JSON, no markdown, no explanations
 - Use realistic nutritional values based on standard food databases
-- Confidence should reflect how clearly you can identify the food (1.0 = very clear, 0.5 = uncertain)`;
+- Confidence should reflect how clearly you can identify the food (1.0 = very clear, 0.5 = uncertain)
+- Include all detectable ingredients in Traditional Chinese
+- For micronutrients, provide best estimates based on visible ingredients (0 if unknown)`;
 
   try {
     const response = await fetch(
@@ -481,7 +470,7 @@ IMPORTANT:
     let analysisData;
     try {
       analysisData = JSON.parse(jsonString);
-    } catch (parseError) {
+    } catch {
       logger.error('Failed to parse Gemini response as JSON:', textContent);
       return {
         success: false,
@@ -502,6 +491,7 @@ IMPORTANT:
       success: true,
       data: {
         food_name: analysisData.food_name,
+        ingredients: analysisData.ingredients ?? [],
         portion_size_grams: analysisData.portion_size_grams ?? 100,
         nutrition: analysisData.nutrition,
         confidence: analysisData.confidence ?? 0.5,
